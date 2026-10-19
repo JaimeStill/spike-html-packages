@@ -1,0 +1,50 @@
+# mise run never installs a missing tool first (task.run_auto_install, on by default): the check
+# reads no network, and fails naming mise run install, the one task that installs tools.
+[settings]
+task.run_auto_install = false
+
+# spike-html-conventions' settled toolchain, at its pins.
+[tools]
+# A consumer only: the fixtures install the releases under npm, pnpm, and bun.
+bun = "1.4.3"
+node = "26.12.0"
+# npm 12, its own pin: node 26.12.0 bundles npm 11.20.0, from before npm 12 refused git
+# dependencies by default.
+npm = "12.2.1"
+pnpm = "12.14.0"
+shellcheck = "0.11.0"
+"github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
+"npm:vite" = "8.3.4"
+
+# The browser tier's browser: Chrome for Testing's chrome-headless-shell, one generic linux64 zip.
+# Chrome for Testing publishes no checksums, so the sha256 and size are ours, taken from the
+# download by hand at each bump; mise refuses a download that doesn't match. Its latest is the
+# Stable channel of Chrome for Testing's last-known-good versions.
+[tools."http:chrome-headless-shell"]
+version = "155.0.8059.84"
+version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
+version_json_path = ".channels.Stable.version"
+
+[tools."http:chrome-headless-shell".platforms]
+linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c", size = "125033980" }
+
+[tasks.check]
+description = "Lint the shell scripts with shellcheck; reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
+run = '''
+set -eu
+cd "$MISE_PROJECT_ROOT"
+find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -print0 \
+  | xargs -0 -r shellcheck
+'''
+
+[tasks.install]
+description = "Install every mise.toml pin; reads the network"
+run = "mise install"
+dir = "{{config_root}}"
+
+[tasks.currency]
+description = "Report every mise tool pinned behind its latest, one line each, exiting nonzero if any; reads the network, writes nothing"
+run = "scripts/currency.sh"
+# Without mise's own command echo, so a current tree prints nothing at all.
+quiet = true
+dir = "{{config_root}}"

@@ -1,0 +1,15 @@
+# Project kind: this spike packages and releases the web stack's layers, checked by
+# `mise run check`. Its goals live in the coordinator's roadmap
+# (standards-lab/context/roadmap.toml). `mise run currency` reports every mise tool pinned behind
+# its latest; the layers task extends it to the package dependencies. No gate.
+[project]
+kind = "code"
+check = "mise run check"
+currency = "mise run currency"
+
+# Remote platform and the commands that publish and merge a finished branch. Pull requests run
+# no checks, so the merge doesn't wait on them.
+[remote]
+platform = "github"
+publish = "gh pr create"
+merge = "gh pr merge --merge --delete-branch"
