@@ -1,12 +1,12 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** layers
-- **Branch:** layers
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
-1. [ ] layers
+1. [x] layers
 2. [ ] layout
 3. [ ] hosting
 4. [ ] registries
@@ -102,10 +102,6 @@ Out of scope  Unchanged: any tag, push, or publish; one package against
               pages and apps; reweighing the lint and the manager.
 Door          two-way: nothing leaves the spike repository.
 ```
-
-## Progress
-
-slices 1-5 committed (1f1a3c0..312fa18) · rework slices 4/4 · standards ✓ · spec ✓ (2 rounds) · editor ✓
 
 ## Decisions
 
