@@ -29,12 +29,12 @@ version_json_path = ".channels.Stable.version"
 linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c", size = "125033980" }
 
 [tasks.check]
-description = "Lint (ESLint), format-check (Prettier), and shellcheck the sources, and run the browser tier (the foundation's tool classes against spike-html-design v0.7.0's computed styles, on demo/tools.html served from the working tree, through the raw Chromium debugging pipe on the pinned chrome-headless-shell, under node --test); reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
+description = "Lint (ESLint, with the layer direction), format-check (Prettier), type-check (tsc, typescript-go), and shellcheck the sources, and test them: the unit tier (the keys grammar, the registry, and the layer direction, under node --test) and the browser tier (the foundation's tool classes against spike-html-design v0.7.0's computed styles, and the keys runtime and its help dialog on v0.7.0's fixtures, on pages served from the working tree, the .ts modules' types stripped, through the raw Chromium debugging pipe on the pinned chrome-headless-shell, under node --test); reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
 run = '''
 set -eu
 cd "$MISE_PROJECT_ROOT"
-# The lint tooling, ESLint and Prettier, comes from node_modules, installed once outside the check
-# (mise run install), so the check itself never reads the network.
+# The lint tooling, ESLint and Prettier with their plugins, comes from node_modules, installed once
+# outside the check (mise run install), so the check itself never reads the network.
 if [ ! -x node_modules/.bin/eslint ] || [ ! -x node_modules/.bin/prettier ]; then
   echo "check: the lint tooling (devDependencies) isn't installed; run mise run install first" >&2
   exit 1
@@ -59,21 +59,29 @@ case "$shell_version" in
     exit 1
     ;;
 esac
-# The project's own copies, by pnpm exec: eslint.config.js holds the lint rules, .prettierrc.json
-# the format, and .prettierignore limits Prettier to the code, the JSON, and the CSS.
+# The project's own copies, by pnpm exec: eslint.config.js holds the lint rules and the layer
+# table, .prettierrc.json the format, and .prettierignore limits Prettier to the code, the JSON,
+# and the CSS.
 pnpm exec eslint .
 pnpm exec prettier --check .
 find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -print0 \
   | xargs -0 -r shellcheck
-# The browser tier, under node --test: scripts/browser.test.js, through the raw pipe
-# (scripts/browser-pipe.js, no package) on the pinned chrome-headless-shell, the pages served from
-# the working tree on the loopback address; the driver fails naming the fix when the executable it
-# is given is missing.
-BROWSER_DRIVER=pipe BROWSER_EXECUTABLE="$headless_shell" node --test scripts/browser.test.js
+# Type-check the layers (tsconfig.json) with the mise-pinned typescript-go, whose binary is tsc;
+# the tests and scripts are plain JavaScript outside it.
+tsc --noEmit -p .
+# The unit tier: test/*.test.js, the DOM-free modules as node runs them, their types stripped.
+node --test test/
+# The browser tier, under node --test: scripts/browser.test.js and scripts/browser-keys.test.js,
+# outside test/ so the unit tier never runs them, through the raw pipe (scripts/browser-pipe.js, no
+# package) on the pinned chrome-headless-shell, the pages served from the working tree on the
+# loopback address, the .ts modules' types stripped as they are served; the driver fails naming
+# the fix when the executable it is given is missing.
+BROWSER_DRIVER=pipe BROWSER_EXECUTABLE="$headless_shell" \
+  node --test scripts/browser.test.js scripts/browser-keys.test.js
 '''
 
 [tasks.install]
-description = "Install every mise.toml pin (mise install: the check's browser, chrome-headless-shell, with the rest; each skipped when it's already installed) and the lint tooling (the devDependencies: ESLint and Prettier) from the lockfile with pnpm; reads the network"
+description = "Install every mise.toml pin (mise install: the check's browser, chrome-headless-shell, with the rest; each skipped when it's already installed) and the lint tooling (the devDependencies: ESLint, Prettier, and their plugins) from the lockfile with pnpm; reads the network"
 run = [
   "mise install",
   "pnpm install --frozen-lockfile",
@@ -81,12 +89,12 @@ run = [
 dir = "{{config_root}}"
 
 [tasks.demo]
-description = "Serve demo/tools.html, every tool class of the foundation's sheets on the default profiles, from the working tree on the loopback address, printing its URL and running until Ctrl-C; reads no network, writes nothing (the page also opens from file://)"
+description = "Serve the demo pages from the working tree on the loopback address, printing their URLs and running until Ctrl-C: demo/tools.html, every tool class of the foundation's sheets on the default profiles (it also opens from file://), and demo/keys.html, the keys family's bindings and help dialog; reads no network, writes nothing"
 run = "node scripts/demo.js"
 dir = "{{config_root}}"
 
 [tasks.currency]
-description = "Report every mise tool pinned behind its latest, one line each, exiting nonzero if any; reads the network, writes nothing"
+description = "Report every mise tool and package.json dependency and devDependency pinned behind its latest (typescript against typescript-eslint's peer range), one line each, exiting nonzero if any; reads the network, writes nothing"
 run = "scripts/currency.sh"
 # Without mise's own command echo, so a current tree prints nothing at all.
 quiet = true

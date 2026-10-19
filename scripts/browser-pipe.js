@@ -1,4 +1,5 @@
-// from spike-html-conventions a88828a: scripts/browser-pipe.js
+// adapted from spike-html-conventions a88828a: scripts/browser-pipe.js, a page given goto() and
+// cdp() for the keys cases (scripts/browser-keys.test.js), which press real keys and reload.
 //
 // The raw pipe driver: Chromium, headless, driven over its DevTools protocol on a pipe
 // (--remote-debugging-pipe), with no package between. It is the check's browser tier's driver, on
@@ -168,11 +169,19 @@ export async function launch({ lang, tz, width, height }) {
         { features: [{ name: "prefers-color-scheme", value: "light" }] },
         sessionId,
       );
-      const loaded = once(sessionId, "Page.loadEventFired");
-      const { errorText } = await send("Page.navigate", { url }, sessionId);
-      if (errorText) throw new Error(`${url}: ${errorText}`);
-      await loaded;
+      /** Loads the URL in the page, resolving once its load event fires. */
+      const goto = async (url) => {
+        const loaded = once(sessionId, "Page.loadEventFired");
+        const { errorText } = await send("Page.navigate", { url }, sessionId);
+        if (errorText) throw new Error(`${url}: ${errorText}`);
+        await loaded;
+      };
+      await goto(url);
       return {
+        goto,
+        /** Sends the page one protocol command, as ("Input.dispatchKeyEvent", {...}), resolving to
+         * its result. */
+        cdp: (method, params) => send(method, params, sessionId),
         /** The expression's value, awaited when it is a promise, as JSON. */
         async evaluate(expression) {
           const { result, exceptionDetails } = await send(

@@ -7,14 +7,24 @@
 // The server is node:http on the loopback address, serving the working tree itself: the pages
 // need no tool between, as the sheets are plain CSS and the in-page half, scripts/computed-styles.js,
 // a plain module. It serves only the types below, so nothing else in the tree is reachable, and
-// reads no network. mise run demo serves the demo through it too.
+// reads no network. mise run demo serves the demo through it too, and the keys cases
+// (scripts/browser-keys.test.js) their fixtures.
+//
+// The foundation's modules are TypeScript, imported by .js specifiers: a request for a .js file
+// that isn't there, with a .ts file beside it, is answered with that .ts file's JavaScript, its
+// types stripped by node's own stripTypeScriptTypes (node:module), which erases them in place, so
+// a line in the browser is the line in the source. tsconfig.json's erasableSyntaxOnly holds the
+// sources to syntax that stripping alone runs. Nothing is written: the check writes nothing.
 //
 // A driver keeps one interface: launch(settings) resolves to a browser with its version, an
 // open(url) that resolves to a page once its load event fires, and a close(); a page has
-// evaluate(expression), the expression's value awaited when it is a promise, and close().
+// evaluate(expression), the expression's value awaited when it is a promise, goto(url), which
+// loads another URL and resolves on its load event, cdp(method, params), one raw protocol command
+// (the keys cases press keys by Input.dispatchKeyEvent), and close().
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:http";
+import { stripTypeScriptTypes } from "node:module";
 import { extname, join, normalize } from "node:path";
 
 /** The root of the repository, which the server serves. */
@@ -45,26 +55,42 @@ const timeout = 120_000;
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 
 /**
- * Serves the working tree over plain http on a free port of the loopback address. Resolves to its
- * origin and a stop() that ends it.
+ * The body a path of the tree is served with, or undefined when it isn't served: a file of a type
+ * the server serves, or a .js path's .ts source, its types stripped.
  */
-export async function serve() {
+function body(file) {
+  if (types[extname(file)] === undefined) return undefined;
+  try {
+    return readFileSync(file);
+  } catch {
+    // A missing file is a 404, unless it is a .js file whose .ts source is there.
+  }
+  const source = file.replace(/\.js$/, ".ts");
+  if (source === file || !existsSync(source)) return undefined;
+  return stripTypeScriptTypes(readFileSync(source, "utf8"));
+}
+
+/**
+ * Serves the working tree over plain http on a free port of the loopback address. Resolves to its
+ * origin, the number of requests each path has had (requests(path), the query aside), and a stop()
+ * that ends it. A path in `refuse` is answered 404 whatever the tree holds, as a module that
+ * failed to load.
+ */
+export async function serve({ refuse = [] } = {}) {
+  const counts = new Map();
   const server = createServer((request, response) => {
     // normalize() of an absolute path never climbs above its root, so every file is in the tree.
     const path = normalize(decodeURIComponent(new URL(request.url, "http://host").pathname));
+    counts.set(path, (counts.get(path) ?? 0) + 1);
     const file = join(root, path);
-    const type = types[extname(file)];
-    let body;
-    try {
-      if (type !== undefined) body = readFileSync(file);
-    } catch {
-      // A missing file is a 404, as is a type the server doesn't serve.
-    }
-    if (body === undefined) {
+    const served = refuse.includes(path) ? undefined : body(file);
+    if (served === undefined) {
       response.writeHead(404).end();
       return;
     }
-    response.writeHead(200, { "content-type": type, "cache-control": "no-store" }).end(body);
+    response
+      .writeHead(200, { "content-type": types[extname(file)], "cache-control": "no-store" })
+      .end(served);
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -72,6 +98,7 @@ export async function serve() {
   });
   return {
     origin: `http://127.0.0.1:${server.address().port}`,
+    requests: (path) => counts.get(path) ?? 0,
     stop: () => new Promise((resolve) => server.close(resolve)),
   };
 }
