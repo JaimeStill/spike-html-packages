@@ -95,13 +95,16 @@ export function register(keys: string, label: string, handler: Handler): () => v
   };
 }
 
+/** The waits between presses, in ms, a reader can pick. */
+export const WAITS = [1000, 1500, 3000, 5000] as const;
+
 /** The localStorage key of the reader's settings. */
 const STORAGE = "spike-html-design.keys";
 
 /** Each setting's check: the values a reader can choose. */
 const VALID: Record<keyof Settings, (value: unknown) => boolean> = {
   enabled: (value) => typeof value === "boolean",
-  wait: (value) => [1000, 1500, 3000, 5000].includes(value as number),
+  wait: (value) => WAITS.some((ms) => ms === value),
 };
 
 /** Whether the name is a setting. */

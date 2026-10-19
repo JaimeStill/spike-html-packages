@@ -2,13 +2,10 @@
 // note, filled into each [data-keys-list] of a dialog as it opens. keys.ts loads it lazily.
 // Adapted from spike-html-design v0.7.0 (fe75220): modules/keys-help.js.
 
-import { bindings, changeSettings, settings } from "./keys.ts";
+import { bindings, changeSettings, settings, WAITS } from "./keys.ts";
 import type { Listed } from "./keys.ts";
 import { labels } from "./keys-grammar.ts";
 import type { Sequence } from "./keys-grammar.ts";
-
-/** The waits between presses, in ms, a reader can pick. */
-const WAITS = [1000, 1500, 3000, 5000];
 
 /** The screen-reader note the dialog carries. */
 const NOTE =
@@ -122,7 +119,7 @@ function waitControl(wait: number): HTMLLabelElement {
   const select = element("select");
   select.name = "wait";
   const shown = (ms: number) => `${ms / 1000} s`;
-  if (!WAITS.includes(wait)) select.append(new Option(shown(wait), "", false, true));
+  if (!WAITS.some((ms) => ms === wait)) select.append(new Option(shown(wait), "", false, true));
   for (const ms of WAITS) select.append(new Option(shown(ms), String(ms), false, ms === wait));
   label.append("Wait between presses ", select);
   return label;
