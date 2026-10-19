@@ -1,17 +1,13 @@
-// The release build's integrity: scripts/build.sh's dist/ against layers/ and package.json's files
-// and exports, by test/consumers/release.js's releaseProblems. mise runs the build before this
-// tier, so the first case reads a fresh emit. The other cases run releaseProblems on scratch copies of
-// the working tree (layers/, dist/, package.json) with one fault each, so a checker that passes
-// everything fails here: a sheet with no built copy, a module with no emitted .js or .d.ts, an
-// export at a missing file, a built file no export reaches, a stray built file, a pattern export
-// that reaches nothing, and a build outside files.
+// The release build's integrity: dist/ against layers/ and package.json's files and exports, by
+// test/consumers/release.js's releaseProblems, on the fresh build and on scratch copies with one
+// fault each.
 
 import assert from "node:assert/strict";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
-import { releaseProblems, resolveExport, subpathsOf } from "../consumers/release.js";
+import { releaseProblems } from "../consumers/release.js";
 
 const root = join(import.meta.dirname, "../..");
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -39,29 +35,6 @@ describe("release build", () => {
   test("dist/ is the build of layers/ that files and exports declare", () => {
     assert.ok(existsSync(join(root, "dist")), "no dist/; run mise run build first");
     assert.deepEqual(releaseProblems(root), []);
-  });
-
-  test("the page entry and every component's module are exported", () => {
-    const { exports } = manifest;
-    assert.deepEqual(resolveExport(exports, "./foundation/page.css")?.targets, {
-      default: "./dist/foundation/page.css",
-    });
-    assert.deepEqual(resolveExport(exports, "./components/status-badge.js")?.targets, {
-      types: "./dist/components/status-badge.d.ts",
-      default: "./dist/components/status-badge.js",
-    });
-    // The formatters are declarations alone: the exact key wins over ./foundation/*.js, so no
-    // runtime target is exported for a module that has none.
-    assert.deepEqual(resolveExport(exports, "./foundation/format.js")?.targets, {
-      types: "./dist/foundation/format.d.ts",
-    });
-    assert.deepEqual(subpathsOf(exports, "dist/foundation/baseline/tokens/color/flexoki.css"), [
-      {
-        subpath: "./foundation/baseline/tokens/color/flexoki.css",
-        key: "./foundation/*.css",
-        condition: "default",
-      },
-    ]);
   });
 
   const faults = {

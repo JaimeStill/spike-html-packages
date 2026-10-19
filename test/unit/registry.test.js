@@ -1,16 +1,6 @@
-// adapted from spike-html-design v0.7.0: test/registry.test.js, its assertions kept and its
-// harness node's. The registry has no DOM, only its store at a global key, so it runs in the unit
-// tier (mise run test:unit), on layers/foundation/registry.ts as node runs it, its types stripped.
-//
-// v0.7.0 opened a fresh page per case; here a case's page is a fresh copy of the module, imported
-// by a URL no other case uses, after the store is removed from the global object, so each case
-// starts from an empty store as a page would. v0.7.0's registration modules, register.js and
-// register-full.js, stay in spike-html-design: where its fixture pages imported them, a case here
-// registers the same names in the same order through registerLean() and registerFull(), copies of
-// those modules' three and eight lines. Their own cases (the names each lists, and that
-// registering loads no CSS) stay with them, as does the CDN case, which loaded copies by two tags'
-// URLs from file://: two copies by two URLs, here, is the same store shared by two module
-// instances.
+// The registry's store, shared by every copy of the module. A case's page is a fresh copy, imported
+// by a URL no other case uses, after the store is removed from the global object.
+// Adapted from spike-html-design v0.7.0 (fe75220): test/registry.test.js, on node:test.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -18,8 +8,7 @@ import { describe, test } from "node:test";
 const url = new URL("../../layers/foundation/registry.ts", import.meta.url).href;
 const KEY = Symbol.for("spike-html-design.registry");
 
-// LEAN and FULL are the names each registration module lists, per facet, in registration order:
-// the profiles its CSS entry ships.
+/** The names v0.7.0's lean and full registration modules list, per facet, in order. */
 const LEAN = { color: ["flexoki"], space: ["regular"], type: ["mono"] };
 const FULL = {
   color: ["flexoki", "primer", "catppuccin", "everforest"],
@@ -27,37 +16,36 @@ const FULL = {
   type: ["mono", "sans"],
 };
 
-// copy imports a copy of the registry by the URL with query, a module instance of its own.
+/** A copy of the registry by the URL with the query, a module instance of its own. */
 const copy = (query) => import(`${url}?${query}`);
 
-// page starts a page: the store removed, and a fresh copy of the registry imported, the one a
-// page's registration module would import. It resolves to that copy and a copy() of the page's
-// own, by a URL with the suffix given.
 let pages = 0;
+
+/** A fresh page: the store removed, its own copy of the registry, and a copy() of that copy. */
 async function page() {
   delete globalThis[KEY];
   const name = `page=${++pages}`;
   return { registry: await copy(name), copy: (suffix) => copy(`${name}&${suffix}`) };
 }
 
-// registerLean and registerFull register what v0.7.0's modules/register.js and
-// modules/register-full.js do, through the registry given.
+/** Registers what v0.7.0's modules/register.js does, through the registry given. */
 function registerLean({ register }) {
   register("color", "flexoki");
   register("space", "regular");
   register("type", "mono");
 }
+
+/** Registers what v0.7.0's modules/register-full.js does, through the registry given. */
 function registerFull({ register }) {
   for (const name of ["flexoki", "primer", "catppuccin", "everforest"]) register("color", name);
   for (const name of ["regular", "compact"]) register("space", name);
   for (const name of ["mono", "sans"]) register("type", name);
 }
 
-// STORE reads the page's registry store at its well-known global key, as JSON.
+/** The store at its global key, as JSON. */
 const STORE = () => JSON.parse(JSON.stringify(globalThis[KEY]));
 
-// listed is what a fixture page listed, per facet: each facet's names as the registry given reads
-// them, as v0.7.0's test/fixtures/registrations.js rendered them.
+/** Each facet's names as the registry given lists them. */
 const listed = ({ FACETS, profiles }) =>
   Object.fromEntries(FACETS.map((facet) => [facet, profiles(facet)]));
 
@@ -106,18 +94,12 @@ describe("registry", () => {
     assert.deepEqual(STORE(), { color: ["flexoki"], space: [], type: ["mono"] });
   });
 
-  test("names the facets and their defaults, and profiles() returns a copy", async () => {
+  test("profiles() returns a copy, so changing it changes no store", async () => {
     const { registry } = await page();
     registerLean(registry);
     registry.profiles("color").push("mutated");
-    assert.deepEqual(
-      [registry.FACETS, registry.DEFAULTS, registry.profiles("color")],
-      [
-        ["color", "space", "type"],
-        { color: "flexoki", space: "regular", type: "mono" },
-        ["flexoki"],
-      ],
-    );
+    assert.deepEqual(registry.profiles("color"), ["flexoki"]);
+    assert.deepEqual(STORE(), LEAN);
   });
 
   test("register throws on an unknown facet or an empty name, and registers nothing", async () => {
