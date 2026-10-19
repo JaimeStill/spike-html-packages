@@ -1,0 +1,10 @@
+{
+  "name": "consumer-bun",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A test fixture, never released: a consumer that depends on spike-html-packages by its locally packed tarball, which scripts/consumers.sh packs and places beside this manifest. The Bun column: installed and run with bun.",
+  "type": "module",
+  "dependencies": {
+    "spike-html-packages": "file:spike-html-packages.tgz"
+  }
+}

@@ -101,6 +101,8 @@ const declarations = {
 };
 
 export default defineConfig([
+  // The release build and the consumer installs' caches, both gitignored, which ESLint doesn't read.
+  { ignores: ["dist/", ".cache/"] },
   { files: code, extends: [js.configs.recommended, tseslint.configs.recommended] },
   { files: code, languageOptions: { globals: globals.browser } },
   { files: code, rules: { "no-restricted-syntax": ["error", ...cssImports] } },

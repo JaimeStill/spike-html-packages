@@ -29,7 +29,7 @@ version_json_path = ".channels.Stable.version"
 linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c", size = "125033980" }
 
 [tasks.check]
-description = "Lint (ESLint, with the layer direction and the CSS module script rule), format-check (Prettier), type-check (tsc, typescript-go), and shellcheck the sources, and test them: the unit tier (the keys grammar, the registry, the layer direction, and the SDK's declarations, under node --test) and the browser tier (the foundation's tool classes against spike-html-design v0.7.0's computed styles, the keys runtime and its help dialog on v0.7.0's fixtures, and the components' contract cases, on pages served from the working tree, the .ts modules' types stripped and lit mapped onto the installed packages, through the raw Chromium debugging pipe on the pinned chrome-headless-shell, under node --test); reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
+description = "Build the release into dist/ (scripts/build.sh), lint (ESLint, with the layer direction and the CSS module script rule), format-check (Prettier), type-check (tsc, typescript-go), and shellcheck the sources, and test them: the unit tier (the keys grammar, the registry, the layer direction, the SDK's declarations, and the release build's integrity against layers/, files, and exports, under node --test) and the browser tier (the foundation's tool classes against spike-html-design v0.7.0's computed styles, the keys runtime and its help dialog on v0.7.0's fixtures, and the components' contract cases, on pages served from the working tree, the .ts modules' types stripped and lit mapped onto the installed packages, through the raw Chromium debugging pipe on the pinned chrome-headless-shell, under node --test), and install the packed release offline into the consumer fixtures under pnpm, npm, and bun, checking each install's files and every export; reads no network, writes only dist/. The layers task grows it to spike-html-conventions' check"
 run = '''
 set -eu
 cd "$MISE_PROJECT_ROOT"
@@ -64,12 +64,16 @@ case "$shell_version" in
     exit 1
     ;;
 esac
+# The release build first, into dist/ (gitignored), so the unit tier's integrity test
+# (test/release.test.js) and the consumer installs below read a fresh emit.
+scripts/build.sh
 # The project's own copies, by pnpm exec: eslint.config.js holds the lint rules and the layer
 # table, .prettierrc.json the format, and .prettierignore limits Prettier to the code, the JSON,
 # and the CSS.
 pnpm exec eslint .
 pnpm exec prettier --check .
-find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -print0 \
+find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -not -path './.cache/*' \
+  -not -path './dist/*' -print0 \
   | xargs -0 -r shellcheck
 # Type-check the layers and the demo's modules (tsconfig.json) with the mise-pinned typescript-go,
 # whose binary is tsc; the tests and scripts are plain JavaScript outside it.
@@ -85,14 +89,31 @@ node --test test/
 # the executable it is given is missing.
 BROWSER_DRIVER=pipe BROWSER_EXECUTABLE="$headless_shell" \
   node --test scripts/browser.test.js scripts/browser-keys.test.js scripts/browser-components.test.js
+# The release, packed from dist/ with pnpm pack, installed offline into each consumer fixture under
+# pnpm, npm, and bun, with lit from the caches under .cache/consumers/ (mise run install warms
+# them): each install's files are the whole pack, every export resolves under node or bun, and
+# tsc type-checks the fixture against the installed declarations.
+scripts/consumers.sh
 '''
 
 [tasks.install]
-description = "Install every mise.toml pin (mise install: the check's browser, chrome-headless-shell, with the rest; each skipped when it's already installed), lit (the one dependency), and the lint tooling (the devDependencies: ESLint, Prettier, and their plugins) from the lockfile with pnpm; reads the network"
+description = "Install every mise.toml pin (mise install: the check's browser, chrome-headless-shell, with the rest; each skipped when it's already installed), lit (the one dependency), and the lint tooling (the devDependencies: ESLint, Prettier, and their plugins) from the lockfile with pnpm, and warm the pnpm store, npm cache, and bun cache under .cache/consumers/ with lit for the check's offline consumer installs; reads the network"
 run = [
   "mise install",
   "pnpm install --frozen-lockfile",
+  "scripts/consumers.sh warm",
 ]
+dir = "{{config_root}}"
+
+[tasks.build]
+description = "Build the release into dist/ (gitignored): every .ts module under layers/ as an unbundled, unminified ES module .js with its .d.ts by tsc emit (tsconfig.build.json), and every .d.ts and .css source copied beside them at its own relative path; reads no network"
+run = "scripts/build.sh"
+dir = "{{config_root}}"
+
+[tasks.installs]
+description = "Build the release, pack it with pnpm pack, install it offline into the consumer fixtures under pnpm, npm, and bun as the check does, and print each install's file list; reads no network"
+depends = ["build"]
+run = "scripts/consumers.sh list"
 dir = "{{config_root}}"
 
 [tasks.demo]
