@@ -29,17 +29,60 @@ version_json_path = ".channels.Stable.version"
 linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c", size = "125033980" }
 
 [tasks.check]
-description = "Lint the shell scripts with shellcheck; reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
+description = "Lint (ESLint), format-check (Prettier), and shellcheck the sources, and run the browser tier (the foundation's tool classes against spike-html-design v0.7.0's computed styles, on demo/tools.html served from the working tree, through the raw Chromium debugging pipe on the pinned chrome-headless-shell, under node --test); reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
 run = '''
 set -eu
 cd "$MISE_PROJECT_ROOT"
+# The lint tooling, ESLint and Prettier, comes from node_modules, installed once outside the check
+# (mise run install), so the check itself never reads the network.
+if [ ! -x node_modules/.bin/eslint ] || [ ! -x node_modules/.bin/prettier ]; then
+  echo "check: the lint tooling (devDependencies) isn't installed; run mise run install first" >&2
+  exit 1
+fi
+# The browser tier's browser, the chrome-headless-shell pin in [tools] above, by its path. mise
+# which fails when the pin isn't installed, so that is named here, with the fix, rather than left
+# to mise's message.
+if ! headless_shell=$(mise which chrome-headless-shell 2>/dev/null); then
+  echo "check: chrome-headless-shell (mise.toml's pin) isn't installed; run mise run install first" >&2
+  exit 1
+fi
+# The shell must report the version pinned, read from mise itself. mise's download cache is keyed
+# by checksum, so a version bumped without its new sha256 installs the cached old build under the
+# new version's name; this fails it.
+shell_pin=$(mise ls --local --json http:chrome-headless-shell \
+  | node -e 'console.log(JSON.parse(require("node:fs").readFileSync(0, "utf8"))[0]?.requested_version ?? "")')
+shell_version=$("$headless_shell" --version)
+case "$shell_version" in
+  *" $shell_pin") ;;
+  *)
+    echo "check: $headless_shell reports $shell_version, but mise.toml pins chrome-headless-shell $shell_pin; give the pin its own sha256 and size" >&2
+    exit 1
+    ;;
+esac
+# The project's own copies, by pnpm exec: eslint.config.js holds the lint rules, .prettierrc.json
+# the format, and .prettierignore limits Prettier to the code, the JSON, and the CSS.
+pnpm exec eslint .
+pnpm exec prettier --check .
 find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -print0 \
   | xargs -0 -r shellcheck
+# The browser tier, under node --test: scripts/browser.test.js, through the raw pipe
+# (scripts/browser-pipe.js, no package) on the pinned chrome-headless-shell, the pages served from
+# the working tree on the loopback address; the driver fails naming the fix when the executable it
+# is given is missing.
+BROWSER_DRIVER=pipe BROWSER_EXECUTABLE="$headless_shell" node --test scripts/browser.test.js
 '''
 
 [tasks.install]
-description = "Install every mise.toml pin; reads the network"
-run = "mise install"
+description = "Install every mise.toml pin (mise install: the check's browser, chrome-headless-shell, with the rest; each skipped when it's already installed) and the lint tooling (the devDependencies: ESLint and Prettier) from the lockfile with pnpm; reads the network"
+run = [
+  "mise install",
+  "pnpm install --frozen-lockfile",
+]
+dir = "{{config_root}}"
+
+[tasks.demo]
+description = "Serve demo/tools.html, every tool class of the foundation's sheets on the default profiles, from the working tree on the loopback address, printing its URL and running until Ctrl-C; reads no network, writes nothing (the page also opens from file://)"
+run = "node scripts/demo.js"
 dir = "{{config_root}}"
 
 [tasks.currency]

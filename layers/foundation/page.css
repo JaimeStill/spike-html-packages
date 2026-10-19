@@ -1,0 +1,31 @@
+/*
+ * The foundation's page entry: the one stylesheet a page links for the whole foundation, the
+ * baseline (baseline.css: the tokens on the default profiles, Flexoki, regular, and mono; the
+ * reset; and the elements) and the three lateral-concern sheets split from spike-html-design
+ * v0.7.0's layers/tools.css: meta.css (buttons and hue variants), structure.css (field stacks), and
+ * utilities.css (scroll and tables).
+ *
+ *   <link rel="stylesheet" href="layers/foundation/page.css">
+ *
+ * The one layer statement comes first and fixes the order of every foundation layer, so the order
+ * holds whichever file a browser loads first. v0.7.0 put its tools in one layer after its elements,
+ * its families in the order buttons, scroll, forms, tables, so where two families set the same
+ * property on one element the later wins: a .button that is also .scroll-y or .scroll-x takes the
+ * scroll's padding, and one that is also .field takes the field's grid. The three layers keep that
+ * order, meta (the buttons) before structure and utilities, so every combination computes as it
+ * did. Structure and utilities set no property in common, so their order is free; utilities come
+ * last, as utility classes do. A page that then declares `@layer app { ... }`
+ * gets a layer after them, so its rules win over every foundation rule whatever their specificity.
+ *
+ * Every sheet it imports layers itself and imports nothing further but baseline.css's own
+ * imports, so the imports take no layer(), and this entry, which only a page links, is the one
+ * place outside baseline.css an @import is written. A shadow root adopts the three sheets on their
+ * own: none holds an @import, which a constructed stylesheet never loads.
+ */
+
+@layer foundation.tokens.color, foundation.tokens.space, foundation.tokens.type, foundation.reset, foundation.elements, foundation.meta, foundation.structure, foundation.utilities;
+
+@import url(./baseline.css);
+@import url(./meta.css);
+@import url(./structure.css);
+@import url(./utilities.css);

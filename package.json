@@ -1,0 +1,11 @@
+{
+  "name": "spike-html-packages",
+  "version": "0.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.10"
+  }
+}

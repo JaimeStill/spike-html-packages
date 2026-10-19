@@ -1,0 +1,120 @@
+/* adapted from spike-html-design v0.7.0 (commit fe75220): layers/tools.css */
+
+/*
+ * The foundation's meta concern: v0.7.0's button tool classes, .button and its hue variants. The
+ * rules are upstream's, unchanged, moved out of upstream's one spike-html-design.tools layer into
+ * this sheet's own layer, foundation.meta; utilities.css holds upstream's scroll and tables, and
+ * structure.css its forms.
+ *
+ * The sheet layers itself and imports nothing, so a shadow root adopts it on its own, as a
+ * constructed stylesheet or a CSS module script, and reads the tokens it uses by inheritance from
+ * the page. A page links page.css, which fixes the order of every foundation layer.
+ *
+ * --button-color is public API, frozen with v0.7.0's class names: a consumer adds a variant in its
+ * own later layer by setting the hook alone, and the variant renders with the family's whole
+ * treatment:
+ *
+ *   @layer foundation, app;
+ *   @layer app {
+ *     .button-danger { --button-color: var(--red); }
+ *   }
+ *
+ * The neutral .button also reads the elements layer's --interaction-color, for its hover border,
+ * as the native button does.
+ */
+
+@layer foundation.meta {
+  /* Buttons. .button gives any element, a link most often, the native button's look: the elements
+     layer's neutral button rules, restated here state for state (rest, hover, disabled), since a
+     rule lives in one layer and the elements layer takes no classes. Beyond that look, it sets
+     what a native button has and another element lacks: inline-block display, centered text, the
+     interface font and leading (the reset gives form controls theirs), no underline, and a
+     pointer. The focus outline needs no rule: the elements layer's :focus-visible rule draws it on
+     every focusable element. */
+
+  .button {
+    display: inline-block;
+    padding: var(--space-3xs) var(--space-s);
+    border: var(--line-s) solid var(--border-2);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-2);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    line-height: var(--leading-ui);
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .button:hover:where(:not(:disabled)) {
+    border-color: var(--interaction-color, var(--blue));
+    background-color: var(--border);
+  }
+
+  .button:disabled {
+    background-color: var(--bg);
+    color: var(--fg-3);
+  }
+
+  /* The button variants, one per hue, outline style. Each sets only the hook, --button-color, the
+     color its treatment below draws in; a consumer's variant sets it the same way, in its own
+     layer, under any name of the form button-<name>.
+
+     --button-color (public API): the color a button variant draws its border and text in, and
+     tints its hover fill from. Set it in a class named button-<name>, on a .button or on a native
+     button or button-type input. */
+
+  .button-red {
+    --button-color: var(--red);
+  }
+
+  .button-orange {
+    --button-color: var(--orange);
+  }
+
+  .button-yellow {
+    --button-color: var(--yellow);
+  }
+
+  .button-green {
+    --button-color: var(--green);
+  }
+
+  .button-cyan {
+    --button-color: var(--cyan);
+  }
+
+  .button-blue {
+    --button-color: var(--blue);
+  }
+
+  .button-purple {
+    --button-color: var(--purple);
+  }
+
+  .button-magenta {
+    --button-color: var(--magenta);
+  }
+
+  /* The variant treatment, on a .button, a native button or a button-type input that carries a
+     class named button-<name>: matched by the class's prefix, so a variant the consumer names
+     joins it with no rule restated. Border and text take the hook's color over no fill, and hover
+     fills with a 15% mix of it into transparent, so the fill tints whatever surface lies beneath.
+     A disabled variant keeps the neutral disabled look. */
+
+  :where(.button, button, input:is([type="button"], [type="submit"], [type="reset"])):is(
+      [class^="button-"],
+      [class*=" button-"]
+    ):not(:disabled) {
+    border-color: var(--button-color);
+    background-color: transparent;
+    color: var(--button-color);
+  }
+
+  :where(.button, button, input:is([type="button"], [type="submit"], [type="reset"])):is(
+      [class^="button-"],
+      [class*=" button-"]
+    ):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--button-color) 15%, transparent);
+  }
+}

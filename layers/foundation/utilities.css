@@ -1,0 +1,52 @@
+/* adapted from spike-html-design v0.7.0 (commit fe75220): layers/tools.css */
+
+/*
+ * The foundation's utilities: v0.7.0's scroll and table tool classes, opt-in classes a page adds
+ * to native elements, unprefixed, which may change layout. The rules are upstream's, unchanged,
+ * moved out of upstream's one spike-html-design.tools layer into this sheet's own layer,
+ * foundation.utilities; structure.css holds upstream's forms family and meta.css its buttons.
+ *
+ * The sheet layers itself and imports nothing, so a shadow root adopts it on its own, as a
+ * constructed stylesheet or a CSS module script, and reads the tokens it uses (--space-2xs,
+ * --bg, --bg-2) by inheritance from the page. A page links page.css, which fixes the order of
+ * every foundation layer; a page that links this sheet without it gets foundation.utilities
+ * wherever the sheet's position puts it.
+ *
+ * --table-stripe is public API, frozen with v0.7.0's class names, as upstream's tools layer
+ * describes its hooks. Scroll has no hook: each class sets its layout in a declaration or two that
+ * a consumer's own class restates as cheaply as it would set a hook.
+ */
+
+@layer foundation.utilities {
+  /* Scroll. Each scrolls its overflow on one axis, with a small space between the content and the
+     scrollbar. .scroll-y also reserves a stable gutter, so its content keeps its width whether or
+     not it overflows. .scroll-x reserves none: scrollbar-gutter reserves only a vertical
+     scrollbar's inline space, which a horizontal scroller never shows, and that space would leave
+     a wrapped table short of its container. */
+
+  .scroll-y {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding-inline-end: var(--space-2xs);
+  }
+
+  .scroll-x {
+    overflow-x: auto;
+    padding-block-end: var(--space-2xs);
+  }
+
+  /* Tables. */
+
+  .table-full {
+    inline-size: 100%;
+  }
+
+  /* --table-stripe (public API): the surface a striped table's alternate body rows sit on, by
+     default halfway from the element surface, --bg-2, to the page, --bg, so a stripe reads apart
+     from both the page and the header cells, which sit on --bg-2. Set it on the table or any
+     ancestor; it is read with a fallback, never declared here, so a value set on an ancestor
+     reaches every striped table inside it. */
+  .table-striped > tbody > tr:nth-child(even) {
+    background-color: var(--table-stripe, color-mix(in srgb, var(--bg-2) 50%, var(--bg)));
+  }
+}
