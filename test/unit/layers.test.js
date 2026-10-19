@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
 import { allowed, violations, writeTree } from "./layers-tree.js";
 
-const root = join(import.meta.dirname, "..");
+const root = join(import.meta.dirname, "../..");
 const eslint = join(root, "node_modules", ".bin", "eslint");
 const dependencies = "boundaries/dependencies";
 const unresolved = "import-x/no-unresolved";

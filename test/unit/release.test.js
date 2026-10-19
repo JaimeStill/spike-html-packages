@@ -1,6 +1,6 @@
 // The release build's integrity: scripts/build.sh's dist/ against layers/ and package.json's files
-// and exports, by scripts/release.js's releaseProblems. The check runs the build before this tier,
-// so the first case reads a fresh emit. The other cases run releaseProblems on scratch copies of
+// and exports, by test/consumers/release.js's releaseProblems. mise runs the build before this
+// tier, so the first case reads a fresh emit. The other cases run releaseProblems on scratch copies of
 // the working tree (layers/, dist/, package.json) with one fault each, so a checker that passes
 // everything fails here: a sheet with no built copy, a module with no emitted .js or .d.ts, an
 // export at a missing file, a built file no export reaches, a stray built file, a pattern export
@@ -11,9 +11,9 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
-import { releaseProblems, resolveExport, subpathsOf } from "../scripts/release.js";
+import { releaseProblems, resolveExport, subpathsOf } from "../consumers/release.js";
 
-const root = join(import.meta.dirname, "..");
+const root = join(import.meta.dirname, "../..");
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const scratches = [];
 

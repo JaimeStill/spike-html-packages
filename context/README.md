@@ -87,6 +87,32 @@ The spike reads these repositories and never writes to them. Each is a key in th
 - `spike-html-design`, at v0.7.0: the tools and modules copied.
 - `spike-html-conventions`, at main a88828a: the layers copied and the toolchain adopted.
 
+## Layout
+
+- `layers/`: the sources: the foundation, the components, and the SDK.
+- `scripts/`: one entry script per task.
+- `test/unit/`: `node --test` on the sources, types stripped, and on the release build.
+- `test/browser/`: `node --test` in the pinned chrome-headless-shell; `support/` holds the raw pipe
+  driver, the static server, and the components' case modules.
+- `test/consumers/`: the npm, pnpm, and bun consumer fixtures, and the manifest step they share.
+- `test/fixtures/`: v0.7.0's pages and sheets, as copied, and the keys and components pages.
+- `demo/`: the demo pages and the listings they show.
+
+## Tasks
+
+- `mise run install`: the mise pins, node_modules, and the consumer caches; the one task that reads
+  the network.
+- `mise run check`: every task below from lint to test:consumers; reads no network, writes only
+  `dist/`.
+- `mise run lint`: ESLint (with the layer direction), Prettier, and shellcheck.
+- `mise run types`: tsc, typescript-go, over the typed sources.
+- `mise run build`: the release, `layers/` into `dist/`.
+- `mise run test:unit`, `test:browser`, `test:consumers`: the three tiers, each runnable alone.
+- `mise run installs`: the consumer installs, with each install's file list.
+- `mise run demo`: the demo pages served from the working tree.
+- `mise run measure`: the import extension's measures, below.
+- `mise run currency`: every pin behind its latest.
+
 ## Measures
 
 `mise run measure` (scripts/measure.sh) prints the measures as one dated markdown report. It is

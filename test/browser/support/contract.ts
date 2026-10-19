@@ -3,7 +3,7 @@
 // none of which is copied here; and the sheets every component's shadow root adopts, the
 // foundation's reset and elements sheets before its own, in that order, each one CSSStyleSheet
 // shared by every root. Like the probe, it writes one line per case into #report and a verdict
-// into #verdict, and scripts/browser-components.test.js passes on every case holding, and exactly
+// into #verdict, and test/browser/components.test.js passes on every case holding, and exactly
 // as many as it expects.
 
 import { baselineLook, look } from "./probe.js";
@@ -22,9 +22,9 @@ interface BadgeElement extends HTMLElement {
 
 /** Each component's tag and the module that defines it. */
 const components = {
-  "sl-pagination-lit-shadow": () => import("../layers/components/pagination-lit-shadow.js"),
-  "sl-entry-lit-shadow": () => import("../layers/components/entry-lit-shadow.js"),
-  "sl-status-badge": () => import("../layers/components/status-badge.js"),
+  "sl-pagination-lit-shadow": () => import("../../../layers/components/pagination-lit-shadow.js"),
+  "sl-entry-lit-shadow": () => import("../../../layers/components/entry-lit-shadow.js"),
+  "sl-status-badge": () => import("../../../layers/components/status-badge.js"),
 };
 
 /** Lets pending updates land: Lit renders in a microtask queued when a property changes. */

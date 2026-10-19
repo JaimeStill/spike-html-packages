@@ -1,5 +1,5 @@
 // A consumer's runtime resolution of the release, by the package's exports, run with bun from
-// this directory after the offline install. subpaths.json, which scripts/consumers.js writes from
+// this directory after the offline install. subpaths.json, which ../consumers.js writes from
 // the installed package, lists every subpath that reaches a shipped file, with the files its
 // runtime and types targets name: a subpath with a runtime target must resolve to that installed
 // file, and one with types alone (the SDK,

@@ -12,7 +12,7 @@
 // policy names, lit. A specifier that resolves to nothing, the package's own name or an absolute
 // path, fails no-unresolved, so no import passes by naming no file.
 //
-// test/layers.test.js runs this config over test/layers-tree.js's trees.
+// test/unit/layers.test.js runs this config over test/unit/layers-tree.js's trees.
 //
 // A .css import is a static CSS module script, `with { type: "css" }`, everywhere: core
 // no-restricted-syntax refuses an import or an export-from without that attribute, so no .css
@@ -106,8 +106,8 @@ export default defineConfig([
   { files: code, extends: [js.configs.recommended, tseslint.configs.recommended] },
   { files: code, languageOptions: { globals: globals.browser } },
   { files: code, rules: { "no-restricted-syntax": ["error", ...cssImports] } },
-  // The suite and the scripts run on node, or in the page they serve.
-  { files: ["test/**", "scripts/**"], languageOptions: { globals: globals.node } },
+  // The suite and the scripts run on node; the browser tier's .ts case modules run in the page.
+  { files: ["test/**/*.js", "scripts/**"], languageOptions: { globals: globals.node } },
   {
     files: ["layers/**"],
     plugins: { boundaries, "import-x": importX },

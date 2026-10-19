@@ -4,7 +4,7 @@
 //
 // The layer tree's direction cases, as files: one tree of violations, one import per file and a
 // file per forbidden edge and per import form, and one of allowed imports in the same layout.
-// test/layers.test.js runs eslint.config.js's layer rules over them. Each maps a path under the
+// layers.test.js runs eslint.config.js's layer rules over them. Each maps a path under the
 // repository root to its source, one line or several, without the trailing newline.
 //
 // The check's rule (eslint-plugin-boundaries) classifies the file an import resolves to, and a
@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 
 /** This package's own name, which every layer refuses. */
 export const self = JSON.parse(
-  readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"),
+  readFileSync(join(import.meta.dirname, "../..", "package.json"), "utf8"),
 ).name;
 
 /** An edge in each of the four import forms, one file per form, each named for the edge and its

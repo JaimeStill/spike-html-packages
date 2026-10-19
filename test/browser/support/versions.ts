@@ -5,10 +5,9 @@
 // The version of the composition the probe runs: it names its pair of tags and loads the modules
 // that define them. The probe loads a version only after building its composition, so every
 // property it sets is set before the elements are defined; each import() runs only when called.
-// Beside it, what every page that composes them shares: the pagination's contract and the page
-// sizes, which the probe and the demo set.
+// Beside it, the pagination's contract, as the probe sets it.
 
-/** The contract the pagination keeps, as the probe and the demo reach it. */
+/** The contract the pagination keeps, as the probe reaches it. */
 export interface PaginationElement extends HTMLElement {
   page: number | null;
   size: number | null;
@@ -17,9 +16,6 @@ export interface PaginationElement extends HTMLElement {
   pageSizes: number[] | null;
   disabled: boolean;
 }
-
-/** The page sizes every composition offers. */
-export const pageSizes = [3, 6, 12];
 
 /** One version of the composition: a pagination element and the entry element it holds. */
 export interface Version {
@@ -34,8 +30,8 @@ export const versions: Record<string, Version> = {
     entry: "sl-entry-lit-shadow",
     load: () =>
       Promise.all([
-        import("../layers/components/pagination-lit-shadow.js"),
-        import("../layers/components/entry-lit-shadow.js"),
+        import("../../../layers/components/pagination-lit-shadow.js"),
+        import("../../../layers/components/entry-lit-shadow.js"),
       ]),
   },
 };

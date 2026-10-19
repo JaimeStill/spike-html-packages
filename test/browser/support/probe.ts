@@ -4,12 +4,12 @@
 // The probe: renders the composition, pagination holding one entry per fixture item, in one
 // version, drives it, and reports every case as a line of text. It reaches the elements only
 // through their contract (tags, properties, attributes, events, the controls' labels, and the text
-// a reader sees, through a shadow root or not). scripts/browser-components.test.js runs it in the
-// one version demo/versions.ts holds and passes on every case holding.
+// a reader sees, through a shadow root or not). test/browser/components.test.js runs it in the
+// one version versions.ts holds and passes on every case holding.
 
-import type { EntryItem } from "../layers/components/entry-lit-shadow.js";
-import { continued, directories, files, type Page } from "./documents.js";
-import { pageSizes, versions, type PaginationElement, type Version } from "./versions.js";
+import type { EntryItem } from "../../../layers/components/entry-lit-shadow.js";
+import { continued, directories, files, pageSizes, type Page } from "../../../demo/documents.js";
+import { versions, type PaginationElement, type Version } from "./versions.js";
 
 /** The contract every entry version keeps. The fixture's Directory and File fit its `item`. */
 interface EntryElement extends HTMLElement {

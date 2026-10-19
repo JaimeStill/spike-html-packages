@@ -1,15 +1,15 @@
 // The browser cases and the server their pages come from, shared by every driver
-// (scripts/browser.test.js runs them), after spike-html-conventions a88828a's
+// (test/browser/tools.test.js runs them), after spike-html-conventions a88828a's
 // scripts/browser-cases.js: the foundation's tool classes on demo/tools.html, read once on
 // spike-html-design v0.7.0's own sheets (test/fixtures/v0.7.0/, copied from the tag) and once on
 // this repository's page entry, layers/foundation/page.css, and compared property for property.
 //
 // The server is node:http on the loopback address, serving the working tree itself: the pages
-// need no tool between, as the sheets are plain CSS and the in-page half, scripts/computed-styles.js,
+// need no tool between, as the sheets are plain CSS and the in-page half, computed-styles.js,
 // a plain module. It serves only the types below, so nothing else in the tree is reachable, and
 // reads no network. mise run demo serves the demo through it too, the keys cases
-// (scripts/browser-keys.test.js) their fixtures, and the components' cases
-// (scripts/browser-components.test.js) theirs.
+// (test/browser/keys.test.js) their fixtures, and the components' cases
+// (test/browser/components.test.js) theirs.
 //
 // The components import lit by its bare name, and a page that loads them maps it by an import map
 // onto /deps/, which the server answers from the directory the installed lit sits in, beside its
@@ -35,11 +35,11 @@ import { stripTypeScriptTypes } from "node:module";
 import { dirname, extname, join, normalize } from "node:path";
 
 /** The root of the repository, which the server serves. */
-export const root = join(import.meta.dirname, "..");
+export const root = join(import.meta.dirname, "../../..");
 
 /** The page every case reads, and the in-page module that reads it, by their paths on the server. */
 export const page = "/demo/tools.html";
-const module = "/scripts/computed-styles.js";
+const module = "/test/browser/support/computed-styles.js";
 
 /** The two stacks of sheets the page is read on: v0.7.0's lean entry, and the page entry. */
 export const reference = "/test/fixtures/v0.7.0/baseline.css";
@@ -150,7 +150,7 @@ export async function inPage(browser, origin, body) {
 }
 
 /**
- * Runs one of the components' case modules (demo/<module>.ts) on the components' page in the
+ * Runs one of the components' case modules (<module>.ts) on the components' page in the
  * version given, resolving to its verdict and report once the run settles.
  */
 export async function runCases(browser, origin, module, version = "") {

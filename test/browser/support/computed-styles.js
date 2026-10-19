@@ -1,4 +1,4 @@
-// The browser tier's in-page half: a module the tools cases (scripts/browser-cases.js) import into
+// The browser tier's in-page half: a module the tools cases (browser-cases.js) import into
 // demo/tools.html, by its URL on the cases' server, to read every element's computed style. It runs
 // in the browser, never on node: each export returns plain JSON, which the driver's evaluate hands
 // back.

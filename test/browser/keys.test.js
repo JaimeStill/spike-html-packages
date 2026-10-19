@@ -1,30 +1,30 @@
 // adapted from spike-html-design v0.7.0: test/keys.test.js, the keys runtime's and its help
 // dialog's cases, their assertions kept and their harness this repository's browser tier: the
 // fixtures (test/fixtures/keys*.html, adapted from v0.7.0's) served from the working tree by
-// scripts/browser-cases.js's server, which answers layers/foundation/keys.js and keys-help.js with
-// the .ts sources' JavaScript, in one browser on one driver (scripts/browser-<name>.js), under
+// support/browser-cases.js's server, which answers layers/foundation/keys.js and keys-help.js with
+// the .ts sources' JavaScript, in one browser on one driver (support/browser-<name>.js), under
 // node:test, with node:assert/strict for bun:test's expect. A key press is a real one, sent by
 // Input.dispatchKeyEvent through the page's cdp(), as v0.7.0's Bun.WebView harness sent it. The
-// check runs it under node --test on the raw pipe and the pinned chrome-headless-shell (mise.toml's
-// check task). It sits outside test/, so the unit tier never picks it up.
+// check runs it under node --test on the raw pipe and the pinned chrome-headless-shell (mise run
+// test:browser).
 //
 // v0.7.0's other keys cases stay with the modules they exercise, none of which is copied here:
 // T and the theme menu (theme-menu.js and preferences.js), the specimen (index.html and
 // specimen.js), and a package consumer (its import map against package.json's exports, which this
 // repository's release task writes).
 //
-//   BROWSER_DRIVER    the driver, scripts/browser-<name>.js (default: pipe, the raw pipe, the
+//   BROWSER_DRIVER    the driver, support/browser-<name>.js (default: pipe, the raw pipe, the
 //                     check's); each driver reads its own variables, the browser's executable
-//                     among them (scripts/browser-pipe.js)
+//                     among them (support/browser-pipe.js)
 
 import assert from "node:assert/strict";
 import { after, afterEach, before, describe, test } from "node:test";
 import { isDeepStrictEqual } from "node:util";
 
-import { serve, settings } from "./browser-cases.js";
+import { serve, settings } from "./support/browser-cases.js";
 
 const driver = process.env.BROWSER_DRIVER ?? "pipe";
-const { launch } = await import(`./browser-${driver}.js`);
+const { launch } = await import(`./support/browser-${driver}.js`);
 
 // The help module, by its path on the server: the failed-load case's server refuses it.
 const HELP_MODULE = "/layers/foundation/keys-help.js";

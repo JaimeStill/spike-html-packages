@@ -1,5 +1,5 @@
-// The release's shape, shared by test/release.test.js, which holds the build to it, and
-// scripts/consumers.js, which resolves an installed release's exports by it. No package: the
+// The release's shape, shared by test/unit/release.test.js, which holds the build to it, and
+// test/consumers/consumers.js, which resolves an installed release's exports by it. No package: the
 // exports map is walked here by Node's own rules, so each shipped file's subpath is known before
 // a consumer resolves it.
 //

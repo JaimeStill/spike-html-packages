@@ -1,6 +1,6 @@
 // adapted from spike-html-design v0.7.0: test/registry.test.js, its assertions kept and its
 // harness node's. The registry has no DOM, only its store at a global key, so it runs in the unit
-// tier (node --test test/), on layers/foundation/registry.ts as node runs it, its types stripped.
+// tier (mise run test:unit), on layers/foundation/registry.ts as node runs it, its types stripped.
 //
 // v0.7.0 opened a fresh page per case; here a case's page is a fresh copy of the module, imported
 // by a URL no other case uses, after the store is removed from the global object, so each case
@@ -15,7 +15,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-const url = new URL("../layers/foundation/registry.ts", import.meta.url).href;
+const url = new URL("../../layers/foundation/registry.ts", import.meta.url).href;
 const KEY = Symbol.for("spike-html-design.registry");
 
 // LEAN and FULL are the names each registration module lists, per facet, in registration order:

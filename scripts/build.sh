@@ -14,8 +14,8 @@
 #                       entry's @import (page.css, baseline.css) resolve in dist/ as in layers/
 #
 # dist/ is removed first, so a module or sheet deleted from layers/ leaves no stale copy, and is
-# gitignored. The check runs this first, so test/release.test.js reads a fresh emit; it reads no
-# network and writes only dist/.
+# gitignored. The check runs this first, so test/unit/release.test.js reads a fresh emit; it
+# reads no network and writes only dist/.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)

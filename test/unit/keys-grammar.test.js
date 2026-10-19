@@ -1,6 +1,6 @@
 // adapted from spike-html-design v0.7.0: test/keys-grammar.test.js, its assertions kept and its
 // harness node's: node:test for bun:test, node:assert/strict's deepEqual and equal for expect's
-// toEqual and toBe. The grammar has no DOM, so it runs in the unit tier (node --test test/), on
+// toEqual and toBe. The grammar has no DOM, so it runs in the unit tier (mise run test:unit), on
 // layers/foundation/keys-grammar.ts as node runs it, its types stripped.
 
 import assert from "node:assert/strict";
@@ -13,7 +13,7 @@ import {
   parse,
   problem,
   stringify,
-} from "../layers/foundation/keys-grammar.ts";
+} from "../../layers/foundation/keys-grammar.ts";
 
 // press builds a parsed press: key, then the modifiers it holds.
 const press = (key, held = {}) => ({

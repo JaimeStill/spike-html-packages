@@ -5,8 +5,8 @@
 #
 #   scripts/consumers.sh         the check's step: packs the build (dist/, which scripts/build.sh
 #                                writes first) with pnpm pack, installs it into
-#                                fixtures/consumer-pnpm with pnpm, fixtures/consumer-npm with npm,
-#                                and fixtures/consumer-bun with bun, offline, and checks each
+#                                test/consumers/consumer-pnpm with pnpm, consumer-npm with npm,
+#                                and consumer-bun with bun, offline, and checks each
 #   scripts/consumers.sh list    the same, then prints each install's file list (mise run installs)
 #   scripts/consumers.sh warm    mise run install's step: installs lit with pnpm, npm, and bun,
 #                                from the network, into the caches under .cache/consumers/
@@ -31,8 +31,8 @@
 # files (dist/), byte for byte; bun installs a tarball whole, as pnpm and npm do, so all three are
 # held to the whole pack. Then that none of this package's devDependencies, its lint tooling, is
 # installed, since a consumer installs a dependency's dependencies only; that every installed file
-# is reachable through the installed manifest's exports (scripts/consumers.js); that every subpath
-# with a runtime target resolves to its installed file, and every types-only subpath resolves to
+# is reachable through the installed manifest's exports (test/consumers/consumers.js); that every
+# subpath with a runtime target resolves to its installed file, and every types-only subpath resolves to
 # nothing at runtime, under the column's runtime (the fixture's resolve.js); and that tsc
 # type-checks the fixture's consumer.ts and every subpath with types against the installed
 # declarations.
@@ -137,7 +137,7 @@ dev_names=$(node -e '
 echo "consumers: npm $npm_version, mise's pin, at $npm"
 for manager in pnpm npm bun; do
   project="$scratch/consumer-$manager"
-  cp -r "$root/fixtures/consumer-$manager" "$project"
+  cp -r "$root/test/consumers/consumer-$manager" "$project"
   cp "$tarball" "$project/$name.tgz"
   if [[ "$manager" == bun ]]; then runtime=bun; else runtime=node; fi
 
@@ -193,7 +193,7 @@ for manager in pnpm npm bun; do
     fi
   done <<<"$dev_names"
 
-  "$runtime" "$root/scripts/consumers.js" subpaths "$installed" "$project"
+  "$runtime" "$root/test/consumers/consumers.js" subpaths "$installed" "$project"
   (cd "$project" && "$runtime" resolve.js)
   tsc -p "$project"
   echo "consumers: consumer-$manager installed $name offline, $(files "$installed" | wc -l)" \

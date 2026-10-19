@@ -13,12 +13,12 @@
 // foundation.elements block. The rule follows the baseline's own in its layer, with the same zero
 // specificity, so it wins.
 //
-// scripts/browser-components.test.js runs it; it passes when both buttons painted from the source
+// test/browser/components.test.js runs it; it passes when both buttons painted from the source
 // before the edit, an opaque color, so the tokens loaded, and both take the edit after it.
 
-import type { EntryItem } from "../layers/components/entry-lit-shadow.js";
-import elements from "../layers/foundation/baseline/elements.css" with { type: "css" };
-import { directories } from "./documents.js";
+import type { EntryItem } from "../../../layers/components/entry-lit-shadow.js";
+import elements from "../../../layers/foundation/baseline/elements.css" with { type: "css" };
+import { directories } from "../../../demo/documents.js";
 import { versions, type Version } from "./versions.js";
 
 /** The background the edit gives every button: a color no source sets. */

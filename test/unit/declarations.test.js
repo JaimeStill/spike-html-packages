@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
-const root = join(import.meta.dirname, "..");
+const root = join(import.meta.dirname, "../..");
 // The check's own tsc, mise.toml's TypeScript-Go pin, never the typescript package
 // typescript-eslint brings into node_modules, so the guard is proven under the compiler the check runs.
 const tsc = "tsc";

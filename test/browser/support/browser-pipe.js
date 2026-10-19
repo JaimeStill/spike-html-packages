@@ -1,13 +1,13 @@
 // adapted from spike-html-conventions a88828a: scripts/browser-pipe.js, a page given goto() and
-// cdp() for the keys cases (scripts/browser-keys.test.js), which press real keys and reload.
+// cdp() for the keys cases (test/browser/keys.test.js), which press real keys and reload.
 //
 // The raw pipe driver: Chromium, headless, driven over its DevTools protocol on a pipe
 // (--remote-debugging-pipe), with no package between. It is the check's browser tier's driver, on
-// Chrome for Testing's chrome-headless-shell, which mise.toml pins (mise.toml's check task), and
+// Chrome for Testing's chrome-headless-shell, which mise.toml pins, and
 // measure compares it with Playwright on the same pin. Chromium reads commands on its fd 3 and
 // writes replies and events on its fd 4, each message one JSON object ended by a NUL. Every page
 // is a target of its own, attached with flatten, so its commands carry its session id on the one
-// pipe. scripts/browser-cases.js names the interface every driver keeps: launch, open a page by
+// pipe. browser-cases.js names the interface every driver keeps: launch, open a page by
 // URL, evaluate an expression in it, close.
 //
 //   BROWSER_EXECUTABLE  the Chromium to launch, by path (required): the check and measure pass the

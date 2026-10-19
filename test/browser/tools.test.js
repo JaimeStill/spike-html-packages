@@ -1,14 +1,13 @@
-// The browser cases (scripts/browser-cases.js) under node:test, on one driver, after
+// The browser cases (support/browser-cases.js) under node:test, on one driver, after
 // spike-html-conventions a88828a's scripts/browser.test.js: the foundation's tool classes compute
 // as spike-html-design v0.7.0's under the default profiles, every declaration the lateral-concern
 // sheets hold is one the comparison catches being dropped, and each sheet is one a shadow root
 // adopts on its own. It is the check's browser tier, which runs it under node --test on the raw
-// pipe and the pinned chrome-headless-shell (mise.toml's check task). It sits outside test/, so a
-// unit tier run over test/ never picks it up.
+// pipe and the pinned chrome-headless-shell (mise run test:browser).
 //
-//   BROWSER_DRIVER    the driver, scripts/browser-<name>.js (default: pipe, the raw pipe, the
+//   BROWSER_DRIVER    the driver, support/browser-<name>.js (default: pipe, the raw pipe, the
 //                     check's); each driver reads its own variables, the browser's executable
-//                     among them (scripts/browser-pipe.js)
+//                     among them (support/browser-pipe.js)
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -26,10 +25,10 @@ import {
   serve,
   settings,
   used,
-} from "./browser-cases.js";
+} from "./support/browser-cases.js";
 
 const driver = process.env.BROWSER_DRIVER ?? "pipe";
-const { launch } = await import(`./browser-${driver}.js`);
+const { launch } = await import(`./support/browser-${driver}.js`);
 
 /** A file of the working tree, by its path on the server. */
 const source = (path) => readFileSync(join(root, path), "utf8");

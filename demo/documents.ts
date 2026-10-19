@@ -173,3 +173,6 @@ export const continued: Page<File> = {
   more: true,
   next: "eyJuYW1lIjoidGVybXMubWQifQ",
 };
+
+/** The page sizes every composition offers. */
+export const pageSizes = [3, 6, 12];

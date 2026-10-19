@@ -3,7 +3,7 @@
 // declarations as tsc emitted or the build copied them, and a stylesheet typed by the package's
 // CSS module script declaration (spike-html-packages/css, a script, so referenced, not imported). The check type-checks this file, with
 // skipLibCheck off so the shipped .d.ts files are checked too, after each offline install, beside
-// subpaths.ts, which scripts/consumers.js writes with a type import of every subpath that has
+// subpaths.ts, which ../consumers.js writes with a type import of every subpath that has
 // types.
 
 import type {

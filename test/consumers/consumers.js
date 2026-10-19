@@ -1,6 +1,6 @@
 // The manifest step of scripts/consumers.sh, run under the column's runtime, node or bun. After
 // spike-html-conventions a88828a: scripts/consumers.js, its exports step walking the release's
-// exports map by scripts/release.js instead of reading its exact targets alone.
+// exports map by test/consumers/release.js instead of reading its exact targets alone.
 //
 //   consumers.js subpaths <installed package directory> <consumer directory>
 //       fails unless every installed file (package.json aside) is reachable through the installed
@@ -55,7 +55,7 @@ if (command === "subpaths") {
     .sort((a, b) => b.startsWith("///") - a.startsWith("///"));
   writeFileSync(
     join(consumer, "subpaths.ts"),
-    `// Written by scripts/consumers.js: every subpath with types.\n${lines.join("\n")}\nexport {};\n`,
+    `// Written by consumers.js: every subpath with types.\n${lines.join("\n")}\nexport {};\n`,
   );
 } else {
   throw new Error(`unknown command ${command}; expected subpaths`);

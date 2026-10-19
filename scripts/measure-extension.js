@@ -21,8 +21,8 @@
 //                           take a .ts probe, the same code
 //   load DIR PAGE MODE      serves DIR on the loopback address (see serveDirectory, MODE static,
 //                           check, or ts), opens PAGE in the pinned chrome-headless-shell through
-//                           the raw pipe (scripts/browser-pipe.js, BROWSER_EXECUTABLE), and prints
-//                           the probe's one-line report; exits 0 when everything loaded and
+//                           the raw pipe (test/browser/support/browser-pipe.js,
+//                           BROWSER_EXECUTABLE), and prints the probe's one-line report; exits 0 when everything loaded and
 //                           rendered, 1 when not, and 2 when the probe never reported
 //   open URL                the same for a page another server serves, Vite's dev server
 
@@ -31,8 +31,8 @@ import { createServer } from "node:http";
 import { stripTypeScriptTypes } from "node:module";
 import { dirname, extname, join, normalize, relative } from "node:path";
 
-import { settings } from "./browser-cases.js";
-import { launch } from "./browser-pipe.js";
+import { settings } from "../test/browser/support/browser-cases.js";
+import { launch } from "../test/browser/support/browser-pipe.js";
 
 /** The root of the repository, whose installed lit /deps/ answers. */
 const root = join(import.meta.dirname, "..");
@@ -222,10 +222,10 @@ const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 
 /**
  * Serves DIR over plain http on a free port of the loopback address, /deps/ answered from the
- * directory the installed lit sits in, as scripts/browser-cases.js's server answers it. MODE:
+ * directory the installed lit sits in, as the browser tier's server answers it. MODE:
  *
  *   static  every file as it is, as any static server sends a release
- *   check   as the check's browser tier serves the working tree (scripts/browser-cases.js): a .js
+ *   check   as the check's browser tier serves the working tree (browser-cases.js): a .js
  *           path that isn't there, with a .ts file beside it, answered with that file's
  *           JavaScript, its types stripped by node's stripTypeScriptTypes; a .ts path isn't served
  *   ts      the same, and a .ts path answered with its own JavaScript, its types stripped, as
