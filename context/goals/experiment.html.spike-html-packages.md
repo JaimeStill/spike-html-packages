@@ -105,7 +105,7 @@ Door          two-way: nothing leaves the spike repository.
 
 ## Progress
 
-slices 1-5 committed (1f1a3c0..312fa18) · rework slices 4/4 · standards ✓ · spec ✓ (2 rounds) · editor —
+slices 1-5 committed (1f1a3c0..312fa18) · rework slices 4/4 · standards ✓ · spec ✓ (2 rounds) · editor ✓
 
 ## Decisions
 
@@ -150,6 +150,28 @@ slices 1-5 committed (1f1a3c0..312fa18) · rework slices 4/4 · standards ✓ ·
 - layers: the harness is rebuilt on standard mechanisms: browser tests on dist/,
   CSS.forcePseudoState for hover, the package managers' own offline modes. mise.toml becomes
   small named tasks, and the repository is laid out by role.
+- layers: the tool sheets' layer order is meta, structure, utilities, after elements, which keeps
+  v0.7.0's computed styles where a button combines with scroll or field classes.
+- layers: the page entry is `layers/foundation/page.css`: one `@layer` statement, then the
+  baseline and the three sheets.
+- layers: `exports` maps a pattern per layer for modules and sheets; `./sdk/*.js` and
+  `./foundation/format.js` are types-only; `files` is `["dist"]`.
+- layers: the consumer caches live in the repository's `.cache/consumers/`, warmed by
+  `mise run install`, because pnpm's default store follows the project's filesystem (tmpfs here).
+  The check therefore writes `.cache/` too.
+- layers: one consumer fixture, `test/consumers/consumer/`, copied once per manager, replaces
+  three identical fixtures.
+- layers: the browser tier's in-page case modules are plain `.js` with JSDoc, loaded unbuilt
+  beside `dist/`.
+- layers: only the copy that installed the listener loads the help module, as in v0.7.0. The test
+  for behavior 10's "two copies each load their own" proves that the first copy loads the help
+  beside it.
+- layers: tsc's emitted `.d.ts` keep `.ts` relative specifiers. typescript-go 7.0.2 and
+  typescript 6.0.3 accept them, as the README records; other `.d.ts` readers are unmeasured, and
+  the registries (JSR) may find more.
+- layers: Vite 8.3.4 still needs the local CSS module script plugin
+  (`test/fixtures/measure/css-sheets.js`); without it, a build fails with MISSING_EXPORT on `.css`
+  imports. The consumers task builds on this.
 
 ## Pending edits
 

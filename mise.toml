@@ -82,7 +82,7 @@ depends = ["build"]
 run = "scripts/consumers.sh"
 
 [tasks.check]
-description = "Run every check; reads no network and writes only dist/ and .cache/"
+description = "Run every check; reads no network; writes dist/ and .cache/ in the repository"
 depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumers"]
 
 [tasks.install]

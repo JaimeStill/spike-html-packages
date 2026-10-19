@@ -92,13 +92,14 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 - `layers/`: the sources: the foundation, the components, and the SDK.
 - `scripts/`: one entry script per task.
-- `test/unit/`: `node --test` on the sources, types stripped, and on the release build.
+- `test/unit/`: `node --test` on the sources, types stripped, and on the release build;
+  `layers-tree.js` holds the layer direction's cases.
 - `test/browser/`: `node --test` on `dist/` in the pinned chrome-headless-shell; `support/` holds
   the pipe driver, the static server, and the case modules the pages import: the tools'
   `computed-styles.js` and the components' `probe.js` and `restyle.js`.
 - `test/consumers/`: the consumer fixture that pnpm, npm, and bun each install, and the manifest
-  step.
-- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages; the components page; and
+  step, `consumers.js`.
+- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages and their `keys-indicator.js`; the components page; and
   the measure page, a Vite page with its CSS plugin.
 - `demo/`: the demo pages, and `documents.js`, the listings they show, which the browser cases'
   components modules also import.
@@ -107,8 +108,8 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 - `mise run install`: `scripts/install.sh`, the mise pins, node_modules, and the consumer caches;
   the one task that reads the network.
-- `mise run check`: lint, types, build, and the three tiers; reads no network, writes only `dist/`
-  and the consumer caches in `.cache/`.
+- `mise run check`: lint, types, build, and the three tiers; reads no network; in the repository it
+  writes only `dist/` and the consumer caches in `.cache/`.
 - `mise run lint`: `lint:eslint` (with the layer direction), `lint:format` (Prettier), and
   `lint:shell` (shellcheck).
 - `mise run types`: tsc, typescript-go, as `types:layers` over the layers and the demo, and
