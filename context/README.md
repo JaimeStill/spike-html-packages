@@ -48,6 +48,7 @@ Copies, each naming its source repository and commit:
   declarations, the Lit shadow components, and the SDK declarations.
 - spike-html-design v0.7.0's tools, split into three lateral-concern sheets (utilities, structure,
   meta), and its registry and keys family (grammar, runtime, help).
+- spike-html-conventions' `.prettierrc.json` at main a88828a, as written.
 
 Lit is the one runtime dependency. The fixtures install the releases under npm, pnpm, and bun.
 Registry trials publish for real under `@jaimestill` at 0.0.x, to GitHub Packages and to JSR.
@@ -92,26 +93,31 @@ The spike reads these repositories and never writes to them. Each is a key in th
 - `layers/`: the sources: the foundation, the components, and the SDK.
 - `scripts/`: one entry script per task.
 - `test/unit/`: `node --test` on the sources, types stripped, and on the release build.
-- `test/browser/`: `node --test` in the pinned chrome-headless-shell; `support/` holds the raw pipe
-  driver, the static server, and the components' case modules.
+- `test/browser/`: `node --test` on `dist/` in the pinned chrome-headless-shell; `support/` holds
+  the pipe driver, the static server, and the case modules the pages import: the tools'
+  `computed-styles.js` and the components' `probe.js` and `restyle.js`.
 - `test/consumers/`: the consumer fixture that pnpm, npm, and bun each install, and the manifest
   step.
-- `test/fixtures/`: v0.7.0's pages and sheets, as copied, the keys and components pages, and the
-  measure's Vite page with its CSS plugin.
-- `demo/`: the demo pages and the listings they show.
+- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages; the components page; and
+  the measure page, a Vite page with its CSS plugin.
+- `demo/`: the demo pages, and `documents.js`, the listings they show, which the browser cases'
+  components modules also import.
 
 ## Tasks
 
-- `mise run install`: the mise pins, node_modules, and the consumer caches; the one task that reads
-  the network.
-- `mise run check`: every task below from lint to test:consumers; reads no network, writes only
-  `dist/` and the consumer caches in `.cache/`.
-- `mise run lint`: ESLint (with the layer direction), Prettier, and shellcheck.
-- `mise run types`: tsc, typescript-go, over the typed sources.
+- `mise run install`: `scripts/install.sh`, the mise pins, node_modules, and the consumer caches;
+  the one task that reads the network.
+- `mise run check`: lint, types, build, and the three tiers; reads no network, writes only `dist/`
+  and the consumer caches in `.cache/`.
+- `mise run lint`: `lint:eslint` (with the layer direction), `lint:format` (Prettier), and
+  `lint:shell` (shellcheck).
+- `mise run types`: tsc, typescript-go, as `types:layers` over the layers and the demo, and
+  `types:browser` over the browser cases' in-page modules against `dist/`.
 - `mise run build`: the release, `layers/` into `dist/`.
 - `mise run test:unit`, `test:browser`, `test:consumers`: the three tiers, each runnable alone.
+  `test:unit` builds the release it checks into a temporary directory, so it needs no `dist/`.
 - `mise run installs`: the consumer installs, with each install's file list.
-- `mise run demo`: the demo pages served from the working tree.
+- `mise run demo`: the demo pages, on a fresh `dist/`, served on the loopback address.
 - `mise run measure`: the import extension's facts, below.
 - `mise run currency`: every pin behind its latest.
 

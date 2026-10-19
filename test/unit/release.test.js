@@ -1,28 +1,43 @@
-// The release build's integrity: dist/ against layers/ and package.json's files and exports, by
-// test/consumers/release.js's releaseProblems, on the fresh build and on scratch copies with one
-// fault each.
+// The release build's integrity: a build of layers/ against package.json's files and exports, by
+// test/consumers/release.js's releaseProblems, on a fresh build of its own and on scratch copies
+// with one fault each. It builds into a temporary directory, so it needs no dist/.
 
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, describe, test } from "node:test";
+import { after, before, describe, test } from "node:test";
 import { releaseProblems } from "../consumers/release.js";
 
 const root = join(import.meta.dirname, "../..");
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const scratches = [];
 
+/** A new temporary directory, removed after the run. */
+function scratchDir() {
+  const scratch = mkdtempSync(join(tmpdir(), "release-"));
+  scratches.push(scratch);
+  return scratch;
+}
+
+// The release under test: layers/ and package.json beside the build of them, in its own dist/.
+let release;
+before(() => {
+  release = scratchDir();
+  cpSync(join(root, "layers"), join(release, "layers"), { recursive: true });
+  cpSync(join(root, "package.json"), join(release, "package.json"));
+  execFileSync(join(root, "scripts/build.sh"), [join(release, "dist")]);
+});
 after(() => {
   for (const scratch of scratches) rmSync(scratch, { recursive: true, force: true });
 });
 
-/** A scratch copy of the working tree's release inputs, `change` applied to it, and its problems. */
+/** A scratch copy of the release, `change` applied to it, and its problems. */
 function faulted(change) {
-  const scratch = mkdtempSync(join(tmpdir(), "release-"));
-  scratches.push(scratch);
-  cpSync(join(root, "layers"), join(scratch, "layers"), { recursive: true });
-  cpSync(join(root, "dist"), join(scratch, "dist"), { recursive: true });
+  const scratch = scratchDir();
+  cpSync(join(release, "layers"), join(scratch, "layers"), { recursive: true });
+  cpSync(join(release, "dist"), join(scratch, "dist"), { recursive: true });
   const copy = structuredClone(manifest);
   change(scratch, copy);
   writeFileSync(join(scratch, "package.json"), JSON.stringify(copy));
@@ -32,9 +47,8 @@ function faulted(change) {
 const remove = (path) => (scratch) => rmSync(join(scratch, path));
 
 describe("release build", () => {
-  test("dist/ is the build of layers/ that files and exports declare", () => {
-    assert.ok(existsSync(join(root, "dist")), "no dist/; run mise run build first");
-    assert.deepEqual(releaseProblems(root), []);
+  test("a fresh build of layers/ is the release that files and exports declare", () => {
+    assert.deepEqual(releaseProblems(release), []);
   });
 
   const faults = {

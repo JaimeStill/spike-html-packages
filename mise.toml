@@ -30,14 +30,36 @@ hide = true
 run = "scripts/preflight.sh"
 
 [tasks.lint]
-description = "Lint with ESLint, check the format with Prettier, and shellcheck the scripts"
+description = "Run the three linters: ESLint, Prettier, and shellcheck"
+depends = ["lint:eslint", "lint:format", "lint:shell"]
+
+[tasks."lint:eslint"]
+description = "Lint with ESLint, the layer direction included"
 depends = ["preflight"]
-run = ["pnpm exec eslint .", "pnpm exec prettier --check .", "shellcheck scripts/*.sh"]
+run = "pnpm exec eslint ."
+
+[tasks."lint:format"]
+description = "Check the format with Prettier"
+depends = ["preflight"]
+run = "pnpm exec prettier --check ."
+
+[tasks."lint:shell"]
+description = "Shellcheck the scripts"
+run = "shellcheck scripts/*.sh"
 
 [tasks.types]
-description = "Type-check the layers, the demo, and the browser cases against dist/ with tsc"
+description = "Type-check the layers and the browser cases with tsc"
+depends = ["types:layers", "types:browser"]
+
+[tasks."types:layers"]
+description = "Type-check the layers and the demo with tsc"
+depends = ["preflight"]
+run = "tsc --noEmit -p ."
+
+[tasks."types:browser"]
+description = "Type-check the browser cases' in-page modules against dist/ with tsc"
 depends = ["build"]
-run = ["tsc --noEmit -p .", "tsc --noEmit -p test/browser"]
+run = "tsc --noEmit -p test/browser"
 
 [tasks.build]
 description = "Build the release from layers/ into dist/"
@@ -45,8 +67,8 @@ depends = ["preflight"]
 run = "scripts/build.sh"
 
 [tasks."test:unit"]
-description = "Run the unit tier on the sources and the release build"
-depends = ["build"]
+description = "Run the unit tier on the sources and on a release it builds itself"
+depends = ["preflight"]
 run = "node --test 'test/unit/*.test.js'"
 
 [tasks."test:browser"]
@@ -65,7 +87,7 @@ depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumer
 
 [tasks.install]
 description = "Install the pins and node_modules, and warm the consumer caches; reads the network"
-run = ["mise install", "pnpm install --frozen-lockfile", "scripts/consumers.sh warm"]
+run = "scripts/install.sh"
 
 [tasks.installs]
 description = "Install the packed release under each manager and list each install's files"
