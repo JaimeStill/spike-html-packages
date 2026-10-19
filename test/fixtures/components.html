@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- The components cases' page: the query's module, probe.js or restyle.js in
+<!-- The components cases' page: the query's module, when it names one, probe.js or restyle.js in
      test/browser/support/, runs and writes its verdict into #verdict. window.verdict settles once
      the run ends, a module that failed to load included. Lit's bare specifiers map onto /deps/,
      where the server answers with the installed packages. Adapted from spike-html-conventions
@@ -34,9 +34,11 @@
     <script type="module">
       const module = new URLSearchParams(location.search).get("module");
       try {
-        if (!["probe", "restyle"].includes(module)) throw new Error(`no module ${module}`);
-        const { run } = await import(`../browser/support/${module}.js`);
-        await run();
+        if (module !== null) {
+          if (!["probe", "restyle"].includes(module)) throw new Error(`no module ${module}`);
+          const { run } = await import(`../browser/support/${module}.js`);
+          await run();
+        }
       } catch (error) {
         document.getElementById("verdict").textContent = `FAIL: ${error.message}`;
       } finally {

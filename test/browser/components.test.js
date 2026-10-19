@@ -1,5 +1,5 @@
-// The components from dist/ in the browser: conventions' 27 probe cases and its restyle check, on
-// test/fixtures/components.html. Adapted from spike-html-conventions a88828a:
+// The components from dist/ in the browser: conventions' 27 probe cases, its restyle check, and
+// the sheets each shadow root adopts, on test/fixtures/components.html. Adapted from spike-html-conventions a88828a:
 // scripts/browser.test.js.
 
 import assert from "node:assert/strict";
@@ -43,5 +43,41 @@ describe("components", { timeout: 60_000 }, () => {
   test("one edit to the elements sheet repaints the buttons in both shadow roots", async () => {
     const { verdict } = await run("restyle");
     assert.match(verdict, /^ok: /);
+  });
+
+  test("each component adopts the shared reset and elements sheets, then its own", async () => {
+    const page = await browser.open(`${server.origin}/test/fixtures/components.html`);
+    try {
+      const { adopted, label } = await page.evaluate(`(async () => {
+        const sheet = async (path) =>
+          (await import("/dist/" + path, { with: { type: "css" } })).default;
+        const reset = await sheet("foundation/baseline/reset.css");
+        const elements = await sheet("foundation/baseline/elements.css");
+        const components = [
+          ["sl-pagination-lit-shadow", "pagination-lit-shadow", "pagination-shadow.css"],
+          ["sl-entry-lit-shadow", "entry-lit-shadow", "entry-shadow.css"],
+          ["sl-status-badge", "status-badge", "status-badge.css"],
+        ];
+        const adopted = {};
+        for (const [tag, module, own] of components) {
+          await import("/dist/components/" + module + ".js");
+          const ownSheet = await sheet("components/" + own);
+          const element = document.body.appendChild(document.createElement(tag));
+          await element.updateComplete;
+          adopted[tag] = element.shadowRoot.adoptedStyleSheets.map((s) =>
+            s === reset ? "reset" : s === elements ? "elements" : s === ownSheet ? "own" : "other");
+        }
+        const badge = document.querySelector("sl-status-badge");
+        badge.label = "Draft";
+        await badge.updateComplete;
+        return { adopted, label: badge.shadowRoot.querySelector("button").textContent };
+      })()`);
+      for (const tag of ["sl-pagination-lit-shadow", "sl-entry-lit-shadow", "sl-status-badge"]) {
+        assert.deepEqual(adopted[tag], ["reset", "elements", "own"], tag);
+      }
+      assert.equal(label, "Draft");
+    } finally {
+      await page.close();
+    }
   });
 });
