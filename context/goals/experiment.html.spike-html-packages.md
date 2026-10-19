@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
-- **Task:** none
-- **Branch:** none
+- **State:** building
+- **Task:** layers
+- **Branch:** layers
 
 ## Tasks
 
@@ -91,6 +91,10 @@ Out of scope  Any tag, push of a release, or registry publish (hosting,
 Door          two-way: nothing leaves the spike repository; no tag, no
               publish.
 ```
+
+## Progress
+
+slices 0/5 committed · standards — · spec — · editor —
 
 ## Decisions
 
