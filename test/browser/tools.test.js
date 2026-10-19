@@ -1,5 +1,6 @@
 // The tool sheets in dist/ against v0.7.0's: every element of demo/tools.html computes the same,
-// at rest and hovered, and dropping any one declaration shows.
+// at rest and hovered, and dropping any one declaration shows. The page entry's layer order and
+// default profiles are read from the same page.
 // Adapted from spike-html-conventions (a88828a): scripts/browser.test.js.
 
 import assert from "node:assert/strict";
@@ -14,6 +15,32 @@ import { root, serve } from "./support/server.js";
 const reference = "/test/fixtures/v0.7.0/baseline.css";
 const entry = "/dist/foundation/page.css";
 const sheet = (concern) => `/dist/foundation/${concern}.css`;
+
+/** The foundation's layers, in the order the page entry states. */
+const LAYER_ORDER = [
+  "foundation.tokens.color",
+  "foundation.tokens.space",
+  "foundation.tokens.type",
+  "foundation.reset",
+  "foundation.elements",
+  "foundation.meta",
+  "foundation.structure",
+  "foundation.utilities",
+];
+
+const FACETS = ["color", "space", "type"];
+/** One token per facet that tells its profile apart, with its value under each profile. */
+const PROFILES = {
+  color: { flexoki: { "--bg": "light-dark(#fffcf0, #100f0f)" } },
+  space: { regular: { "--radius-base": "0.375rem" } },
+  type: {
+    mono: {
+      "--font-heading":
+        'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace',
+    },
+  },
+};
+const TOKENS = FACETS.flatMap((facet) => Object.values(PROFILES[facet]).flatMap(Object.keys));
 
 /** A file of the repository, by its path on the server, without its CSS comments. */
 const source = (path) => readFileSync(join(root, path), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -92,18 +119,38 @@ describe("foundation tools", () => {
     );
   });
 
-  test("the page entry states the whole layer order in one statement, first", () => {
-    const code = source(entry);
-    const statements = [...code.matchAll(/@layer\s+([^;{]+);/g)].map((m) =>
-      m[1].trim().split(/\s*,\s*/),
+  test("the page entry states the whole layer order in one statement, first", async () => {
+    const page = await toolsPage(entry);
+    const statements = await page.evaluate(`(() => {
+      const sheet = [...document.styleSheets].find(({ href }) => href.endsWith("${entry}"));
+      const rules = [...sheet.cssRules];
+      return rules
+        .filter((rule) => rule instanceof CSSLayerStatementRule)
+        .map((rule) => ({ index: rules.indexOf(rule), names: [...rule.nameList] }));
+    })()`);
+    await page.close();
+    assert.deepEqual(statements, [{ index: 0, names: LAYER_ORDER }]);
+  });
+
+  test("with no profile attribute, the page entry applies DEFAULTS' profiles", async () => {
+    const page = await toolsPage(entry);
+    // A custom property keeps its source's line breaks.
+    const read = `import("/dist/foundation/registry.js").then(({ DEFAULTS }) => {
+      const style = getComputedStyle(document.documentElement);
+      const token = (name) => style.getPropertyValue(name).trim().replace(/\\s+/g, " ");
+      return {
+        attributes: document.querySelectorAll("[data-palette], [data-space], [data-type]").length,
+        defaults: DEFAULTS,
+        tokens: Object.fromEntries(${JSON.stringify(TOKENS)}.map((name) => [name, token(name)])),
+      };
+    })`;
+    const { attributes, defaults, tokens } = await page.evaluate(read);
+    await page.close();
+    assert.equal(attributes, 0);
+    assert.deepEqual(
+      tokens,
+      Object.assign({}, ...FACETS.map((facet) => PROFILES[facet][defaults[facet]])),
     );
-    assert.equal(statements.length, 1, "one @layer statement");
-    assert.ok(code.trim().startsWith("@layer"), "the statement comes before every import");
-    assert.deepEqual(statements[0].slice(-3), [
-      "foundation.meta",
-      "foundation.structure",
-      "foundation.utilities",
-    ]);
   });
 
   test("every tool class computes as v0.7.0's, at rest and hovered", async () => {
