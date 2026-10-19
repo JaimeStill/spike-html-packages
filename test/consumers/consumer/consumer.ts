@@ -1,10 +1,6 @@
 /// <reference types="spike-html-packages/css" />
-// A consumer's typed use of the release, from the installed package by its exports: each layer's
-// declarations as tsc emitted or the build copied them, and a stylesheet typed by the package's
-// CSS module script declaration (spike-html-packages/css, a script, so referenced, not imported). The check type-checks this file, with
-// skipLibCheck off so the shipped .d.ts files are checked too, after each offline install, beside
-// subpaths.ts, which ../consumers.js writes with a type import of every subpath that has
-// types.
+// A consumer's typed use of the installed release, which tsc checks with skipLibCheck off, so the
+// shipped .d.ts are checked too. The CSS declaration is a script, so it's referenced, not imported.
 
 import type {
   PaginationLitShadow,

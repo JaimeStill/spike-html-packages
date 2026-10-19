@@ -1,12 +1,13 @@
-// The browser tier's static server: the repository root over plain http on the loopback address,
-// every file sent as it is on disk. The pages load the built dist/, so nothing needs transforming.
+// The browser tier's static server: the repository root, or another directory, over plain http on
+// the loopback address, every file sent as it is on disk. The pages load the built dist/, so
+// nothing needs transforming.
 
 import { realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, extname, join, normalize } from "node:path";
 
-/** The repository root, which the server serves. */
+/** The repository root, which the server serves by default. */
 export const root = join(import.meta.dirname, "../../..");
 
 /** The content type of each extension served; any other file is a 404. */
@@ -17,16 +18,16 @@ const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const deps = dirname(realpathSync(join(root, "node_modules/lit")));
 
 /** The file a request's path names: under /deps/ one of lit's packages, otherwise the tree's. */
-function file(pathname) {
+function file(tree, pathname) {
   // normalize() of an absolute path never climbs above its root, so no request leaves the tree.
   const path = normalize(decodeURIComponent(pathname));
-  return path.startsWith("/deps/") ? join(deps, path.slice("/deps/".length)) : join(root, path);
+  return path.startsWith("/deps/") ? join(deps, path.slice("/deps/".length)) : join(tree, path);
 }
 
-/** Serves the repository on a free loopback port, resolving to its origin and a stop(). */
-export async function serve() {
+/** Serves the tree on a free loopback port, resolving to its origin and a stop(). */
+export async function serve(tree = root) {
   const server = createServer(async (request, response) => {
-    const path = file(new URL(request.url, "http://localhost").pathname);
+    const path = file(tree, new URL(request.url, "http://localhost").pathname);
     const type = types[extname(path)];
     const body = type && (await readFile(path).catch(() => undefined));
     if (body === undefined) {

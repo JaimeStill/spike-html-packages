@@ -1,17 +1,6 @@
-// The release's shape, shared by test/unit/release.test.js, which holds the build to it, and
-// test/consumers/consumers.js, which resolves an installed release's exports by it. No package: the
-// exports map is walked here by Node's own rules, so each shipped file's subpath is known before
-// a consumer resolves it.
-//
-// The release is package.json's files, dist/ alone, which scripts/build.sh fills from layers/:
-//
-//   layers/<path>.ts     dist/<path>.js and dist/<path>.d.ts, by tsc emit
-//   layers/<path>.d.ts   dist/<path>.d.ts, copied
-//   layers/<path>.css    dist/<path>.css, copied
-//
-// and every shipped file is reachable through exports: some subpath resolves to it under one of
-// its conditions. An exports entry is a target string or a flat object of conditions, each a
-// target string ("types" and "default" here); a target may hold one *, as its key does.
+// The release's shape: its exports map walked by Node's rules, and the build checked against the
+// sources, package.json's files, and exports. Shared by test/unit/release.test.js and
+// test/consumers/consumers.js.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, sep } from "node:path";

@@ -1,5 +1,5 @@
 // Copied from spike-html-conventions a88828a: scripts/css-sheets.js, unchanged but for the plugin's
-// doc comment, which names its one user here: scripts/measure.sh's Vite builds and dev servers.
+// doc comment, which names its one user here: the measure's Vite build.
 //
 // A Vite plugin that gives a CSS module script, `import sheet from "./x.css" with { type: "css" }`,
 // the module a browser gives it: one constructed CSSStyleSheet, its default export, shared by every
@@ -28,7 +28,7 @@ const isSheet = (node) =>
     (a) => (a.key.name ?? a.key.value) === "type" && a.value.value === "css",
   );
 
-/** The plugin: measure's Vite configs list it, in dev and build alike. */
+/** The plugin: test/fixtures/measure/vite.config.js lists it. */
 export function cssSheets() {
   let build = false;
   return {

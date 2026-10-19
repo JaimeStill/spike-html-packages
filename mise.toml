@@ -60,7 +60,7 @@ depends = ["build"]
 run = "scripts/consumers.sh"
 
 [tasks.check]
-description = "Run every check; reads no network and writes only dist/"
+description = "Run every check; reads no network and writes only dist/ and .cache/"
 depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumers"]
 
 [tasks.install]
@@ -78,8 +78,9 @@ depends = ["build"]
 run = "node scripts/demo.js"
 
 [tasks.measure]
-description = "Print the import extension's measures as a dated markdown report"
-run = "scripts/measure.sh"
+description = "Print the import extension's facts as a dated markdown table; reads no network"
+depends = ["preflight browser"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/measure.js"
 
 [tasks.currency]
 description = "Report every pin behind its latest, exiting nonzero if any"

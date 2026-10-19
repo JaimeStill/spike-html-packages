@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- The measure's Vite page: scripts/measure.js copies it beside a build of dist/, where its
+     ./dist/ paths resolve, builds it with Vite, and loads the result. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>measure</title>
+    <link rel="stylesheet" href="./dist/foundation/page.css" />
+    <script type="module">
+      import "./dist/foundation/dom.js";
+      import "./dist/foundation/registry.js";
+      import "./dist/foundation/keys-grammar.js";
+      import "./dist/foundation/keys.js";
+      import "./dist/components/status-badge.js";
+      import "./dist/components/entry-lit-shadow.js";
+      import "./dist/components/pagination-lit-shadow.js";
+
+      document.querySelector("sl-entry-lit-shadow").item = {
+        id: "1",
+        name: "notes",
+        status: "ready",
+        updated_at: "2026-10-19T00:00:00Z",
+      };
+    </script>
+  </head>
+  <body>
+    <sl-status-badge label="draft"></sl-status-badge>
+    <sl-entry-lit-shadow></sl-entry-lit-shadow>
+    <sl-pagination-lit-shadow page="1" size="10" total="30"></sl-pagination-lit-shadow>
+    <dialog id="help"><div data-keys-list></div></dialog>
+  </body>
+</html>
