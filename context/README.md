@@ -97,7 +97,7 @@ The spike reads these repositories and never writes to them. Each is a key in th
 - `test/consumers/`: the consumer fixture that pnpm, npm, and bun each install, and the manifest
   step.
 - `test/fixtures/`: v0.7.0's pages and sheets, as copied, the keys and components pages, and the
-  measure's Vite page.
+  measure's Vite page with its CSS plugin.
 - `demo/`: the demo pages and the listings they show.
 
 ## Tasks

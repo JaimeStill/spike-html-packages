@@ -1,18 +1,6 @@
-// Copied from spike-html-conventions a88828a: scripts/css-sheets.js, unchanged but for the plugin's
-// doc comment, which names its one user here: the measure's Vite build.
-//
 // A Vite plugin that gives a CSS module script, `import sheet from "./x.css" with { type: "css" }`,
-// the module a browser gives it: one constructed CSSStyleSheet, its default export, shared by every
-// importer. Vite's dev server strips the attribute and injects the CSS into the document, and
-// vite build fails on the missing default export, so the plugin keys on the attribute itself: no
-// resolveId or load hook sees it (Vite 8.3.4 passes them no attributes), so a transform that runs
-// before Vite's reads it from each importer's own syntax tree. Each .css import carrying
-// `type: "css"` is rewritten to a virtual module of that file, which builds the sheet; any other
-// .css import is left to Vite. Herald's lit-css-module BunPlugin is the prior art.
-//
-// In vite build the virtual module takes its CSS from Vite's own `?inline` import of the file, so
-// the sheet's text is minified as Vite minifies linked CSS (build.cssMinify, Lightning CSS by
-// default in Vite 8) with nothing added to the build; the dev server serves the file as written.
+// the module a browser gives it: one constructed CSSStyleSheet, its default export.
+// Adapted from spike-html-conventions (a88828a): scripts/css-sheets.js, its header cut.
 
 import { readFile } from "node:fs/promises";
 
@@ -28,7 +16,7 @@ const isSheet = (node) =>
     (a) => (a.key.name ?? a.key.value) === "type" && a.value.value === "css",
   );
 
-/** The plugin: test/fixtures/measure/vite.config.js lists it. */
+/** The plugin, which vite.config.js lists. */
 export function cssSheets() {
   let build = false;
   return {
@@ -37,6 +25,8 @@ export function cssSheets() {
     configResolved(config) {
       build = config.command === "build";
     },
+    // Vite 8.3.4 passes no import attributes to resolveId or load, so a transform that runs
+    // before Vite's reads them from the importer's syntax tree.
     transform(code, id) {
       if (!/\.[cm]?[jt]s$/.test(id.split("?")[0]) || !code.includes(".css")) return null;
       const lang = /\.[cm]?ts$/.test(id.split("?")[0]) ? "ts" : "js";
@@ -59,6 +49,7 @@ export function cssSheets() {
       if (!id.startsWith(prefix)) return null;
       const path = id.slice(prefix.length, -suffix.length);
       const sheet = (css) => `const sheet = new CSSStyleSheet();\nsheet.replaceSync(${css});\n`;
+      // Vite's own ?inline import minifies the sheet as it minifies linked CSS.
       if (build) {
         return `import css from ${JSON.stringify(path + "?inline")};\n${sheet("css")}export default sheet;\n`;
       }
