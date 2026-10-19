@@ -105,7 +105,7 @@ Door          two-way: nothing leaves the spike repository.
 
 ## Progress
 
-slices 1-5 committed (1f1a3c0..312fa18) · rework slices 3/4 · standards — · spec — · editor —
+slices 1-5 committed (1f1a3c0..312fa18) · rework slices 4/4 · standards — · spec — · editor —
 
 ## Decisions
 
