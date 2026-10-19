@@ -94,7 +94,7 @@ Door          two-way: nothing leaves the spike repository; no tag, no
 
 ## Progress
 
-slices 4/5 committed · standards — · spec — · editor —
+slices 5/5 committed (slice 5 awaits the specifier pick) · standards — · spec — · editor —
 
 ## Decisions
 
