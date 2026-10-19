@@ -1,8 +1,7 @@
 // The lint the check runs (eslint .): @eslint/js's and typescript-eslint's recommended rules over
 // the code, and the layer direction in layers/, by the file each import resolves to. Adapted from
 // spike-html-conventions a88828a: eslint.config.js, its layer table cut to the layers this
-// repository packages, the foundation, the components, and the SDK, without the apps' rows, and
-// without its CSS module script rule, which arrives with the first .css import in layers/.
+// repository packages, the foundation, the components, and the SDK, without the apps' rows.
 //
 // The direction is eslint-plugin-boundaries' dependencies rule over the layer table below, with
 // eslint-plugin-import-x's no-unresolved beside it. eslint-import-resolver-typescript resolves
@@ -14,6 +13,11 @@
 // path, fails no-unresolved, so no import passes by naming no file.
 //
 // test/layers.test.js runs this config over test/layers-tree.js's trees.
+//
+// A .css import is a static CSS module script, `with { type: "css" }`, everywhere: core
+// no-restricted-syntax refuses an import or an export-from without that attribute, so no .css
+// import leans on a bundler's own CSS handling, and refuses an import() of a .css file outright,
+// attribute or not: a component imports its sheet statically.
 
 import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
@@ -23,6 +27,29 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 const code = ["**/*.js", "**/*.ts"];
+
+// The attribute a CSS module script carries among a declaration's attributes, by its key's name
+// or its quoted key.
+const cssType = `:matches(ImportAttribute[key.name='type'], ImportAttribute[key.value='type'])[value.value='css']`;
+const cssSource = "[source.value=/\\.css$/]";
+// An import() whose specifier ends in .css: a string, or a template whose last part does, matched
+// at that part.
+const cssDynamic = [
+  `ImportExpression${cssSource}`,
+  "ImportExpression > TemplateLiteral.source > TemplateElement[tail=true][value.cooked=/\\.css$/]",
+];
+const cssImports = [
+  ...["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration"].map((type) => ({
+    selector: `${type}${cssSource}:not(:has(${cssType}))`,
+    message: "A .css import is a CSS module script: add with { type: 'css' }.",
+  })),
+  ...cssDynamic.map((selector) => ({
+    selector,
+    message:
+      "A .css file is imported statically, as a CSS module script with { type: 'css' }, never by " +
+      "import().",
+  })),
+];
 
 // The layer table: each layer's directory and the layers it may import, "lit" the one package.
 // The foundation imports nothing but itself; a component imports the foundation and lit; the SDK
@@ -76,6 +103,7 @@ const declarations = {
 export default defineConfig([
   { files: code, extends: [js.configs.recommended, tseslint.configs.recommended] },
   { files: code, languageOptions: { globals: globals.browser } },
+  { files: code, rules: { "no-restricted-syntax": ["error", ...cssImports] } },
   // The suite and the scripts run on node, or in the page they serve.
   { files: ["test/**", "scripts/**"], languageOptions: { globals: globals.node } },
   {

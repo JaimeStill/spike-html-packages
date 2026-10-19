@@ -7,8 +7,15 @@
 // The server is node:http on the loopback address, serving the working tree itself: the pages
 // need no tool between, as the sheets are plain CSS and the in-page half, scripts/computed-styles.js,
 // a plain module. It serves only the types below, so nothing else in the tree is reachable, and
-// reads no network. mise run demo serves the demo through it too, and the keys cases
-// (scripts/browser-keys.test.js) their fixtures.
+// reads no network. mise run demo serves the demo through it too, the keys cases
+// (scripts/browser-keys.test.js) their fixtures, and the components' cases
+// (scripts/browser-components.test.js) theirs.
+//
+// The components import lit by its bare name, and a page that loads them maps it by an import map
+// onto /deps/, which the server answers from the directory the installed lit sits in, beside its
+// own dependencies (lit-html, lit-element, @lit/reactive-element): under pnpm, lit's directory in
+// node_modules/.pnpm, as spike-html-conventions a88828a's unbundled server mapped it. No tool
+// rewrites a specifier: the browser resolves each one, as it would from any static server.
 //
 // The foundation's modules are TypeScript, imported by .js specifiers: a request for a .js file
 // that isn't there, with a .ts file beside it, is answered with that .ts file's JavaScript, its
@@ -22,10 +29,10 @@
 // loads another URL and resolves on its load event, cdp(method, params), one raw protocol command
 // (the keys cases press keys by Input.dispatchKeyEvent), and close().
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { createServer } from "node:http";
 import { stripTypeScriptTypes } from "node:module";
-import { extname, join, normalize } from "node:path";
+import { dirname, extname, join, normalize } from "node:path";
 
 /** The root of the repository, which the server serves. */
 export const root = join(import.meta.dirname, "..");
@@ -47,6 +54,22 @@ export const foundation = "/layers/foundation";
  * read (Playwright's default viewport), as spike-html-conventions' cases set them.
  */
 export const settings = { lang: "en-US", tz: "UTC", width: 1280, height: 720 };
+
+/**
+ * The directory /deps/ is served from: the one the installed lit sits in, with its dependencies
+ * beside it, or undefined while lit isn't installed, when /deps/ answers 404 and a component's
+ * page fails naming lit.
+ */
+function depsDirectory() {
+  try {
+    return dirname(realpathSync(join(root, "node_modules/lit")));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The page the components' cases run on, by its path on the server. */
+export const componentsPage = "/test/fixtures/components.html";
 
 /** How long one evaluation may take, once the page has loaded. */
 const timeout = 120_000;
@@ -78,12 +101,14 @@ function body(file) {
  */
 export async function serve({ refuse = [] } = {}) {
   const counts = new Map();
+  const deps = depsDirectory();
   const server = createServer((request, response) => {
     // normalize() of an absolute path never climbs above its root, so every file is in the tree.
     const path = normalize(decodeURIComponent(new URL(request.url, "http://host").pathname));
     counts.set(path, (counts.get(path) ?? 0) + 1);
-    const file = join(root, path);
-    const served = refuse.includes(path) ? undefined : body(file);
+    let file = join(root, path);
+    if (path.startsWith("/deps/")) file = deps && join(deps, path.slice("/deps/".length));
+    const served = refuse.includes(path) || file === undefined ? undefined : body(file);
     if (served === undefined) {
       response.writeHead(404).end();
       return;
@@ -116,6 +141,30 @@ export async function inPage(browser, origin, body) {
       tab.evaluate(`import(${JSON.stringify(module)}).then(async (m) => { ${body} })`),
       new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error(`no result after ${timeout} ms`)), timeout);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+    await tab.close();
+  }
+}
+
+/**
+ * Runs one of the components' case modules (demo/<module>.ts) on the components' page in the
+ * version given, resolving to its verdict and report once the run settles.
+ */
+export async function runCases(browser, origin, module, version = "") {
+  const query = new URLSearchParams({ module, version });
+  const tab = await browser.open(`${origin}${componentsPage}?${query}`);
+  let timer;
+  try {
+    return await Promise.race([
+      tab.evaluate(`window.verdict.then(() => ({
+        verdict: document.getElementById("verdict").textContent,
+        report: document.getElementById("report").textContent,
+      }))`),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`no verdict after ${timeout} ms`)), timeout);
       }),
     ]);
   } finally {

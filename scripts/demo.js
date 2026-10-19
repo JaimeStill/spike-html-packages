@@ -7,12 +7,17 @@
 //   demo/keys.html   the foundation's keys family: bindings by data-keys and register(), and the
 //                    help dialog. Its modules are the .ts sources the server strips, so it runs
 //                    served only.
+//   demo/components.html
+//                    the components layer on the foundation: the shadow-root pagination holding
+//                    entries from demo/documents.ts, and the status badge, lit mapped by the page's
+//                    import map onto the server's /deps/, so it runs served only.
 
 import { page, serve } from "./browser-cases.js";
 
 const server = await serve();
 console.log(`${server.origin}${page}`);
 console.log(`${server.origin}/demo/keys.html`);
+console.log(`${server.origin}/demo/components.html`);
 process.once("SIGINT", async () => {
   await server.stop();
   process.exit(0);

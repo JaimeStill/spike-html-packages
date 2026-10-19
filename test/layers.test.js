@@ -1,7 +1,7 @@
 // adapted from spike-html-conventions a88828a: test/layers.test.js, on this repository's layer
-// table (the foundation, the components, and the SDK), without its CSS module script cases, as
-// eslint.config.js holds no such rule yet. lit isn't a dependency here, so each scratch tree gets
-// a stub lit package, which the resolver finds as it would the real one.
+// table (the foundation, the components, and the SDK). Each scratch tree gets a stub lit package,
+// which the resolver finds as it would the real one, where conventions linked the installed lit:
+// the resolver reads a package's name, exports, and types alone, so the stub holds those.
 //
 // The layer tree's import direction: eslint.config.js's layer rules (eslint-plugin-boundaries'
 // dependencies rule with import-x's no-unresolved), run by the ESLint package.json pins against
@@ -12,6 +12,11 @@
 // tree holds the files its imports name, so the rules judge the file an import resolves to, as
 // they do in layers/; the violations are held to the dependencies rule itself, so no case passes
 // on no-unresolved because its target went unwritten. A case that doesn't parse fails both tests.
+//
+// The same runs hold eslint.config.js's other import rule, that a .css import is a static CSS
+// module script: a tree of components importing a stylesheet in each form, static and dynamic,
+// with and without `with { type: "css" }`, passes only when no-restricted-syntax flags exactly the
+// static files without it and every import(), with it or not.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -95,6 +100,48 @@ describe("layer import direction", () => {
 
   test("a tree of allowed imports draws none", () => {
     assert.deepEqual([...flagged(allowed, [dependencies, unresolved])], []);
+  });
+});
+
+// Each file imports the stylesheet beside it in one form; layers-tree.js's targets() reads a .css
+// specifier as a directory, so this tree is written as it stands, the stylesheet with it.
+const sheet = "layers/components/x.css";
+const refusedCss = {
+  "layers/components/side-effect.ts": `import "./x.css";`,
+  "layers/components/default.ts": `import sheet from "./x.css";`,
+  "layers/components/json.ts": `import sheet from "./x.css" with { type: "json" };`,
+  "layers/components/export.ts": `export { default } from "./x.css";`,
+  "layers/components/export-all.ts": `export * from "./x.css";`,
+  "layers/components/dynamic.ts": `await import("./x.css");`,
+  "layers/components/dynamic-json.ts": `await import("./x.css", { with: { type: "json" } });`,
+  "layers/components/dynamic-module.ts": `await import("./x.css", { with: { type: "css" } });`,
+  "layers/components/dynamic-quoted.ts": `await import("./x.css", { "with": { "type": "css" } });`,
+  "layers/components/dynamic-template.ts": "await import(`./x.css`, { with: { type: 'css' } });",
+  "layers/components/dynamic-computed.ts": "const name = 'x'; await import(`./${name}.css`);",
+};
+const cssModules = {
+  "layers/components/module.ts": `import sheet from "./x.css" with { type: "css" };`,
+  "layers/components/quoted.ts": `import sheet from "./x.css" with { "type": "css" };`,
+  "layers/components/export-module.ts": `export { default } from "./x.css" with { type: "css" };`,
+};
+
+/** Writes `files` under `dir` as they stand, with the stylesheet they import; returns the paths. */
+function writeSheets(dir, files) {
+  const written = { ...files, [sheet]: ".x {}" };
+  for (const [path, source] of Object.entries(written)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), `${source}\n`);
+  }
+  return Object.keys(written);
+}
+
+describe("a .css import is a static CSS module script", () => {
+  test("each import() of a .css file, and each static .css import without the css type, draws no-restricted-syntax, and only those", () => {
+    const files = { ...refusedCss, ...cssModules };
+    assert.deepEqual(
+      [...flagged(files, ["no-restricted-syntax"], writeSheets)].sort(),
+      Object.keys(refusedCss).sort(),
+    );
   });
 });
 

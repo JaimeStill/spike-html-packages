@@ -1,5 +1,6 @@
-// Adapted from spike-html-conventions a88828a: tsconfig.json, its include narrowed to layers/, the
-// typed sources this repository holds; the tests and scripts are plain JavaScript outside it.
+// Adapted from spike-html-conventions a88828a: tsconfig.json, its include narrowed to the typed
+// sources this repository holds, layers/ and the demo's modules (demo/), which the components'
+// browser cases run; the tests and scripts are plain JavaScript outside it.
 {
   "compilerOptions": {
     "target": "es2024",
@@ -15,5 +16,5 @@
     "noEmit": true,
     "skipLibCheck": false
   },
-  "include": ["layers"]
+  "include": ["layers", "demo"]
 }
