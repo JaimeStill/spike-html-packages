@@ -32,10 +32,12 @@ export interface ParseOptions {
   mac?: boolean;
 }
 
+/** Each modifier's name in a binding, to its flag on a press. */
 const MODIFIERS = { Control: "control", Alt: "alt", Meta: "meta", Shift: "shift" } as const;
 type Modifier = keyof typeof MODIFIERS;
 const MODIFIER_NAMES = Object.keys(MODIFIERS) as Modifier[];
 
+/** The keys a binding names in words, since "+" and " " separate its parts. */
 const NAMED: Record<string, string> = { plus: "+", space: " " };
 
 // aria-keyshortcuts names physical keys, so a shifted symbol is declared by the US key it is on.
@@ -63,19 +65,26 @@ const US_SHIFTED: Record<string, string> = {
   "?": "/",
 };
 
+/** Whether the key is one character. */
 const isSingle = (key: string): boolean => [...key].length === 1;
+/** Whether the key is one letter, in any script. */
 const isLetter = (key: string): boolean => isSingle(key) && key.toLowerCase() !== key.toUpperCase();
+/** Whether the key is one Latin letter, a to z. */
 const isAsciiLetter = (key: string): boolean => /^[a-z]$/i.test(key);
+/** Whether the key is one digit, 0 to 9. */
 const isDigit = (key: string): boolean => /^[0-9]$/.test(key);
+/** Whether the key is one character that is no letter, digit, or space. */
 const isSymbol = (key: string): boolean =>
   isSingle(key) && !isLetter(key) && !isDigit(key) && key !== " ";
 
+/** The modifier a name in a binding means, Mod by the platform, or undefined. */
 function modifierOf(name: string, mac: boolean): Modifier | undefined {
   const lower = name.toLowerCase();
   if (lower === "mod") return mac ? "Meta" : "Control";
   return MODIFIER_NAMES.find((modifier) => modifier.toLowerCase() === lower);
 }
 
+/** The `event.key` a name in a binding means, a letter lowercased, or undefined. */
 function keyOf(name: string): string | undefined {
   if (isSingle(name)) return isLetter(name) ? name.toLowerCase() : name;
   return NAMED[name.toLowerCase()] ?? (/^[A-Z][A-Za-z0-9]*$/.test(name) ? name : undefined);
@@ -134,9 +143,11 @@ export function problem(binding: unknown): string | null {
   return typeof result === "string" ? result : null;
 }
 
+/** The press's modifiers, in normal order. */
 const modifiersOf = (press: Press): Modifier[] =>
   MODIFIER_NAMES.filter((modifier) => press[MODIFIERS[modifier]]);
 
+/** The press's key as its normal string writes it. */
 function keyName({ key, shift }: Press): string {
   if (key === "+") return "Plus";
   if (key === " ") return "Space";
@@ -177,6 +188,7 @@ export function matches(press: Press, event: KeyLike): boolean {
   return event.key === press.key;
 }
 
+/** A key as the help dialog shows it: a letter uppercased, and Space by name. */
 function label(key: string): string {
   if (key === " ") return "Space";
   return isLetter(key) ? key.toUpperCase() : key;

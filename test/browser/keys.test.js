@@ -1,6 +1,6 @@
 // The keys runtime and its help dialog from dist/, pressed with real keys through the DevTools
-// Protocol on test/fixtures/keys*.html. Adapted from spike-html-design v0.7.0: test/keys.test.js,
-// its cases and assertions kept.
+// Protocol on test/fixtures/keys*.html.
+// Adapted from spike-html-design v0.7.0 (fe75220): test/keys.test.js, its cases kept.
 
 import assert from "node:assert/strict";
 import { after, afterEach, before, describe, test } from "node:test";

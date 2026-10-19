@@ -1,22 +1,6 @@
-// adapted from spike-html-conventions a88828a: test/layers.test.js, on this repository's layer
-// table (the foundation, the components, and the SDK). Each scratch tree gets a stub lit package,
-// which the resolver finds as it would the real one, where conventions linked the installed lit:
-// the resolver reads a package's name, exports, and types alone, so the stub holds those.
-//
-// The layer tree's import direction: eslint.config.js's layer rules (eslint-plugin-boundaries'
-// dependencies rule with import-x's no-unresolved), run by the ESLint package.json pins against
-// scratch trees outside the working tree that mirror layers/. One tree holds one violating import
-// per file, a file per forbidden edge and per import form, and passes only when the files the
-// dependencies rule flags are exactly its files; the other holds only allowed imports and passes
-// only when neither rule flags any, so a rule that refuses everything or nothing fails here. Each
-// tree holds the files its imports name, so the rules judge the file an import resolves to, as
-// they do in layers/; the violations are held to the dependencies rule itself, so no case passes
-// on no-unresolved because its target went unwritten. A case that doesn't parse fails both tests.
-//
-// The same runs hold eslint.config.js's other import rule, that a .css import is a static CSS
-// module script: a tree of components importing a stylesheet in each form, static and dynamic,
-// with and without `with { type: "css" }`, passes only when no-restricted-syntax flags exactly the
-// static files without it and every import(), with it or not.
+// The layer import direction and the .css and .d.ts import rules: eslint.config.js run over scratch
+// trees, each passing only when ESLint flags exactly the files that break a rule.
+// Adapted from spike-html-conventions (a88828a): test/layers.test.js, with a stub lit package.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";

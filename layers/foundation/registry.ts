@@ -18,12 +18,13 @@ export const DEFAULTS: Readonly<Record<Facet, string>> = Object.freeze({
   type: "mono",
 });
 
+/** The store's well-known global key, shared by every copy of the module. */
 const KEY = Symbol.for("spike-html-design.registry");
 const scope = globalThis as typeof globalThis & Record<symbol, Store | undefined>;
 scope[KEY] ??= { color: [], space: [], type: [] };
 const store: Store = scope[KEY];
 
-// The checks hold for a caller the types never reach: a page's plain script, or another tag's copy.
+/** The facet, or a TypeError naming it; it guards callers the types never reach, as plain script. */
 function facetOf(facet: string): Facet {
   if (!(FACETS as readonly string[]).includes(facet)) {
     throw new TypeError(`registry: unknown facet ${facet}; expected one of ${FACETS.join(", ")}`);

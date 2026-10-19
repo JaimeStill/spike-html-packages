@@ -1,6 +1,6 @@
-// The foundation's tool sheets in dist/ against spike-html-design v0.7.0's: every element of
-// demo/tools.html computes the same on both, at rest and hovered, and the comparison catches any
-// one declaration dropped. Adapted from spike-html-conventions a88828a: scripts/browser.test.js.
+// The tool sheets in dist/ against v0.7.0's: every element of demo/tools.html computes the same,
+// at rest and hovered, and dropping any one declaration shows.
+// Adapted from spike-html-conventions (a88828a): scripts/browser.test.js.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The release build: layers/ into dist/, or into the directory given. tsc emits each module's .js
 # and .d.ts; the .css and the handwritten .d.ts are copied beside them as written.
-# After spike-html-conventions a88828a: scripts/build.sh.
+# Adapted from spike-html-conventions (a88828a): scripts/build.sh.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)

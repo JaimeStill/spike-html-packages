@@ -1,7 +1,6 @@
-// from spike-html-conventions a88828a: layers/sdk/auth.d.ts
-//
 // The application SDK's auth hook, declared: the client asks a TokenProvider for the token each
 // call carries. spike-html-apps implements the default; an app supplies its own provider.
+// From spike-html-conventions (a88828a): layers/sdk/auth.d.ts.
 
 /** Where the client's bearer token comes from. `token` is the current token, undefined when there
  * is none (the call goes without Authorization); `refresh` obtains a new one after a 401, and the

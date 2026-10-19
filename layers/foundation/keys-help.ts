@@ -7,15 +7,20 @@ import type { Listed } from "./keys.ts";
 import { labels } from "./keys-grammar.ts";
 import type { Sequence } from "./keys-grammar.ts";
 
+/** The waits between presses, in ms, a reader can pick. */
 const WAITS = [1000, 1500, 3000, 5000];
 
+/** The screen-reader note the dialog carries. */
 const NOTE =
   "Screen readers: a screen reader may take a key before the page does. To pass the next key " +
   "through, press NVDA+F2 in NVDA, JAWS+3 in JAWS, Narrator+3 in Narrator, or VO+Tab in VoiceOver.";
 
+/** Each row button's binding action. */
 const runs = new WeakMap<Element, () => void>();
+/** The dialog each list's listeners were added for. */
 const wired = new WeakMap<Element, HTMLDialogElement>();
 
+/** A new element of the tag, with the text when given. */
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   text?: string,
@@ -54,6 +59,7 @@ function labelOf({ element, label, keys }: Listed): string {
   return (field && textOf(field)) || keys;
 }
 
+/** A binding's sequences as kbd elements, joined by "+", " then ", and " or ". */
 function keysOf(sequences: Sequence[]): (string | Node)[] {
   const nodes: (string | Node)[] = [];
   sequences.forEach((sequence, a) => {
@@ -69,6 +75,7 @@ function keysOf(sequences: Sequence[]): (string | Node)[] {
   return nodes;
 }
 
+/** A table row of the keys cell and the action cell. */
 function row(keys: Node, action: Node): HTMLTableRowElement {
   const tr = element("tr");
   const cells = [keys, action].map((content) => {
@@ -80,6 +87,7 @@ function row(keys: Node, action: Node): HTMLTableRowElement {
   return tr;
 }
 
+/** A binding's row: its keys, marked off when off, and a button that runs it. */
 function bindingRow(binding: Listed): HTMLTableRowElement {
   const keys = new DocumentFragment();
   keys.append(...keysOf(binding.sequences));
@@ -92,13 +100,14 @@ function bindingRow(binding: Listed): HTMLTableRowElement {
   return tr;
 }
 
-// Escape releasing a field is no binding: always listed, never off, with nothing to run.
+/** Escape's fixed row: releasing a field is no binding, so it is never off and runs nothing. */
 function escapeRow(): HTMLTableRowElement {
   const tr = row(element("kbd", "Esc"), new Text("Leave a field"));
   tr.dataset.keysFixed = "";
   return tr;
 }
 
+/** The bindings table, each active binding's row and then Escape's. */
 function table(dialog: HTMLDialogElement): HTMLTableElement {
   const el = element("table");
   el.dataset.keysTable = "";
@@ -107,7 +116,7 @@ function table(dialog: HTMLDialogElement): HTMLTableElement {
   return el;
 }
 
-// A page's store.wait may be one the reader can't pick: it shows as an option that clears theirs.
+/** The wait select; a store.wait the reader can't pick shows as an option that clears theirs. */
 function waitControl(wait: number): HTMLLabelElement {
   const label = element("label");
   const select = element("select");
@@ -119,6 +128,7 @@ function waitControl(wait: number): HTMLLabelElement {
   return label;
 }
 
+/** The settings fieldset: the character-key switch and the wait. */
 function form(): HTMLFieldSetElement {
   const current = settings();
   const fieldset = element("fieldset");
@@ -133,11 +143,13 @@ function form(): HTMLFieldSetElement {
   return fieldset;
 }
 
+/** Replaces the list's bindings table with a current one. */
 function render(list: Element, dialog: HTMLDialogElement): void {
   list.querySelector(":scope > [data-keys-table]")?.remove();
   list.prepend(table(dialog));
 }
 
+/** Adds the list's click and change listeners, once per list and dialog. */
 function wire(list: Element, dialog: HTMLDialogElement): void {
   if (wired.get(list) === dialog) return;
   wired.set(list, dialog);

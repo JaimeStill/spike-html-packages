@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Installs the packed release into test/consumers/consumer/ under pnpm, npm, and bun, each offline
 # from its cache in .cache/consumers/, and checks each install. `list` also prints the installed
-# files; `warm` fills the caches from the network. After spike-html-conventions a88828a.
+# files; `warm` fills the caches from the network.
+# Adapted from spike-html-conventions (a88828a): scripts/consumers.sh.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)

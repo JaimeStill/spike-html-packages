@@ -1,11 +1,10 @@
 // The release's shape: its exports map walked by Node's rules, and the build checked against the
-// sources, package.json's files, and exports. Shared by test/unit/release.test.js and
-// test/consumers/consumers.js.
+// sources, package.json's files, and exports. test/unit/release.test.js and consumers.js share it.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
 
-// listFiles DIR: every file below DIR, relative to it with / separators, sorted.
+/** Every file below `dir`, relative to it with / separators, sorted. */
 export function listFiles(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { recursive: true })
@@ -14,26 +13,24 @@ export function listFiles(dir) {
     .sort();
 }
 
-// The conditions of an exports entry, as { condition: target }; a bare target is "default".
+/** The conditions of an exports entry, as { condition: target }; a bare target is "default". */
 export function conditions(entry) {
   return typeof entry === "string" ? { default: entry } : { ...entry };
 }
 
-// A key's or target's parts around its one *, or undefined when it holds none.
+/** A key's or target's parts around its one *, or undefined when it holds none. */
 function star(pattern) {
   const at = pattern.indexOf("*");
   return at < 0 ? undefined : { prefix: pattern.slice(0, at), suffix: pattern.slice(at + 1) };
 }
 
-// Node's PATTERN_KEY_COMPARE: the longer prefix before the * first, then the longer key.
+/** Node's PATTERN_KEY_COMPARE: the longer prefix before the * first, then the longer key. */
 function compareKeys(a, b) {
   const [pa, pb] = [a.indexOf("*"), b.indexOf("*")];
   return pb - pa || b.length - a.length;
 }
 
-// resolveExport(exports, subpath): the key a subpath ("./components/status-badge.js") matches
-// and its entry's conditions, the * replaced, by Node's rules: an exact key first, then the
-// best-matching pattern key. undefined when no key matches.
+/** The key a subpath matches and its conditions, the * replaced, by Node's rules, or undefined. */
 export function resolveExport(exports, subpath) {
   if (Object.hasOwn(exports, subpath) && !subpath.includes("*")) {
     return { key: subpath, targets: conditions(exports[subpath]) };
@@ -59,9 +56,7 @@ export function resolveExport(exports, subpath) {
   return { key, targets: Object.fromEntries(targets) };
 }
 
-// subpathsOf(exports, file): every subpath that resolves to file ("dist/foundation/dom.js")
-// under some condition, as { subpath, key, condition }. A key whose target would name the file
-// but which loses that subpath to an exact or better key doesn't count.
+/** Each { subpath, key, condition } resolving to the file, by a key that wins the subpath. */
 export function subpathsOf(exports, file) {
   const path = `./${file}`;
   const found = [];
@@ -92,7 +87,7 @@ export function subpathsOf(exports, file) {
   return found;
 }
 
-// The dist/ path each source in layers/ ships as.
+/** The dist/ paths a source in layers/ ships as. */
 export function builtFrom(source) {
   if (source.endsWith(".d.ts") || source.endsWith(".css")) return [`dist/${source}`];
   if (source.endsWith(".ts")) {
@@ -102,8 +97,7 @@ export function builtFrom(source) {
   return [];
 }
 
-// releaseProblems(root): what keeps root's build from being the release package.json declares,
-// one line each; none when it is. root holds layers/, dist/ (the build), and package.json.
+/** What keeps root's dist/ from being the release its package.json declares, one line each. */
 export function releaseProblems(root) {
   const problems = [];
   const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));

@@ -1,9 +1,6 @@
 // The browser tier's driver: chrome-headless-shell over the DevTools Protocol on a pipe, with no
-// package between. Adapted from spike-html-conventions a88828a: scripts/browser-pipe.js.
-//
-// Chromium reads commands on its fd 3 and writes replies and events on its fd 4, each message one
-// JSON object ended by a NUL. Each page is a target attached with flatten, so its commands carry
-// its session id on the one pipe.
+// package between.
+// Adapted from spike-html-conventions (a88828a): scripts/browser-pipe.js.
 
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -41,6 +38,8 @@ export async function launch() {
       env: { ...process.env, TZ: settings.tz, TMPDIR: profile },
     },
   );
+  // Chromium reads commands on its fd 3 and writes replies and events on its fd 4, each message one
+  // JSON object ended by a NUL.
   const [, , errors, commands, replies] = child.stdio;
   let log = "";
   errors.setEncoding("utf8");
@@ -117,6 +116,7 @@ export async function launch() {
   /** Opens the URL in a new page, resolving to the page once its load event fires. */
   async function open(url) {
     const { targetId } = await send("Target.createTarget", { url: "about:blank" });
+    // flatten: the page's commands carry its session id on the one pipe.
     const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
     const cdp = (method, params) => send(method, params, sessionId);
     await cdp("Page.enable");

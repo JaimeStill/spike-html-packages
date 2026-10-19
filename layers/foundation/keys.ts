@@ -7,6 +7,7 @@ import type * as Help from "./keys-help.ts";
 import { keyshortcuts, matches, normalize, parse, problem, stringify } from "./keys-grammar.ts";
 import type { Binding, KeyLike, Press, Sequence } from "./keys-grammar.ts";
 
+/** A register() binding's handler, given the keys-fire event. */
 type Handler = (event: CustomEvent<FireDetail>) => void;
 
 /** A `register` binding, as the store holds it. */
@@ -65,6 +66,7 @@ interface Match {
   sequence: Sequence;
 }
 
+/** The store's well-known global key, shared by every copy of the module. */
 const KEY = Symbol.for("spike-html-design.keys");
 const scope = globalThis as typeof globalThis & Record<symbol, Store | undefined>;
 scope[KEY] ??= { registered: [], wait: 1500, listening: false };
@@ -74,6 +76,7 @@ const store: Store = scope[KEY];
 const agent = navigator as Navigator & { userAgentData?: { platform: string } };
 const mac = /mac|iphone|ipad/i.test(agent.userAgentData?.platform ?? navigator.platform);
 
+/** The keys that only modify another, which neither start nor drop a sequence. */
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "CapsLock", "OS"]);
 
 /** Binds keys to a handler with no element; returns a function that removes this binding. */
@@ -92,15 +95,19 @@ export function register(keys: string, label: string, handler: Handler): () => v
   };
 }
 
+/** The localStorage key of the reader's settings. */
 const STORAGE = "spike-html-design.keys";
 
+/** Each setting's check: the values a reader can choose. */
 const VALID: Record<keyof Settings, (value: unknown) => boolean> = {
   enabled: (value) => typeof value === "boolean",
   wait: (value) => [1000, 1500, 3000, 5000].includes(value as number),
 };
 
+/** Whether the name is a setting. */
 const isSetting = (name: string): name is keyof Settings => name in VALID;
 
+/** The settings with nothing stored: on, at the store's wait. */
 const defaults = (): Settings => ({ enabled: true, wait: store.wait });
 
 /** The reader's valid stored settings; none when storage is empty, unparseable, or blocked. */
@@ -172,6 +179,7 @@ function declare(): void {
   }
 }
 
+/** Whether the target is a form field or editable, where a key types. */
 function isField(el: EventTarget | null): boolean {
   return (
     el instanceof HTMLElement &&
@@ -194,6 +202,7 @@ function elementBinding(el: HTMLElement, current: Settings): Active | null {
   return null;
 }
 
+/** Whether the element can act: enabled, not inert, and rendered. */
 const isActiveElement = (el: HTMLElement): boolean =>
   !el.matches(":disabled") && !el.closest("[inert]") && el.checkVisibility();
 
@@ -239,6 +248,7 @@ const snapshot = ({ key, code, shiftKey, altKey, ctrlKey, metaKey }: KeyboardEve
 const passed = (event: KeyboardEvent): boolean =>
   event.defaultPrevented || event.repeat || event.isComposing || event.keyCode === 229;
 
+/** Whether the press is one keys never matches. */
 const silent = (event: KeyboardEvent): boolean =>
   passed(event) ||
   event.key === "Dead" ||
@@ -256,6 +266,7 @@ function release(event: KeyboardEvent): boolean {
   return true;
 }
 
+/** Dispatches keys-sequence on the document. */
 function announce(
   state: SequenceDetail["state"],
   presses: string[],
@@ -265,7 +276,7 @@ function announce(
   document.dispatchEvent(new CustomEvent("keys-sequence", { detail }));
 }
 
-// Ends before the binding acts, so a handler that throws leaves no sequence behind.
+/** Ends the pending sequence; it ends before the binding acts, so a throw leaves none behind. */
 function end(reason: NonNullable<SequenceDetail["reason"]>): void {
   if (!pending) return;
   clearTimeout(pending.timer);
@@ -274,6 +285,7 @@ function end(reason: NonNullable<SequenceDetail["reason"]>): void {
   announce("end", strings, reason);
 }
 
+/** The binding's keys-fire event, for the presses that fired it. */
 function fireEvent(binding: Active, sequence: Sequence): CustomEvent<FireDetail> {
   const detail: FireDetail = {
     binding: normalize(binding.keys, { mac }),
@@ -283,12 +295,14 @@ function fireEvent(binding: Active, sequence: Sequence): CustomEvent<FireDetail>
   return new CustomEvent("keys-fire", { bubbles: true, cancelable: true, detail });
 }
 
+/** Runs the binding: its handler, else focuses its field or clicks its element. */
 function act(binding: Active, event: CustomEvent<FireDetail>): void {
   if (binding.entry) binding.entry.handler(event);
   else if (isField(binding.el)) binding.el.focus();
   else binding.el.click();
 }
 
+/** Dispatches keys-fire and, unless it is cancelled, acts. */
 function fire({ binding, sequence }: Match): void {
   const event = fireEvent(binding, sequence);
   if ((binding.el ?? document).dispatchEvent(event)) act(binding, event);
@@ -322,6 +336,7 @@ export function bindings(dialog: Element | null): Listed[] {
 let help: typeof Help | null = null;
 let loading: Promise<typeof Help | null> | null = null;
 
+/** Imports keys-help.ts once, resolving to it, or to null after a failure the next call retries. */
 function loadHelp(): Promise<typeof Help | null> {
   loading ??= import("./keys-help.ts").then(
     (module) => (help = module),
@@ -335,6 +350,7 @@ function loadHelp(): Promise<typeof Help | null> {
   return loading;
 }
 
+/** Fills a help dialog as it opens, loading keys-help.ts on the first open. */
 function onbeforetoggle(event: ToggleEvent): void {
   const dialog = event.target;
   if (event.newState !== "open" || !(dialog instanceof HTMLDialogElement)) return;

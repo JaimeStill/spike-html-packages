@@ -1,7 +1,6 @@
-// from spike-html-conventions a88828a: layers/sdk/router.d.ts
-//
 // The application SDK's router, declared: spike-html-apps implements it on URLPattern and the
 // Navigation API, with no hand-written matcher.
+// From spike-html-conventions (a88828a): layers/sdk/router.d.ts.
 
 /** Imports the module that defines a route's element and resolves to the element's tag, so the
  * element's code loads on the route's first visit. */

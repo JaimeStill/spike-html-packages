@@ -1,23 +1,7 @@
-// The lint the check runs (eslint .): @eslint/js's and typescript-eslint's recommended rules over
-// the code, and the layer direction in layers/, by the file each import resolves to. Adapted from
-// spike-html-conventions a88828a: eslint.config.js, its layer table cut to the layers this
-// repository packages, the foundation, the components, and the SDK, without the apps' rows.
-//
-// The direction is eslint-plugin-boundaries' dependencies rule over the layer table below, with
-// eslint-plugin-import-x's no-unresolved beside it. eslint-import-resolver-typescript resolves
-// each specifier to the file it names, a .js specifier to its .ts source and a directory to its
-// index.ts, and the rule judges the layer that file is in, never the specifier's text, so a path
-// that climbs out and back in (./x/../../foundation/dom.js from a component) is the file it
-// reaches. A package resolves into node_modules, so the only package a layer may name is one a
-// policy names, lit. A specifier that resolves to nothing, the package's own name or an absolute
-// path, fails no-unresolved, so no import passes by naming no file.
-//
-// test/unit/layers.test.js runs this config over test/unit/layers-tree.js's trees.
-//
-// A .css import is a static CSS module script, `with { type: "css" }`, everywhere: core
-// no-restricted-syntax refuses an import or an export-from without that attribute, so no .css
-// import leans on a bundler's own CSS handling, and refuses an import() of a .css file outright,
-// attribute or not: a component imports its sheet statically.
+// The lint the check runs: the recommended rules, the layer direction in layers/, and every .css
+// import a CSS module script. test/unit/layers.test.js runs it over test/unit/layers-tree.js.
+// Adapted from spike-html-conventions (a88828a): eslint.config.js, its layer table cut to the
+// foundation, the components, and the SDK.
 
 import js from "@eslint/js";
 import { defineConfig } from "eslint/config";
@@ -116,6 +100,8 @@ export default defineConfig([
       "import-x/resolver": { typescript: true },
       "boundaries/elements": elements,
     },
+    // The rule judges the file an import resolves to, never the specifier's text, and
+    // no-unresolved fails a specifier that names no file, so no import passes by naming none.
     rules: {
       "import-x/no-unresolved": "error",
       "boundaries/dependencies": [

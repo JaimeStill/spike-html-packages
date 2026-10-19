@@ -1,7 +1,6 @@
-// from spike-html-conventions a88828a: layers/sdk/service.d.ts
-//
 // The application SDK's domain-service pattern, declared: an app's domains tier writes each
 // service as a stateless object over a Client, one method per route.
+// From spike-html-conventions (a88828a): layers/sdk/service.d.ts.
 
 import type { Client, Result } from "./api.js";
 

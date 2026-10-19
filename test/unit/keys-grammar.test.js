@@ -1,7 +1,5 @@
-// adapted from spike-html-design v0.7.0: test/keys-grammar.test.js, its assertions kept and its
-// harness node's: node:test for bun:test, node:assert/strict's deepEqual and equal for expect's
-// toEqual and toBe. The grammar has no DOM, so it runs in the unit tier (mise run test:unit), on
-// layers/foundation/keys-grammar.ts as node runs it, its types stripped.
+// The keys family's binding grammar, on layers/foundation/keys-grammar.ts as node runs it.
+// Adapted from spike-html-design v0.7.0 (fe75220): test/keys-grammar.test.js, on node:test.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";

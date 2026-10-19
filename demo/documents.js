@@ -1,5 +1,5 @@
 // A static fixture of document listings in go-web-service's wire shape at commit 15e0bc3, for the
-// demo and the browser tier's components cases. Adapted from spike-html-conventions a88828a:
+// demo and the browser tier's components cases. Adapted from spike-html-conventions (a88828a):
 // demo/documents.ts, its types as JSDoc so the browser loads it as written.
 
 /**

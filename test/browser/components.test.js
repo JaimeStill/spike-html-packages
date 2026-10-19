@@ -1,6 +1,6 @@
-// The components from dist/ in the browser: conventions' 27 probe cases, its restyle check, and
-// the sheets each shadow root adopts, on test/fixtures/components.html. Adapted from spike-html-conventions a88828a:
-// scripts/browser.test.js.
+// The components from dist/: conventions' 27 probe cases, its restyle case, and the sheets each
+// shadow root adopts, on test/fixtures/components.html.
+// Adapted from spike-html-conventions (a88828a): scripts/browser.test.js.
 
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";

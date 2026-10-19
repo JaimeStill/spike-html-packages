@@ -1,8 +1,7 @@
-// The components probe: renders the pagination holding one entry per fixture item, drives it, and
-// reports every case as a line. It reaches the elements only through their contract: tags,
-// properties, attributes, events, the controls' labels, and the text a reader sees.
-// Adapted from spike-html-conventions a88828a: demo/probe.ts and demo/versions.ts, cut to the one
-// version this repository holds, Lit with a shadow root, and loading dist/.
+// The components probe: renders the pagination holding one entry per fixture item, drives it
+// through its contract alone, and reports every case as a line.
+// Adapted from spike-html-conventions (a88828a): demo/probe.ts and demo/versions.ts, cut to the
+// Lit shadow-root version and loading dist/.
 
 import { continued, directories, files, pageSizes } from "../../../demo/documents.js";
 

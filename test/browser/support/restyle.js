@@ -1,7 +1,7 @@
-// The button styles' single source: one edit to the foundation's elements sheet repaints the
-// buttons in both the pagination's and the entry's shadow roots, since a CSS module script is one
-// CSSStyleSheet per document. Adapted from spike-html-conventions a88828a: demo/restyle.ts, cut
-// to the shadow-root Lit version and loading dist/.
+// The restyle case: one edit to the elements sheet repaints the buttons in both components' shadow
+// roots, since a CSS module script is one CSSStyleSheet per document.
+// Adapted from spike-html-conventions (a88828a): demo/restyle.ts, cut to the Lit shadow-root
+// version and loading dist/.
 
 import elements from "../../../dist/foundation/baseline/elements.css" with { type: "css" };
 import { directories } from "../../../demo/documents.js";

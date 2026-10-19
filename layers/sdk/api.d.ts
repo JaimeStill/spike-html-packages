@@ -1,12 +1,6 @@
-// from spike-html-conventions a88828a: layers/sdk/api.d.ts
-//
-// The application SDK's API client, declared: spike-html-apps implements it on fetch and
-// AbortSignal. A declaration file holds no runtime code; tsc refuses any (skipLibCheck is off in
-// tsconfig.json, so it checks every .d.ts), and test/declarations.test.js holds the SDK to .d.ts
-// files alone.
-//
-// Every call resolves to a Result and never rejects: a server's problem document, a failed
-// network, and an aborted call each arrive as a Problem.
+// The application SDK's API client, declared; spike-html-apps implements it on fetch and
+// AbortSignal. Every call resolves to a Result and never rejects.
+// From spike-html-conventions (a88828a): layers/sdk/api.d.ts, its header cut.
 
 import type { TokenProvider } from "./auth.js";
 

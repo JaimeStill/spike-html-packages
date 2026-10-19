@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prints `<where>: <item> <pin> -> <latest>` for each mise tool and package.json dependency behind
 # its latest, and exits 1 if any; prints nothing when all are current. Reads the network.
-# After spike-html-conventions a88828a: scripts/currency.sh.
+# Adapted from spike-html-conventions (a88828a): scripts/currency.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

@@ -1,12 +1,6 @@
-// from spike-html-conventions a88828a: test/declarations.test.js
-//
-// The SDK and the foundation's formatters are declarations alone: their signatures, checked by
-// tsc, with no runtime code, until spike-html-apps implements them. The guard is tsc's own: a
-// .d.ts file is an ambient context, where a statement, a function or method body, or an
-// unexported initialized binding is an error (TS1036, TS1183, TS1046, TS1039), and tsconfig.json
-// keeps skipLibCheck off so tsc checks every .d.ts at all; with it on, tsc skips them whole, the
-// signatures and these errors with them. So the SDK's files are held to .d.ts here, and the
-// repository's tsconfig is held to refusing runtime code in one, run against a scratch tree.
+// The SDK and the foundation's formatters are declarations alone, and tsc, under tsconfig.json,
+// refuses runtime code in a declaration file, run against scratch trees.
+// From spike-html-conventions (a88828a): test/declarations.test.js.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -16,12 +10,10 @@ import { join } from "node:path";
 import { describe, test } from "node:test";
 
 const root = join(import.meta.dirname, "../..");
-// The check's own tsc, mise.toml's TypeScript-Go pin, never the typescript package
-// typescript-eslint brings into node_modules, so the guard is proven under the compiler the check runs.
+// The check's own tsc, mise.toml's TypeScript-Go pin, not the typescript package in node_modules.
 const tsc = "tsc";
 
-/** The files tsc reports errors in, each with an error code, sorted, when it checks `files`, a map of paths
- * under a scratch layers/ to sources, under the repository's tsconfig.json. */
+/** Each "path code" tsc reports, sorted, for `files` (paths under layers/ to sources) in scratch. */
 function check(files) {
   const scratch = mkdtempSync(join(tmpdir(), "declarations-"));
   try {
@@ -53,6 +45,7 @@ const runtime = {
   "foundation/format.d.ts": `export declare function formatBytes(bytes: number): string;\nformatBytes(1);`,
 };
 
+// skipLibCheck off is the guard: with it on, tsc skips every .d.ts, and these errors with them.
 describe("SDK and formatter declarations", () => {
   test("every file in the SDK is a declaration file", () => {
     const files = readdirSync(join(root, "layers", "sdk"), { recursive: true, withFileTypes: true })
