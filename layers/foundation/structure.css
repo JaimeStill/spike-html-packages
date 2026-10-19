@@ -1,33 +1,17 @@
-/* adapted from spike-html-design v0.7.0 (commit fe75220): layers/tools.css */
-
 /*
- * The foundation's structure: v0.7.0's forms tool classes, the field stack and its growing
- * control. The rules are upstream's, unchanged, moved out of upstream's one
- * spike-html-design.tools layer into this sheet's own layer, foundation.structure; utilities.css
- * holds upstream's scroll and tables, and meta.css its buttons.
- *
- * The sheet layers itself and imports nothing, so a shadow root adopts it on its own, as a
- * constructed stylesheet or a CSS module script, and reads the token it uses (--space-3xs) by
- * inheritance from the page. A page links page.css, which fixes the order of every foundation
- * layer.
- *
- * The family has no hook: each class sets its layout in a declaration or two that a consumer's own
- * class restates as cheaply as it would set a hook.
+ * The foundation's structure sheet: the field stack. Self-layered and importing nothing, so a
+ * shadow root adopts it alone.
+ * Adapted from spike-html-design v0.7.0 (fe75220): layers/tools.css.
  */
 
 @layer foundation.structure {
-  /* .field stacks a label, its control and an optional hint, each at its own size, as items of one
-     group: --space-3xs apart, as the whitespace guideline sets items. */
-
   .field {
     display: grid;
     justify-items: start;
     gap: var(--space-3xs);
   }
 
-  /* .field-grow sizes a text field, select or text area to its content, from a few characters'
-     width up to its container's. field-sizing is Baseline Newly available; a browser without it
-     keeps the control's native size, which the bounds leave as it was. */
+  /* field-sizing is Baseline newly available; without it the control keeps its native size. */
   .field-grow {
     field-sizing: content;
     min-inline-size: 8ch;
