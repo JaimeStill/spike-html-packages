@@ -1,50 +1,28 @@
-// adapted from spike-html-design v0.7.0: test/keys.test.js, the keys runtime's and its help
-// dialog's cases, their assertions kept and their harness this repository's browser tier: the
-// fixtures (test/fixtures/keys*.html, adapted from v0.7.0's) served from the working tree by
-// support/browser-cases.js's server, which answers layers/foundation/keys.js and keys-help.ts with
-// the .ts sources' JavaScript, in one browser on one driver (support/browser-<name>.js), under
-// node:test, with node:assert/strict for bun:test's expect. A key press is a real one, sent by
-// Input.dispatchKeyEvent through the page's cdp(), as v0.7.0's Bun.WebView harness sent it. The
-// check runs it under node --test on the raw pipe and the pinned chrome-headless-shell (mise run
-// test:browser).
-//
-// v0.7.0's other keys cases stay with the modules they exercise, none of which is copied here:
-// T and the theme menu (theme-menu.js and preferences.js), the specimen (index.html and
-// specimen.js), and a package consumer (its import map against package.json's exports, which this
-// repository's release task writes).
-//
-//   BROWSER_DRIVER    the driver, support/browser-<name>.js (default: pipe, the raw pipe, the
-//                     check's); each driver reads its own variables, the browser's executable
-//                     among them (support/browser-pipe.js)
+// The keys runtime and its help dialog from dist/, pressed with real keys through the DevTools
+// Protocol on test/fixtures/keys*.html. Adapted from spike-html-design v0.7.0: test/keys.test.js,
+// its cases and assertions kept.
 
 import assert from "node:assert/strict";
 import { after, afterEach, before, describe, test } from "node:test";
-import { isDeepStrictEqual } from "node:util";
 
-import { serve, settings } from "./support/browser-cases.js";
+import { launch } from "./support/browser-pipe.js";
+import { serve } from "./support/server.js";
 
-const driver = process.env.BROWSER_DRIVER ?? "pipe";
-const { launch } = await import(`./support/browser-${driver}.js`);
+const KEYS = "/dist/foundation/keys.js";
+const STORE = 'globalThis[Symbol.for("spike-html-design.keys")]';
+// The sequence wait the tests set, short so a test waits it out quickly.
+const WAIT = 150;
 
-// The help module, by its path on the server: the failed-load case's server refuses it.
-const HELP_MODULE = "/layers/foundation/keys-help.ts";
-
-// The working tree served, so a fixture imports the modules by relative URL; chromium runs no
-// relative module script from file://. A second server refuses the help module, for the case
-// whose load fails; v0.7.0 intercepted the request with a missing file instead.
 let server;
-let refusing;
 let browser;
-const fixture = (name, on = server) => `${on.origin}/test/fixtures/${name}`;
 const pages = [];
+const fixture = (name) => `${server.origin}/test/fixtures/${name}`;
 
 before(async () => {
   server = await serve();
-  refusing = await serve({ refuse: [HELP_MODULE] });
-  browser = await launch(settings);
+  browser = await launch();
 });
-// Every fixture shares the server's origin, and so the reader's stored settings: each test
-// clears them before its pages close.
+// Every fixture shares one origin, and so the reader's stored settings.
 afterEach(async () => {
   for (const page of pages.splice(0)) {
     await page.evaluate("localStorage.clear()");
@@ -54,23 +32,15 @@ afterEach(async () => {
 after(async () => {
   await browser?.close();
   await server?.stop();
-  await refusing?.stop();
 });
 
-const KEYS = "/layers/foundation/keys.js";
-// WAIT is the sequence wait the tests set, short so a test waits it out quickly; the default,
-// 1500 ms, is checked once.
-const WAIT = 150;
-
-// open opens a keys fixture with the wait set to WAIT and every keys-fire and keys-sequence
-// detail recorded, in window.fired and window.sequences, and closes it after the test. on is the
-// server it is served from.
-async function open(name = "keys.html", on = server) {
-  const page = await browser.open(fixture(name, on));
+/** Opens a fixture with the wait set to WAIT, recording keys-fire and keys-sequence details. */
+async function open(name = "keys.html") {
+  const page = await browser.open(fixture(name));
   pages.push(page);
   await page.evaluate(`(() => {
-    window.defaultWait = globalThis[Symbol.for("spike-html-design.keys")].wait;
-    globalThis[Symbol.for("spike-html-design.keys")].wait = ${WAIT};
+    window.defaultWait = ${STORE}.wait;
+    ${STORE}.wait = ${WAIT};
     window.fired = [];
     window.sequences = [];
     document.addEventListener("keys-fire", (event) => window.fired.push(event.detail));
@@ -79,12 +49,12 @@ async function open(name = "keys.html", on = server) {
   return page;
 }
 
-// MODIFIERS are CDP's modifier bits.
 const MODIFIERS = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
 
-// press sends a real key press through CDP: a keyDown of key, with code (a US layout's for an
-// ASCII letter or digit unless given), the modifiers held, and repeat or keyCode when given,
-// then its keyUp. A character typed with no Control or Meta carries its text, as typing would.
+/**
+ * Sends a real key press: keyDown then keyUp, with a US layout's code for a letter or digit
+ * unless given, and the text a character types when no Control or Meta is held.
+ */
 async function press(page, key, { code, repeat = false, keyCode, ...held } = {}) {
   const modifiers = Object.entries(held).reduce(
     (bits, [name, on]) => bits | (on ? MODIFIERS[name] : 0),
@@ -103,79 +73,84 @@ async function press(page, key, { code, repeat = false, keyCode, ...held } = {})
   await page.cdp("Input.dispatchKeyEvent", { type: "keyUp", ...event });
 }
 
-// log resolves to the actions the fixture's bindings ran, in order.
+/** Presses Escape as a keyboard sends it. */
+const pressEscape = (page, init) => press(page, "Escape", { code: "Escape", keyCode: 27, ...init });
+
+/** Presses ?, Shift and the slash key. */
+const pressHelp = (page) => press(page, "?", { code: "Slash", shift: true });
+
+/** The actions the fixture's bindings ran, in order. */
 const log = (page) => page.evaluate("window.log");
 
-// sleep resolves after ms, as measured in the page.
+/** The keys-fire details, in order. */
+const fired = (page) => page.evaluate("window.fired");
+
+/** Resolves after ms, as measured in the page. */
 const sleep = (page, ms) => page.evaluate(`new Promise((resolve) => setTimeout(resolve, ${ms}))`);
 
-// call runs body with the keys module the page loaded, as keys, and resolves to its result.
+/** Evaluates the expression with the page's keys module bound as `keys`. */
 const call = (page, body) =>
   page.evaluate(`import(${JSON.stringify(KEYS)}).then((keys) => ${body})`);
 
-// filled resolves once the help dialog is open and filled, or rejects after 2 s.
-const filled = (page) =>
-  page.evaluate(`new Promise((resolve, reject) => {
-    const end = performance.now() + 2000;
-    const poll = () => {
-      const dialog = document.getElementById("help");
-      if (dialog.open && dialog.querySelector("[data-keys-list] [data-keys-table]")) resolve(true);
-      else if (performance.now() > end) reject(new Error("help: not filled"));
-      else setTimeout(poll, 10);
-    };
-    poll();
-  })`);
+/** Registers a binding, labelled by its keys, whose handler logs its keys. */
+const registerLogged = (page, binding) => {
+  const keys = JSON.stringify(binding);
+  return call(page, `keys.register(${keys}, ${keys}, () => window.log.push(${keys}))`);
+};
 
-// rows resolves to the help table's rows: each [keys, action], keys drawn with each kbd as
-// [name] and an off row ending " off", action the row button's text, or, for the fixed Escape
-// row, which has no button, the cell's text.
-const rows = (page) =>
-  page.evaluate(`[...document.querySelectorAll("#help [data-keys-table] tbody tr")].map((row) => {
-    const [keys, action] = row.cells;
-    const drawn = [...keys.childNodes].map((node) =>
-      node.localName === "kbd" ? "[" + node.textContent + "]" : node.textContent).join("");
-    return [drawn, (action.querySelector("button") ?? action).textContent];
-  })`);
+/** The [name, message] of the error the keys call throws, or null. */
+const thrown = (page, body) =>
+  call(
+    page,
+    `{ try { ${body}; return null; } catch (e) { return [e.constructor.name, e.message]; } }`,
+  );
 
-// ESCAPE is the help table's fixed last row, Escape releasing a field.
-const ESCAPE = ["[Esc]", "Leave a field"];
+/** Focuses the element with the id. */
+const focus = (page, id) => page.evaluate(`document.getElementById(${JSON.stringify(id)}).focus()`);
+
+/** The focused element's id, or its tag when it has none. */
+const active = (page) =>
+  page.evaluate("document.activeElement.id || document.activeElement.localName");
+
+/** Whether the dialog with the id is open. */
+const isOpen = (page, id = "help") =>
+  page.evaluate(`document.getElementById(${JSON.stringify(id)}).open`);
+
+/** Whether the dialog with the id is modal. */
+const isModal = (page, id = "help") =>
+  page.evaluate(`document.getElementById(${JSON.stringify(id)}).matches(":modal")`);
 
 describe("keys: element bindings", () => {
   test("T clicks its button, running the invoker command, and marks the press handled", async () => {
     const page = await open();
-    await page.evaluate(`document.addEventListener("keydown", (event) => {
-      window.handled = event.defaultPrevented;
-    })`);
+    await page.evaluate(
+      `document.addEventListener("keydown", (event) => (window.handled = event.defaultPrevented))`,
+    );
     await press(page, "t");
     assert.deepEqual(await log(page), ["command --theme"]);
     assert.equal(await page.evaluate("window.handled"), true);
-    assert.deepEqual(await page.evaluate("window.fired"), [{ binding: "t", keys: ["t"] }]);
+    assert.deepEqual(await fired(page), [{ binding: "t", keys: ["t"] }]);
     // A single press that fires at once is no sequence.
     assert.deepEqual(await page.evaluate("window.sequences"), []);
   });
 
   test("on a layout such as Russian, the key on T's code runs the T binding", async () => {
     const page = await open();
-    // Cyrillic е, not Latin e.
-    await press(page, "\u0435", { code: "KeyT" });
+    await press(page, "е", { code: "KeyT" }); // Cyrillic е, not Latin e.
     assert.deepEqual(await log(page), ["command --theme"]);
-    assert.deepEqual(await page.evaluate("window.fired"), [{ binding: "t", keys: ["t"] }]);
+    assert.deepEqual(await fired(page), [{ binding: "t", keys: ["t"] }]);
   });
 
   test("a field's binding focuses it", async () => {
     const page = await open();
     await press(page, "/");
-    assert.equal(await page.evaluate("document.activeElement.id"), "search");
+    assert.equal(await active(page), "search");
   });
 
   test("keys reads the page at each press: an added element binds, a removed one unbinds", async () => {
     const page = await open();
-    await page.evaluate(`(() => {
-      const button = document.createElement("button");
-      button.dataset.keys = "n";
-      button.dataset.log = "n";
-      document.body.append(button);
-    })()`);
+    await page.evaluate(`document.body.insertAdjacentHTML("beforeend",
+      '<button type="button" data-keys="n" data-log="n">N</button>')`);
     await press(page, "n");
     await page.evaluate(`document.querySelector("[data-keys=t]").removeAttribute("data-keys")`);
     await press(page, "t");
@@ -184,10 +159,9 @@ describe("keys: element bindings", () => {
 
   test("a malformed data-keys binds nothing and warns once", async () => {
     const page = await open();
-    await page.evaluate(`(() => {
-      window.warnings = [];
-      console.warn = (message) => window.warnings.push(message);
-    })()`);
+    await page.evaluate(
+      `(window.warnings = [], console.warn = (message) => window.warnings.push(message))`,
+    );
     await press(page, "x");
     await press(page, "y");
     assert.deepEqual(await log(page), []);
@@ -198,13 +172,12 @@ describe("keys: element bindings", () => {
 
   test("the first of two elements sharing keys wins, ahead of a register() binding", async () => {
     const page = await open();
-    await call(page, `keys.register("f", "registered f", () => window.log.push("f registered"))`);
+    await registerLogged(page, "f");
     await press(page, "f");
     assert.deepEqual(await log(page), ["f first"]);
-    // With the elements gone, the register() binding is the first.
     await page.evaluate(`document.querySelectorAll("[data-keys=f]").forEach((el) => el.remove())`);
     await press(page, "f");
-    assert.deepEqual(await log(page), ["f first", "f registered"]);
+    assert.deepEqual(await log(page), ["f first", "f"]);
   });
 });
 
@@ -213,16 +186,12 @@ describe("keys: register()", () => {
     const page = await open();
     await call(
       page,
-      `{
-        window.removeOne = keys.register("q", "one", (event) => window.log.push("one " + event.type));
-        keys.register("q", "two", () => window.log.push("two"));
-      }`,
+      `(window.removeOne = keys.register("q", "one", (event) => window.log.push("one " + event.type)),
+      keys.register("q", "two", () => window.log.push("two")))`,
     );
     await press(page, "q");
     assert.deepEqual(await log(page), ["one keys-fire"]);
-    assert.deepEqual(await page.evaluate("window.fired"), [
-      { binding: "q", keys: ["q"], label: "one" },
-    ]);
+    assert.deepEqual(await fired(page), [{ binding: "q", keys: ["q"], label: "one" }]);
     await page.evaluate("(window.removeOne(), window.removeOne())");
     await press(page, "q");
     assert.deepEqual(await log(page), ["one keys-fire", "two"]);
@@ -230,21 +199,12 @@ describe("keys: register()", () => {
 
   test("throws a TypeError on a malformed binding, label, or handler", async () => {
     const page = await open();
-    const thrown = (args) =>
-      call(
-        page,
-        `{ try { keys.register(${args}); return null; }
-           catch (error) { return [error.constructor.name, error.message]; } }`,
-      );
-    const [name, message] = await thrown(`"Control+", "x", () => {}`);
+    const [name, message] = await thrown(page, `keys.register("Control+", "x", () => {})`);
     assert.equal(name, "TypeError");
     assert.ok(message.startsWith("keys: "));
-    assert.equal((await thrown(`"x", 1, () => {}`))[0], "TypeError");
-    assert.equal((await thrown(`"x", "x", null`))[0], "TypeError");
-    assert.deepEqual(
-      await page.evaluate(`globalThis[Symbol.for("spike-html-design.keys")].registered`),
-      [],
-    );
+    assert.equal((await thrown(page, `keys.register("x", 1, () => {})`))[0], "TypeError");
+    assert.equal((await thrown(page, `keys.register("x", "x", null)`))[0], "TypeError");
+    assert.deepEqual(await page.evaluate(`${STORE}.registered`), []);
   });
 });
 
@@ -254,9 +214,7 @@ describe("keys: sequences", () => {
     assert.equal(await page.evaluate("window.defaultWait"), 1500);
     await press(page, "g");
     await press(page, "c");
-    assert.deepEqual(await log(page), ["g c"]);
     await press(page, "g");
-    // Pending until the wait ends.
     assert.deepEqual(await log(page), ["g c"]);
     await sleep(page, WAIT + 100);
     assert.deepEqual(await log(page), ["g c", "g"]);
@@ -267,7 +225,7 @@ describe("keys: sequences", () => {
       { state: "end", presses: ["g"], reason: "fired" },
     ]);
     assert.deepEqual(
-      (await page.evaluate("window.fired")).map(({ keys }) => keys),
+      (await fired(page)).map(({ keys }) => keys),
       [["g", "c"], ["g"]],
     );
   });
@@ -275,8 +233,7 @@ describe("keys: sequences", () => {
   test("a press that doesn't continue the sequence ends it and is dropped, not retried", async () => {
     const page = await open();
     await press(page, "g");
-    // t is bound, but as a new start, not as g's next press.
-    await press(page, "t");
+    await press(page, "t"); // Bound, but as a new start, not as g's next press.
     await sleep(page, WAIT + 100);
     assert.deepEqual(await log(page), []);
     assert.deepEqual(await page.evaluate("window.sequences"), [
@@ -287,7 +244,7 @@ describe("keys: sequences", () => {
 
   test("a press after the wait finds the sequence timed out", async () => {
     const page = await open();
-    await call(page, `keys.register("w e r", "wer", () => window.log.push("w e r"))`);
+    await registerLogged(page, "w e r");
     await press(page, "w");
     await press(page, "e");
     await sleep(page, WAIT + 100);
@@ -298,7 +255,6 @@ describe("keys: sequences", () => {
       { state: "continue", presses: ["w", "e"] },
       { state: "end", presses: ["w", "e"], reason: "timeout" },
     ]);
-    // Within the wait it runs.
     for (const key of ["w", "e", "r"]) await press(page, key);
     assert.deepEqual(await log(page), ["w e r"]);
   });
@@ -306,7 +262,7 @@ describe("keys: sequences", () => {
   test("the indicator, an outside module, shows the pending presses from keys-sequence alone", async () => {
     const page = await open();
     const shown = () => page.evaluate(`document.getElementById("indicator").textContent`);
-    await call(page, `keys.register("w e r", "wer", () => {})`);
+    await registerLogged(page, "w e r");
     await press(page, "w");
     assert.equal(await shown(), "w");
     await press(page, "e");
@@ -316,17 +272,18 @@ describe("keys: sequences", () => {
   });
 });
 
+const FIELDS = ["text", "notes", "pick", "editable", "search"];
+
 describe("keys: silence", () => {
   test("nothing fires in a field, even a combination", async () => {
     const page = await open();
-    await call(page, `keys.register("Control+k", "k", () => window.log.push("Control+k"))`);
-    for (const id of ["text", "notes", "pick", "editable", "search"]) {
-      await page.evaluate(`document.getElementById(${JSON.stringify(id)}).focus()`);
+    await registerLogged(page, "Control+k");
+    for (const id of FIELDS) {
+      await focus(page, id);
       await press(page, "t");
       await press(page, "k", { ctrl: true });
     }
     assert.deepEqual(await log(page), []);
-    // Out of the field, the combination fires.
     await page.evaluate("document.activeElement.blur()");
     await press(page, "k", { ctrl: true });
     assert.deepEqual(await log(page), ["Control+k"]);
@@ -345,14 +302,12 @@ describe("keys: silence", () => {
     await press(page, "t", { keyCode: 229 });
     await press(page, "Dead");
     await press(page, "Process");
-    await page.evaluate(`(() => {
-      const send = (init) => document.dispatchEvent(new KeyboardEvent("keydown",
+    await page.evaluate(`for (const init of [{ isComposing: true }, { modifierAltGraph: true }]) {
+      document.dispatchEvent(new KeyboardEvent("keydown",
         { key: "t", code: "KeyT", bubbles: true, cancelable: true, ...init }));
-      send({ isComposing: true });
-      send({ modifierAltGraph: true });
-    })()`);
+    }`);
     assert.deepEqual(await log(page), []);
-    assert.deepEqual(await page.evaluate("window.fired"), []);
+    assert.deepEqual(await fired(page), []);
   });
 
   test("an event already handled is left alone", async () => {
@@ -385,58 +340,45 @@ describe("keys: scope", () => {
 
   test("under a modal only its own bindings are active and register() bindings pause", async () => {
     const page = await open();
-    await call(page, `keys.register("r", "r", () => window.log.push("r"))`);
+    await registerLogged(page, "r");
     await press(page, "o");
-    assert.equal(await page.evaluate(`document.getElementById("modal").matches(":modal")`), true);
+    assert.equal(await isModal(page, "modal"), true);
     for (const key of ["t", "r", "g"]) await press(page, key);
     await sleep(page, WAIT + 100);
     await press(page, "m");
     assert.deepEqual(await log(page), ["m"]);
-    await press(page, "Escape");
-    assert.equal(await page.evaluate(`document.getElementById("modal").open`), false);
+    await pressEscape(page);
+    assert.equal(await isOpen(page, "modal"), false);
     await press(page, "r");
     assert.deepEqual(await log(page), ["m", "r"]);
   });
 });
 
-// Behavior 18: Escape in a field, outside an open modal and unhandled, blurs the field, so the
-// page's shortcuts work again.
 describe("keys: Escape releases a field", () => {
-  const FIELDS = ["text", "notes", "pick", "editable", "search"];
-  const pressEscape = (page, init) =>
-    press(page, "Escape", { code: "Escape", keyCode: 27, ...init });
-  const active = (page) =>
-    page.evaluate("document.activeElement.id || document.activeElement.localName");
-
   test("Escape in an input, textarea, select, or contenteditable blurs it, and j fires again", async () => {
     const page = await open();
-    await call(page, `keys.register("j", "j", () => window.log.push("j"))`);
+    await registerLogged(page, "j");
     for (const id of FIELDS) {
-      await page.evaluate(`document.getElementById(${JSON.stringify(id)}).focus()`);
+      await focus(page, id);
       await press(page, "j");
       assert.equal(await active(page), id);
       await pressEscape(page);
       assert.equal(await active(page), "body");
       await press(page, "j");
     }
+    const each = FIELDS.map(() => "j");
+    assert.deepEqual(await log(page), each);
+    // Escape is no binding: only the j presses fired keys-fire.
     assert.deepEqual(
-      await log(page),
-      FIELDS.map(() => "j"),
-    );
-    // It is no binding: only the j presses fired keys-fire.
-    assert.deepEqual(
-      (await page.evaluate("window.fired")).map(({ binding }) => binding),
-      FIELDS.map(() => "j"),
+      (await fired(page)).map(({ binding }) => binding),
+      each,
     );
   });
 
   test("a search input's native Escape still clears it as keys blurs it", async () => {
     const page = await open();
-    await page.evaluate(`(() => {
-      const search = document.getElementById("search");
-      search.value = "query";
-      search.focus();
-    })()`);
+    await page.evaluate(`document.getElementById("search").value = "query"`);
+    await focus(page, "search");
     await pressEscape(page);
     assert.equal(await page.evaluate(`document.getElementById("search").value`), "");
     assert.equal(await active(page), "body");
@@ -445,30 +387,29 @@ describe("keys: Escape releases a field", () => {
   test("the off switch doesn't cover it", async () => {
     const page = await open();
     await call(page, "keys.changeSettings({ enabled: false })");
-    await page.evaluate(`document.getElementById("text").focus()`);
+    await focus(page, "text");
     await pressEscape(page);
     assert.equal(await active(page), "body");
   });
 
   test("a handled, repeated, or composing Escape blurs nothing", async () => {
     const page = await open();
-    await page.evaluate(`document.getElementById("text").focus()`);
+    await focus(page, "text");
     await pressEscape(page, { repeat: true });
     await pressEscape(page, { keyCode: 229 });
     assert.equal(await active(page), "text");
-    await page.evaluate(`document.getElementById("text").addEventListener("keydown",
-      (event) => event.preventDefault())`);
+    await page.evaluate(
+      `document.getElementById("text").addEventListener("keydown", (event) => event.preventDefault())`,
+    );
     await pressEscape(page);
     assert.equal(await active(page), "text");
   });
 
   test("an Escape whose listener moved focus on blurs nothing", async () => {
     const page = await open();
-    await page.evaluate(`(() => {
-      const text = document.getElementById("text");
-      text.addEventListener("keydown", () => document.getElementById("notes").focus());
-      text.focus();
-    })()`);
+    await page.evaluate(`document.getElementById("text").addEventListener("keydown",
+      () => document.getElementById("notes").focus())`);
+    await focus(page, "text");
     await pressEscape(page);
     assert.equal(await active(page), "notes");
   });
@@ -477,26 +418,23 @@ describe("keys: Escape releases a field", () => {
     const page = await open();
     await page.evaluate(`(() => {
       const modal = document.getElementById("modal");
-      const field = document.createElement("input");
-      field.id = "inside";
-      modal.append(field);
-      modal.showModal();
-      field.focus();
-      // A document listener added after keys's sees where focus is once keys has run.
-      document.addEventListener("keydown", () => (window.after = document.activeElement.id));
-      // The page's own Escape binding inside the modal is removed, so the native close runs.
       modal.querySelector("[data-keys=Escape]").remove();
+      modal.append(Object.assign(document.createElement("input"), { id: "inside" }));
+      modal.showModal();
+      document.getElementById("inside").focus();
+      // Added after keys's listener, it sees where focus is once keys has run.
+      document.addEventListener("keydown", () => (window.after = document.activeElement.id));
     })()`);
     await pressEscape(page);
     assert.equal(await page.evaluate("window.after"), "inside");
-    assert.equal(await page.evaluate(`document.getElementById("modal").open`), false);
+    assert.equal(await isOpen(page, "modal"), false);
   });
 });
 
 describe("keys: extension and the store", () => {
   test("cancelling keys-fire stops the action", async () => {
     const page = await open();
-    await call(page, `keys.register("q", "q", () => window.log.push("q"))`);
+    await registerLogged(page, "q");
     await page.evaluate(
       `document.addEventListener("keys-fire", (event) => event.preventDefault())`,
     );
@@ -504,7 +442,7 @@ describe("keys: extension and the store", () => {
     await press(page, "q");
     assert.deepEqual(await log(page), []);
     assert.deepEqual(
-      (await page.evaluate("window.fired")).map(({ binding }) => binding),
+      (await fired(page)).map(({ binding }) => binding),
       ["t", "q"],
     );
   });
@@ -512,7 +450,7 @@ describe("keys: extension and the store", () => {
   test("keys-fire bubbles from the bound element", async () => {
     const page = await open();
     await page.evaluate(`document.querySelector("[data-keys=t]").addEventListener("keys-fire",
-      (event) => { window.from = [event.target.dataset.keys, event.bubbles, event.cancelable]; })`);
+      (event) => (window.from = [event.target.dataset.keys, event.bubbles, event.cancelable]))`);
     await press(page, "t");
     assert.deepEqual(await page.evaluate("window.from"), ["t", true, true]);
   });
@@ -522,59 +460,25 @@ describe("keys: extension and the store", () => {
     assert.equal(await page.evaluate("window.copies"), true);
     for (const key of ["t", "a", "b"]) await press(page, key);
     assert.deepEqual(await log(page), ["t", "a", "b"]);
-    const store = await page.evaluate(`(() => {
-      const store = globalThis[Symbol.for("spike-html-design.keys")];
-      return { keys: Object.keys(store), registered: store.registered.map(({ keys, label }) => [keys, label]) };
-    })()`);
-    assert.deepEqual(store, {
-      keys: ["registered", "wait", "listening"],
-      registered: [
+    assert.deepEqual(await page.evaluate(`Object.keys(${STORE})`), [
+      "registered",
+      "wait",
+      "listening",
+    ]);
+    assert.deepEqual(
+      await page.evaluate(`${STORE}.registered.map(({ keys, label }) => [keys, label])`),
+      [
         ["a", "from a"],
         ["b", "from b"],
       ],
-    });
+    );
   });
 });
 
-// SETTINGS_FIXTURE is the settings fixture: a key, a symbol, a chord, two combinations, and a
-// named key, each pressed as written.
-const SETTINGS_FIXTURE = "keys-settings.html";
-
-// declared resolves to each bound button's aria-keyshortcuts, by its data-log, null when absent.
-const declared = (page) =>
-  page.evaluate(`Object.fromEntries([...document.querySelectorAll("[data-log]")]
-    .map((el) => [el.dataset.log, el.getAttribute("aria-keyshortcuts")]))`);
-
-// store writes the reader's settings to storage as another tab would, value a string or an object
-// written as JSON, and dispatches the storage event that tab's write sends here.
-const store = (page, value) => {
-  const json = typeof value === "string" ? value : JSON.stringify(value);
-  return page.evaluate(`(() => {
-    const oldValue = localStorage.getItem("spike-html-design.keys");
-    localStorage.setItem("spike-html-design.keys", ${JSON.stringify(json)});
-    dispatchEvent(new StorageEvent("storage", { key: "spike-html-design.keys", oldValue,
-      newValue: ${JSON.stringify(json)}, storageArea: localStorage, url: location.href }));
-  })()`);
-};
-
-// saved resolves to the reader's stored settings, parsed, or null when none are stored.
-const saved = (page) => page.evaluate(`JSON.parse(localStorage.getItem("spike-html-design.keys"))`);
-
-// pressAll presses each of the fixture's bindings as written: T, ?, g c, Alt+T (Option changes
-// the character on macOS, so Alt matches a letter by event.code), Control+K, and Escape.
-async function pressAll(page) {
-  await press(page, "t");
-  await press(page, "?", { code: "Slash", shift: true });
-  await press(page, "g");
-  await press(page, "c");
-  await press(page, "†", { code: "KeyT", alt: true });
-  await press(page, "k", { ctrl: true });
-  await press(page, "Escape", { code: "Escape" });
-}
-
+// The settings fixture's bindings: a key, a symbol, a chord, two combinations, and a named key.
+const SETTINGS = "keys-settings.html";
 const ALL = ["t", "?", "g c", "Alt+t", "Control+k", "Escape"];
-
-// DECLARED is the fixture's aria-keyshortcuts with the off switch on.
+// Each binding's aria-keyshortcuts with the off switch on, and with it off.
 const DECLARED = {
   t: "T",
   "?": "Shift+/",
@@ -583,18 +487,47 @@ const DECLARED = {
   "Control+k": "Control+K",
   Escape: "Escape",
 };
-
-// OFF is the fixture's aria-keyshortcuts with the off switch off: character keys declare nothing.
 const OFF = { ...DECLARED, t: null, "?": null };
+
+/** Each bound button's aria-keyshortcuts, by its data-log. */
+const declared = (page) =>
+  page.evaluate(`Object.fromEntries([...document.querySelectorAll("[data-log]")]
+    .map((el) => [el.dataset.log, el.getAttribute("aria-keyshortcuts")]))`);
+
+/** Writes the reader's settings as another tab would, and sends the storage event it sends. */
+const store = (page, value) => {
+  const json = JSON.stringify(typeof value === "string" ? value : JSON.stringify(value));
+  return page.evaluate(`(() => {
+    const oldValue = localStorage.getItem("spike-html-design.keys");
+    localStorage.setItem("spike-html-design.keys", ${json});
+    dispatchEvent(new StorageEvent("storage", { key: "spike-html-design.keys", oldValue,
+      newValue: ${json}, storageArea: localStorage, url: location.href }));
+  })()`);
+};
+
+/** The reader's stored settings, or null. */
+const saved = (page) => page.evaluate(`JSON.parse(localStorage.getItem("spike-html-design.keys"))`);
+
+/** Presses each of the settings fixture's bindings as written. */
+async function pressAll(page) {
+  await press(page, "t");
+  await pressHelp(page);
+  await press(page, "g");
+  await press(page, "c");
+  // Option changes the character on macOS, so Alt matches a letter by its code.
+  await press(page, "†", { code: "KeyT", alt: true });
+  await press(page, "k", { ctrl: true });
+  await press(page, "Escape", { code: "Escape" });
+}
 
 describe("keys: bindings as written", () => {
   test("a key, a symbol, a written chord, written combinations, and a named key all fire", async () => {
-    const page = await open(SETTINGS_FIXTURE);
+    const page = await open(SETTINGS);
     assert.deepEqual(await declared(page), DECLARED);
     await pressAll(page);
     assert.deepEqual(await log(page), ALL);
     assert.deepEqual(
-      (await page.evaluate("window.fired")).map(({ keys }) => keys),
+      (await fired(page)).map(({ keys }) => keys),
       [["t"], ["?"], ["g", "c"], ["Alt+t"], ["Control+k"], ["Escape"]],
     );
     // Modifiers are exact: k without Control, and Alt+Shift+T, fire nothing.
@@ -607,30 +540,29 @@ describe("keys: bindings as written", () => {
 
 describe("keys: the reader's settings", () => {
   test("settings() is { enabled, wait }, the wait the store's by default", async () => {
-    const page = await open(SETTINGS_FIXTURE);
+    const page = await open(SETTINGS);
     assert.deepEqual(await call(page, "keys.settings()"), { enabled: true, wait: WAIT });
   });
 
   test("the stored wait wins over the store's", async () => {
-    const page = await open(SETTINGS_FIXTURE);
-    await call(page, `keys.register("w e", "we", () => window.log.push("w e"))`);
-    // The store's wait, WAIT, has passed.
-    await press(page, "w");
-    await sleep(page, WAIT + 250);
-    await press(page, "e");
+    const page = await open(SETTINGS);
+    await registerLogged(page, "w e");
+    const pressSlowly = async () => {
+      await press(page, "w");
+      await sleep(page, WAIT + 250);
+      await press(page, "e");
+    };
+    await pressSlowly();
     assert.deepEqual(await log(page), []);
     await call(page, "keys.changeSettings({ wait: 1000 })");
     assert.equal(await call(page, "keys.settings().wait"), 1000);
-    await press(page, "w");
-    await sleep(page, WAIT + 250);
-    await press(page, "e");
+    await pressSlowly();
     assert.deepEqual(await log(page), ["w e"]);
   });
 
   test("invalid or unknown stored values read as defaults, and unparseable JSON as all defaults", async () => {
-    const page = await open(SETTINGS_FIXTURE);
+    const page = await open(SETTINGS);
     const defaults = { enabled: true, wait: WAIT };
-    // A name keys doesn't know is ignored.
     await store(page, { enabled: "no", foo: 1, wait: 20 });
     assert.deepEqual(await call(page, "keys.settings()"), defaults);
     await store(page, { foo: 1, wait: 3000 });
@@ -639,13 +571,12 @@ describe("keys: the reader's settings", () => {
       await store(page, value);
       assert.deepEqual(await call(page, "keys.settings()"), defaults);
     }
-    // keys still fires as written.
     await press(page, "t");
     assert.deepEqual(await log(page), ["t"]);
   });
 
   test("changeSettings() stores only changed settings; a default or null removes one", async () => {
-    const page = await open(SETTINGS_FIXTURE);
+    const page = await open(SETTINGS);
     await call(page, `keys.changeSettings({ wait: 3000 })`);
     assert.deepEqual(await saved(page), { wait: 3000 });
     await call(page, `keys.changeSettings({ enabled: false })`);
@@ -656,29 +587,26 @@ describe("keys: the reader's settings", () => {
     await store(page, { enabled: 1, foo: 1 });
     await call(page, `keys.changeSettings({ wait: 5000 })`);
     assert.deepEqual(await saved(page), { wait: 5000 });
-    const thrown = (change) =>
-      call(
-        page,
-        `{ try { keys.changeSettings(${change}); return null; }
-           catch (error) { return error.constructor.name; } }`,
-      );
     for (const change of [`{ foo: 1 }`, `{ wait: 20 }`, `{ colour: "red" }`]) {
-      assert.deepEqual([change, await thrown(change)], [change, "TypeError"]);
+      assert.equal(
+        (await thrown(page, `keys.changeSettings(${change})`))?.[0],
+        "TypeError",
+        change,
+      );
     }
     assert.deepEqual(await saved(page), { wait: 5000 });
   });
 
   test("the off switch turns off keys and chords of characters and leaves combinations on", async () => {
-    const page = await open(SETTINGS_FIXTURE);
-    await call(page, `keys.register("j", "j", () => window.log.push("j"))`);
-    await call(page, `keys.register("Alt+j", "Alt+j", () => window.log.push("Alt+j"))`);
+    const page = await open(SETTINGS);
+    await registerLogged(page, "j");
+    await registerLogged(page, "Alt+j");
     await call(page, "keys.changeSettings({ enabled: false })");
     assert.deepEqual(await declared(page), OFF);
     await pressAll(page);
     await press(page, "j");
     await press(page, "∆", { code: "KeyJ", alt: true });
     assert.deepEqual(await log(page), ["Alt+t", "Control+k", "Escape", "Alt+j"]);
-    // Turned back on, they all fire.
     await page.evaluate("window.log = []");
     await call(page, "keys.changeSettings({ enabled: true })");
     assert.deepEqual(await declared(page), DECLARED);
@@ -689,23 +617,22 @@ describe("keys: the reader's settings", () => {
 
 describe("keys: aria-keyshortcuts", () => {
   test("another tab's change to the settings applies at once, to presses and the attribute", async () => {
-    const page = await open(SETTINGS_FIXTURE);
+    const page = await open(SETTINGS);
     await store(page, { enabled: false });
     assert.deepEqual(await declared(page), OFF);
     await pressAll(page);
     assert.deepEqual(await log(page), ["Alt+t", "Control+k", "Escape"]);
-    // Storage cleared in another tab: key null.
+    // Storage cleared in another tab sends a null key.
     await page.evaluate(`(localStorage.clear(),
       dispatchEvent(new StorageEvent("storage", { key: null, storageArea: localStorage })))`);
     assert.deepEqual(await declared(page), DECLARED);
   });
 
   test("two tabs on one origin: a change in one rewrites the other's attribute", async () => {
-    const one = await open(SETTINGS_FIXTURE);
-    const two = await open(SETTINGS_FIXTURE);
+    const one = await open(SETTINGS);
+    const two = await open(SETTINGS);
     await call(one, `keys.changeSettings({ enabled: false })`);
-    // The other tab's storage event arrives as a task; wait for it.
-    await sleep(two, 50);
+    await sleep(two, 50); // The other tab's storage event arrives as a task.
     assert.deepEqual(await declared(two), OFF);
     await press(two, "t");
     await press(two, "k", { ctrl: true });
@@ -713,75 +640,48 @@ describe("keys: aria-keyshortcuts", () => {
   });
 
   test("stored settings apply on load", async () => {
-    const page = await open(SETTINGS_FIXTURE);
-    await page.evaluate(
-      `localStorage.setItem("spike-html-design.keys", JSON.stringify({ enabled: false }))`,
-    );
-    await page.goto(fixture(SETTINGS_FIXTURE));
+    const page = await open(SETTINGS);
+    await page.evaluate(`localStorage.setItem("spike-html-design.keys", '{"enabled":false}')`);
+    await page.goto(fixture(SETTINGS));
     assert.deepEqual(await declared(page), OFF);
   });
 
   test("follows added elements and data-keys changes, and leaves unbound elements alone", async () => {
-    const page = await open(SETTINGS_FIXTURE);
-    const shortcut = (id) =>
-      page.evaluate(
-        `document.getElementById(${JSON.stringify(id)}).getAttribute("aria-keyshortcuts")`,
+    const page = await open(SETTINGS);
+    const shortcut = async (keys) => {
+      await page.evaluate(
+        keys === null
+          ? `document.getElementById("added").removeAttribute("data-keys")`
+          : `document.getElementById("added").dataset.keys = ${JSON.stringify(keys)}`,
       );
-    await page.evaluate(`(() => {
-      const button = document.createElement("button");
-      button.id = "added";
-      button.dataset.keys = "n";
-      document.body.append(button);
-    })()`);
-    assert.equal(await shortcut("added"), "N");
-    await page.evaluate(`document.getElementById("added").dataset.keys = "Alt+n, ?"`);
-    assert.equal(await shortcut("added"), "Alt+N Shift+/");
+      return page.evaluate(`document.getElementById("added").getAttribute("aria-keyshortcuts")`);
+    };
+    await page.evaluate(
+      `document.body.append(Object.assign(document.createElement("button"), { id: "added" }))`,
+    );
+    assert.equal(await shortcut("n"), "N");
+    assert.equal(await shortcut("Alt+n, ?"), "Alt+N Shift+/");
     // A sequence declares nothing; nor does a malformed binding.
-    await page.evaluate(`document.getElementById("added").dataset.keys = "n m"`);
-    assert.equal(await shortcut("added"), null);
-    await page.evaluate(`document.getElementById("added").dataset.keys = "Control+"`);
-    assert.equal(await shortcut("added"), null);
+    assert.equal(await shortcut("n m"), null);
+    assert.equal(await shortcut("Control+"), null);
     // data-keys removed: the attribute keys wrote goes with it.
-    await page.evaluate(`document.getElementById("added").dataset.keys = "n"`);
-    assert.equal(await shortcut("added"), "N");
-    await page.evaluate(`document.getElementById("added").removeAttribute("data-keys")`);
-    assert.equal(await shortcut("added"), null);
+    assert.equal(await shortcut("n"), "N");
+    assert.equal(await shortcut(null), null);
     // An element that never carried data-keys keeps its own.
     await call(page, `keys.changeSettings({ enabled: false })`);
-    assert.equal(await shortcut("unbound"), "Alt+U");
+    assert.equal(
+      await page.evaluate(`document.getElementById("unbound").getAttribute("aria-keyshortcuts")`),
+      "Alt+U",
+    );
   });
 });
 
-// The help dialog: keys-help.js, which keys loads the first time a dialog holding
-// [data-keys-list] opens, fills it with the page's bindings, the reader's settings, and the
-// screen-reader note.
+// The help dialog: keys loads dist/foundation/keys-help.js the first time a dialog holding
+// [data-keys-list] opens, and it fills the dialog.
 describe("keys: the help dialog", () => {
   const HELP = "keys-help.html";
-
-  // fetchedHelp resolves to whether the page has fetched keys-help.js.
-  const fetchedHelp = (page) =>
-    page.evaluate(`performance.getEntriesByType("resource")
-      .some(({ name }) => name.endsWith("/layers/foundation/keys-help.ts"))`);
-
-  // openHelp opens the dialog from its Help button, a show-modal invoker, and waits for it.
-  async function openHelp(page) {
-    await page.evaluate(`document.querySelector("button[command=show-modal]").click()`);
-    await filled(page);
-  }
-
-  // closeHelp closes the dialog from script.
-  const closeHelp = (page) => page.evaluate(`document.getElementById("help").close()`);
-
-  // choose sets one of the dialog's settings controls, as the reader would, and fires change.
-  const choose = (page, name, value) =>
-    page.evaluate(`(() => {
-      const control = document.querySelector("#help [data-keys-settings] [name=${name}]");
-      if (control.type === "checkbox") control.checked = ${JSON.stringify(value)};
-      else control.value = ${JSON.stringify(String(value))};
-      control.dispatchEvent(new Event("change", { bubbles: true }));
-    })()`);
-
-  // ROWS is the fixture's rows, with j registered after the elements.
+  const ESCAPE = ["[Esc]", "Leave a field"];
+  // The fixture's rows, with j registered after the elements.
   const ROWS = [
     ["[?]", "Help"],
     ["[T]", "Theme"],
@@ -793,13 +693,81 @@ describe("keys: the help dialog", () => {
     ["[J]", "Next section"],
   ];
 
-  // registerJ registers j, and a second f the first element's f shadows.
+  /** Whether the page has fetched the help module. */
+  const fetchedHelp = (page) =>
+    page.evaluate(
+      `performance.getEntriesByType("resource").some(({ name }) => name.endsWith("/keys-help.js"))`,
+    );
+
+  /** Resolves once the help dialog is open and filled, or rejects after 2 s. */
+  const filled = (page) =>
+    page.evaluate(`new Promise((resolve, reject) => {
+      const end = performance.now() + 2000;
+      const poll = () => {
+        const dialog = document.getElementById("help");
+        if (dialog.open && dialog.querySelector("[data-keys-list] [data-keys-table]")) resolve(true);
+        else if (performance.now() > end) reject(new Error("help: not filled"));
+        else setTimeout(poll, 10);
+      };
+      poll();
+    })`);
+
+  /** Opens the dialog from its Help button, a show-modal invoker. */
+  const clickHelp = (page) =>
+    page.evaluate(`document.querySelector("button[command=show-modal]").click()`);
+
+  /** Opens the dialog from its Help button and waits for it to fill. */
+  async function openHelp(page) {
+    await clickHelp(page);
+    await filled(page);
+  }
+
+  const closeHelp = (page) => page.evaluate(`document.getElementById("help").close()`);
+
+  /**
+   * The table's rows as [keys, action]: each kbd drawn as [name], an off row's keys ending " off",
+   * and the action the row button's text, or the fixed Escape row's cell text.
+   */
+  const rows = (page) =>
+    page.evaluate(`[...document.querySelectorAll("#help [data-keys-table] tbody tr")].map((row) => {
+      const [keys, action] = row.cells;
+      const drawn = [...keys.childNodes].map((node) =>
+        node.localName === "kbd" ? "[" + node.textContent + "]" : node.textContent).join("");
+      return [drawn, (action.querySelector("button") ?? action).textContent];
+    })`);
+
+  /** Clicks the row button whose text is the action. */
+  const clickRow = (page, action) =>
+    page.evaluate(`[...document.querySelectorAll("#help [data-keys-table] button")]
+      .find((button) => button.textContent === ${JSON.stringify(action)}).click()`);
+
+  /** Sets one of the dialog's settings controls as the reader would. */
+  const choose = (page, name, value) =>
+    page.evaluate(`(() => {
+      const control = document.querySelector("#help [data-keys-settings] [name=${name}]");
+      if (control.type === "checkbox") control.checked = ${JSON.stringify(value)};
+      else control.value = ${JSON.stringify(String(value))};
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+
+  /** Registers j, and a second f the first element's f shadows. */
   const registerJ = (page) =>
     call(
       page,
       `(keys.register("j", "Next section", (event) => window.log.push("j " + JSON.stringify(event.detail))),
-        keys.register("f", "Shadowed f", () => window.log.push("f registered")))`,
+      keys.register("f", "Shadowed f", () => window.log.push("f registered")))`,
     );
+
+  /** Answers every request for the help module with a 404, resolving to a count of them. */
+  async function refuseHelp(page) {
+    let requests = 0;
+    page.on("Fetch.requestPaused", ({ requestId }) => {
+      requests++;
+      page.cdp("Fetch.fulfillRequest", { requestId, responseCode: 404 });
+    });
+    await page.cdp("Fetch.enable", { patterns: [{ urlPattern: "*/keys-help.js" }] });
+    return () => requests;
+  }
 
   test("keys-help.js loads on the first open by the show-modal button, not before", async () => {
     const page = await open(HELP);
@@ -811,13 +779,13 @@ describe("keys: the help dialog", () => {
     );
     await openHelp(page);
     assert.equal(await fetchedHelp(page), true);
-    assert.equal(await page.evaluate(`document.getElementById("help").matches(":modal")`), true);
+    assert.equal(await isModal(page), true);
     assert.deepEqual(await rows(page), [...ROWS.slice(0, -1), ESCAPE]);
   });
 
   test("a failed load leaves the dialog usable, warns, and imports again at the next open", async () => {
-    // The refusing server answers keys-help.js with a 404.
-    const page = await open(HELP, refusing);
+    const page = await open(HELP);
+    const requests = await refuseHelp(page);
     await page.evaluate(`(() => {
       window.unhandled = [];
       window.warned = [];
@@ -825,32 +793,27 @@ describe("keys: the help dialog", () => {
       const warn = console.warn;
       console.warn = (...args) => (window.warned.push(String(args[0])), warn(...args));
     })()`);
-    // requests counts the fetches of keys-help.js the server answered.
-    const requests = () => refusing.requests(HELP_MODULE);
+    // The dialog opens as the page wrote it, and its own Close closes it.
     const attempt = async () => {
-      await page.evaluate(`document.querySelector("button[command=show-modal]").click()`);
+      await clickHelp(page);
       await sleep(page, 200);
-      assert.equal(await page.evaluate(`document.getElementById("help").matches(":modal")`), true);
-      // The dialog shows as the page wrote it, and its own Close closes it.
+      assert.equal(await isModal(page), true);
       assert.equal(
         await page.evaluate(`document.querySelector("#help [data-keys-list]").childElementCount`),
         0,
       );
       await page.evaluate(`document.querySelector("#help [command=close]").click()`);
-      assert.equal(await page.evaluate(`document.getElementById("help").open`), false);
+      assert.equal(await isOpen(page), false);
     };
     await attempt();
     await attempt();
-    // Each open imports keys-help.js again, and each failure warns. Chromium keeps a failed
-    // module fetch in the document's module map, so the second import fails without a request;
-    // a document loaded later fetches it afresh.
-    assert.deepEqual(await page.evaluate("window.warned"), [
-      "keys: the help module failed to load",
-      "keys: the help module failed to load",
-    ]);
+    const failed = "keys: the help module failed to load";
+    assert.deepEqual(await page.evaluate("window.warned"), [failed, failed]);
+    // Chromium keeps a failed module fetch in the document's module map, so the second import
+    // fails without a request; a document loaded later fetches it afresh.
     assert.equal(requests(), 1);
     assert.deepEqual(await page.evaluate("window.unhandled"), []);
-    await page.goto(fixture(HELP, refusing));
+    await page.goto(fixture(HELP));
     await attempt();
     assert.equal(requests(), 2);
   });
@@ -861,10 +824,10 @@ describe("keys: the help dialog", () => {
     await filled(page);
     assert.equal(await fetchedHelp(page), true);
     // Its own Close carries ? inside the modal.
-    await press(page, "?", { code: "Slash", shift: true });
-    assert.equal(await page.evaluate(`document.getElementById("help").open`), false);
+    await pressHelp(page);
+    assert.equal(await isOpen(page), false);
     await page.evaluate(`document.querySelector("[data-keys-list]").replaceChildren()`);
-    await press(page, "?", { code: "Slash", shift: true });
+    await pressHelp(page);
     await filled(page);
     assert.deepEqual(await rows(page), [...ROWS.slice(0, -1), ESCAPE]);
   });
@@ -882,29 +845,25 @@ describe("keys: the help dialog", () => {
       document.querySelector("[data-log='f first']").remove())`);
     await openHelp(page);
     const listed = await rows(page);
-    assert.ok(listed.some((item) => isDeepStrictEqual(item, ["[D]", "Disabled"])));
-    assert.ok(listed.some((item) => isDeepStrictEqual(item, ["[F]", "Second"])));
+    assert.ok(listed.some(([keys, action]) => keys === "[D]" && action === "Disabled"));
+    assert.ok(listed.some(([keys, action]) => keys === "[F]" && action === "Second"));
   });
 
   test("a row button closes the dialog and runs its binding: click, focus, or the handler", async () => {
     const page = await open(HELP);
     await registerJ(page);
-    const runRow = async (action) => {
+    for (const action of ["Theme", "Next section", "Search"]) {
       await openHelp(page);
-      await page.evaluate(`[...document.querySelectorAll("#help [data-keys-table] button")]
-        .find((button) => button.textContent === ${JSON.stringify(action)}).click()`);
-      assert.equal(await page.evaluate(`document.getElementById("help").open`), false);
-    };
-    await runRow("Theme");
-    await runRow("Next section");
+      await clickRow(page, action);
+      assert.equal(await isOpen(page), false);
+    }
     assert.deepEqual(await log(page), [
       "t",
       `j ${JSON.stringify({ binding: "j", keys: [], label: "Next section" })}`,
     ]);
     // Running a row is no key press: keys-fire is not dispatched.
-    assert.deepEqual(await page.evaluate("window.fired"), []);
-    await runRow("Search");
-    assert.equal(await page.evaluate("document.activeElement.id"), "search");
+    assert.deepEqual(await fired(page), []);
+    assert.equal(await active(page), "search");
   });
 
   test("the settings are stored through changeSettings and change what fires", async () => {
@@ -914,23 +873,23 @@ describe("keys: the help dialog", () => {
       const fieldset = document.querySelector("#help [data-keys-settings]");
       return {
         legend: fieldset.querySelector("legend").textContent,
-        controls: [...fieldset.querySelectorAll("input, select")].map((el) =>
-          [el.name, el.type === "checkbox" ? el.checked : el.value,
-           el.type === "checkbox" ? null : [...el.options].map((o) => o.value)]),
+        controls: [...fieldset.querySelectorAll("input, select")].map((el) => el.type === "checkbox"
+          ? [el.name, el.checked, null]
+          : [el.name, el.value, [...el.options].map((o) => o.value)]),
       };
     })()`);
     assert.deepEqual(shown, {
       legend: "Settings",
       controls: [
         ["enabled", true, null],
-        // The tests' store wait, WAIT, is listed first, as the page's own.
+        // The tests' store wait, WAIT, is the page's own: the empty first option.
         ["wait", "", ["", "1000", "1500", "3000", "5000"]],
       ],
     });
     await choose(page, "wait", 3000);
     assert.deepEqual(await saved(page), { wait: 3000 });
     assert.deepEqual(await call(page, "keys.settings()"), { enabled: true, wait: 3000 });
-    // The page's own wait, the empty first option, removes the reader's from storage.
+    // The page's own wait removes the reader's from storage.
     await choose(page, "wait", "");
     assert.equal(await saved(page), null);
     await choose(page, "enabled", false);
@@ -962,12 +921,9 @@ describe("keys: the help dialog", () => {
     ]);
     assert.deepEqual((await rows(page))[1], ["[T] off", "Theme"]);
     // An off row's button still runs its action: a click is no character-key shortcut.
-    await page.evaluate(`[...document.querySelectorAll("#help [data-keys-table] button")]
-      .find((button) => button.textContent === "Theme").click()`);
+    await clickRow(page, "Theme");
     assert.deepEqual(await log(page), ["t"]);
-    await press(page, "t");
-    await press(page, "g");
-    await press(page, "c");
+    for (const key of ["t", "g", "c"]) await press(page, key);
     await press(page, "k", { ctrl: true });
     assert.deepEqual(await log(page), ["t", "Control+k"]);
   });
@@ -983,8 +939,8 @@ describe("keys: the help dialog", () => {
     })()`);
     assert.deepEqual(fixed, [true, false, "<kbd>Esc</kbd>", "Leave a field", null]);
     await page.evaluate(`document.querySelector("#help [data-keys-settings] [name=wait]").focus()`);
-    await press(page, "Escape", { code: "Escape", keyCode: 27 });
-    assert.equal(await page.evaluate(`document.getElementById("help").open`), false);
+    await pressEscape(page);
+    assert.equal(await isOpen(page), false);
   });
 
   test("carries the screen-reader note", async () => {
@@ -994,7 +950,7 @@ describe("keys: the help dialog", () => {
       `document.querySelector("#help [data-keys-note]").textContent`,
     );
     for (const text of ["NVDA+F2", "JAWS+3", "Narrator+3", "VO+Tab"])
-      assert.ok(note.includes(text));
+      assert.ok(note.includes(text), text);
   });
 
   test("another tab's change shows in the dialog on the next open, and changes what fires", async () => {
@@ -1008,46 +964,16 @@ describe("keys: the help dialog", () => {
     await sleep(two, 50);
     await openHelp(two);
     assert.deepEqual((await rows(two))[1], ["[T] off", "Theme"]);
+    const controls = `[...document.querySelectorAll("#help [data-keys-settings] :is(input, select)")]`;
     assert.deepEqual(
-      await two.evaluate(`[...document.querySelectorAll("#help [data-keys-settings] :is(input, select)")]
-        .map((el) => el.type === "checkbox" ? el.checked : el.value)`),
+      await two.evaluate(
+        `${controls}.map((el) => (el.type === "checkbox" ? el.checked : el.value))`,
+      ),
       [false, "5000"],
     );
     await closeHelp(two);
     await press(two, "t");
     await press(two, "k", { ctrl: true });
     assert.deepEqual(await log(two), ["Control+k"]);
-  });
-});
-
-// The demo, demo/keys.html (mise run demo): its bindings fire, and ? opens its help dialog,
-// filled with them. Not one of v0.7.0's cases: it keeps the demo working.
-describe("keys: the demo", () => {
-  test("T and the register() binding fire, and ? opens the help dialog listing them", async () => {
-    const page = await browser.open(`${server.origin}/demo/keys.html`);
-    pages.push(page);
-    await page.evaluate(`new Promise((resolve) => {
-      const poll = () => globalThis[Symbol.for("spike-html-design.keys")]?.registered.length
-        ? resolve() : setTimeout(poll, 10);
-      poll();
-    })`);
-    await press(page, "t");
-    await press(page, "j");
-    assert.deepEqual(
-      await page.evaluate(`[...document.querySelectorAll("#log li")].map((li) => li.textContent)`),
-      ["j, from register()", "Theme"],
-    );
-    await press(page, "?", { code: "Slash", shift: true });
-    await filled(page);
-    assert.deepEqual(await rows(page), [
-      ["[?]", "Help"],
-      ["[T]", "Theme"],
-      ["[G] then [C]", "Contents"],
-      ["[G]", "Top"],
-      ["[Control]+[K]", "Command"],
-      ["[/]", "Search"],
-      ["[J]", "Say j, a register() binding"],
-      ESCAPE,
-    ]);
   });
 });

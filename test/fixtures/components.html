@@ -1,23 +1,14 @@
 <!doctype html>
-<!-- adapted from spike-html-conventions a88828a: scripts/browser-cases.js's page(), the page its
-     probe and restyle check ran on, written here as a file the server serves, on this repository's
-     page entry, with the import map its unbundled server wrote.
-
-     The components' cases, one module per load: the query's module, probe.ts, restyle.ts, or
-     contract.ts in test/browser/support/ (served as .js, their types stripped), runs with the
-     query's version, and writes its verdict into #verdict and its report into #report. The classic script makes
-     window.verdict, a promise settled once the run returns or throws, a module that failed to load
-     among the throws, which then writes the verdict; the browser tier awaits the verdict itself,
-     never the page's load, which the run's top-level await doesn't hold.
-
-     Lit's bare specifiers map onto the installed packages, which the server serves under /deps/
-     (test/browser/support/browser-cases.js), so the components load unbundled, as conventions'
-     unbundled server loaded them. -->
+<!-- The components cases' page: the query's module, probe.js or restyle.js in
+     test/browser/support/, runs and writes its verdict into #verdict. window.verdict settles once
+     the run ends, a module that failed to load included. Lit's bare specifiers map onto /deps/,
+     where the server answers with the installed packages. Adapted from spike-html-conventions
+     a88828a: scripts/browser-cases.js's page(). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>components cases</title>
-    <link rel="stylesheet" href="../../layers/foundation/page.css" />
+    <link rel="stylesheet" href="../../dist/foundation/page.css" />
     <script type="importmap">
       {
         "imports": {
@@ -41,14 +32,11 @@
       window.verdict = new Promise((resolve) => (settle = resolve));
     </script>
     <script type="module">
-      const query = new URLSearchParams(location.search);
-      const module = query.get("module");
+      const module = new URLSearchParams(location.search).get("module");
       try {
-        if (!["probe", "restyle", "contract"].includes(module)) {
-          throw new Error(`no module ${module}`);
-        }
+        if (!["probe", "restyle"].includes(module)) throw new Error(`no module ${module}`);
         const { run } = await import(`../browser/support/${module}.js`);
-        await run(query.get("version"));
+        await run();
       } catch (error) {
         document.getElementById("verdict").textContent = `FAIL: ${error.message}`;
       } finally {

@@ -4,15 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>components</title>
-    <!-- The components layer on the foundation: the shadow-root pagination holding one entry per
-         item of demo/documents.ts's pages, and the status badge, each root adopting the
-         foundation's reset and elements sheets before its own, on the page entry, which gives
-         them the tokens. The elements answer their own events only by the page below: a page
-         change or a page size change moves through the fixture's directories, and an open or a
-         badge select is logged. mise run demo serves it from the working tree, where the server
-         strips the .ts modules' types and answers /deps/ with the installed lit, which the import
-         map names; from file:// the modules don't run. -->
-    <link rel="stylesheet" href="../layers/foundation/page.css" />
+    <!-- The components from dist/ on the foundation's page entry: the shadow-root pagination
+         holding one entry per item of documents.js's pages, and the status badge. A page change or
+         a page size change moves through the fixture's directories; every event is logged. Lit
+         maps onto the demo server's /deps/, so the page runs served only: mise run demo. -->
+    <link rel="stylesheet" href="../dist/foundation/page.css" />
     <script type="importmap">
       {
         "imports": {
@@ -27,9 +23,9 @@
       }
     </script>
     <script type="module">
-      import "../layers/components/pagination-lit-shadow.js";
-      import "../layers/components/entry-lit-shadow.js";
-      import "../layers/components/status-badge.js";
+      import "../dist/components/pagination-lit-shadow.js";
+      import "../dist/components/entry-lit-shadow.js";
+      import "../dist/components/status-badge.js";
       import { continued, directories, files, pageSizes } from "./documents.js";
 
       // say writes what an element sent into the log, newest first.

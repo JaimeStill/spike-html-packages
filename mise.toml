@@ -35,9 +35,9 @@ depends = ["preflight"]
 run = ["pnpm exec eslint .", "pnpm exec prettier --check .", "shellcheck scripts/*.sh"]
 
 [tasks.types]
-description = "Type-check the layers, the demo, and the browser cases with tsc"
-depends = ["preflight"]
-run = "tsc --noEmit -p ."
+description = "Type-check the layers, the demo, and the browser cases against dist/ with tsc"
+depends = ["build"]
+run = ["tsc --noEmit -p .", "tsc --noEmit -p test/browser"]
 
 [tasks.build]
 description = "Build the release from layers/ into dist/"
@@ -50,8 +50,8 @@ depends = ["build"]
 run = "node --test 'test/unit/*.test.js'"
 
 [tasks."test:browser"]
-description = "Run the browser tier on the pinned chrome-headless-shell"
-depends = ["preflight browser"]
+description = "Run the browser tier on dist/ in the pinned chrome-headless-shell"
+depends = ["preflight browser", "build"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.js'"
 
 [tasks."test:consumers"]
@@ -73,7 +73,8 @@ depends = ["build"]
 run = "scripts/consumers.sh list"
 
 [tasks.demo]
-description = "Serve the demo pages on the loopback address until Ctrl-C"
+description = "Serve the demo pages, on dist/, on the loopback address until Ctrl-C"
+depends = ["build"]
 run = "node scripts/demo.js"
 
 [tasks.measure]

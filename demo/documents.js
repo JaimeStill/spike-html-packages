@@ -1,54 +1,62 @@
-// from spike-html-conventions a88828a: demo/documents.ts
-//
-// A static fixture of document listings, written by hand in go-web-service's wire shape at commit
-// 15e0bc3: Directory and File from domain/document/entities.go, in go-web-sdk's Page envelope
-// (response.go). Nothing fetches; the demo and the measure pages read these values as they are.
-// The types mirror the wire for this fixture alone. The components never import them: their own
-// interfaces hold only the fields they render, and these objects fit them structurally.
+// A static fixture of document listings in go-web-service's wire shape at commit 15e0bc3, for the
+// demo and the browser tier's components cases. Adapted from spike-html-conventions a88828a:
+// demo/documents.ts, its types as JSDoc so the browser loads it as written.
 
 /**
  * go-web-sdk's paginated read: `page` is omitted under a cursor, `total` when the read didn't
  * count, and `next` when the read can't continue by cursor.
+ *
+ * @template T
+ * @typedef {{
+ *   items: T[];
+ *   page?: number;
+ *   size: number;
+ *   total?: number;
+ *   more: boolean;
+ *   next?: string;
+ * }} Page
  */
-export interface Page<T> {
-  items: T[];
-  page?: number;
-  size: number;
-  total?: number;
-  more: boolean;
-  next?: string;
-}
 
-/** A directory as a listing presents it; only the single-directory read adds `path`. */
-export interface Directory {
-  id: string;
-  parent_id: string | null;
-  name: string;
-  path?: string;
-  status: "active" | "deleting";
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
+/**
+ * A directory as a listing presents it; only the single-directory read adds `path`.
+ *
+ * @typedef {{
+ *   id: string;
+ *   parent_id: string | null;
+ *   name: string;
+ *   path?: string;
+ *   status: "active" | "deleting";
+ *   version: number;
+ *   created_at: string;
+ *   updated_at: string;
+ * }} Directory
+ */
 
-/** A file; `size` is null until its write completes. */
-export interface File {
-  id: string;
-  directory_id: string;
-  name: string;
-  status: "pending" | "available" | "deleting";
-  size: number | null;
-  content_type: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}
+/**
+ * A file; `size` is null until its write completes.
+ *
+ * @typedef {{
+ *   id: string;
+ *   directory_id: string;
+ *   name: string;
+ *   status: "pending" | "available" | "deleting";
+ *   size: number | null;
+ *   content_type: string;
+ *   version: number;
+ *   created_at: string;
+ *   updated_at: string;
+ * }} File
+ */
 
 /** The document root's id: every directory below lists under it. */
 const root = "01a06121-cc00-78d5-82fe-91ab0d2477c3";
 
-/** The second page of the root's directories by number, sorted by name: page 2 of 3. */
-export const directories: Page<Directory> = {
+/**
+ * The second page of the root's directories by number, sorted by name: page 2 of 3.
+ *
+ * @type {Page<Directory>}
+ */
+export const directories = {
   items: [
     {
       id: "01a066c2-d640-79f6-9e40-5e84b8bd80a9",
@@ -85,8 +93,12 @@ export const directories: Page<Directory> = {
   next: "eyJuYW1lIjoibGVnYWwifQ",
 };
 
-/** The first page of the designs directory's files: one still pending, so its size is null. */
-export const files: Page<File> = {
+/**
+ * The first page of the designs directory's files: one still pending, so its size is null.
+ *
+ * @type {Page<File>}
+ */
+export const files = {
   items: [
     {
       id: "01a0805a-59c0-790b-b759-1e6347fae3c2",
@@ -132,8 +144,10 @@ export const files: Page<File> = {
 /**
  * The legal directory's files continued by cursor (`cursor=<next>` in place of `page`): a
  * continued page has no `page`, and this read didn't count, so it has no `total` either.
+ *
+ * @type {Page<File>}
  */
-export const continued: Page<File> = {
+export const continued = {
   items: [
     {
       id: "01a13e71-fc60-7932-aa92-c43392d8e7f9",

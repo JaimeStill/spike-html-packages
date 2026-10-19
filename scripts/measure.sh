@@ -34,10 +34,6 @@
 #
 # and, for the upside a .ts specifier claims, the sources themselves with no build:
 #
-#   check server   the probe page on the sources, served as the check's browser tier serves the
-#                  working tree (a .js path answered by its .ts source, types stripped; a .ts path
-#                  not served)
-#   .ts server     the same server also answering a .ts path with its types stripped
 #   node           node importing foundation/keys.ts, a foundation module with relative imports,
 #                  by type stripping: whether node resolves and links them (keys.ts itself then
 #                  needs a DOM, which node hasn't)
@@ -75,8 +71,7 @@ cleanup() {
 trap cleanup EXIT
 cd "$scratch"
 
-# helper ARGS...: scripts/measure-extension.js, without node's notice that stripTypeScriptTypes is
-# experimental.
+# helper ARGS...: scripts/measure-extension.js, without node's experimental-feature notices.
 helper() {
   node --disable-warning=ExperimentalWarning "$helper" "$@"
 }
@@ -212,7 +207,7 @@ for form in js ts; do
 
   # unbundled: the emit as files, through the pipe.
   helper page "$dir" probe ./dist .js
-  status=$(run "$scratch/$form-unbundled.log" helper load "$dir" probe.html static)
+  status=$(run "$scratch/$form-unbundled.log" helper load "$dir" probe.html)
   row "$form" "the emit loads unbundled in chrome-headless-shell" "$([[ $status == 0 ]] && echo 1)" \
     "$(tail -n1 "$scratch/$form-unbundled.log")"
 
@@ -224,7 +219,7 @@ for form in js ts; do
   warning=$(url_warning "$scratch/$form-vite-bare.log")
   [[ -z "$warning" ]] || observed+="; Vite warns: $warning"
   if [[ "$status" == 0 ]]; then
-    load=$(run "$scratch/$form-vite-bare-load.log" helper load "$dir/vite-bare" vite.html static)
+    load=$(run "$scratch/$form-vite-bare-load.log" helper load "$dir/vite-bare" vite.html)
     observed+="; built page: $(tail -n1 "$scratch/$form-vite-bare-load.log")"
   else
     observed+=": $(first_error "$scratch/$form-vite-bare.log")"
@@ -239,7 +234,7 @@ for form in js ts; do
   warning=$(url_warning "$scratch/$form-vite.log")
   [[ -z "$warning" ]] || observed+="; Vite warns: $warning"
   if [[ "$status" == 0 ]]; then
-    load=$(run "$scratch/$form-vite-load.log" helper load "$dir/vite-out" vite.html static)
+    load=$(run "$scratch/$form-vite-load.log" helper load "$dir/vite-out" vite.html)
     observed+="; built page: $(tail -n1 "$scratch/$form-vite-load.log")"
   else
     observed+=": $(first_error "$scratch/$form-vite.log")"
@@ -247,19 +242,6 @@ for form in js ts; do
   fi
   row "$form" "the emit builds through Vite with scripts/css-sheets.js and loads" \
     "$([[ $status == 0 && $load == 0 ]] && echo 1)" "$observed"
-
-  # The sources, with no build.
-  helper page "$dir" sources ./layers ".$form"
-  for mode in check ts; do
-    status=$(run "$scratch/$form-sources-$mode.log" helper load "$dir" sources.html "$mode")
-    if [[ "$mode" == check ]]; then
-      name="the sources load unbundled, served as the check's browser tier serves them (.js to its .ts, stripped)"
-    else
-      name="the sources load unbundled, served with .ts answered too (stripped, text/javascript)"
-    fi
-    row "$form" "$name" "$([[ $status == 0 ]] && echo 1)" \
-      "$(tail -n1 "$scratch/$form-sources-$mode.log")"
-  done
 
   # node links a module's whole graph, resolving every import, before it evaluates any, so an
   # error at evaluation (keys.ts reads document at its top level) means every import resolved.

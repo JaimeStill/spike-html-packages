@@ -19,8 +19,7 @@
 //                           .ts), then renders them (see probe). Vite's dev server maps a .js
 //                           specifier onto its .ts source only from a .ts importer, so its pages
 //                           take a .ts probe, the same code
-//   load DIR PAGE MODE      serves DIR on the loopback address (see serveDirectory, MODE static,
-//                           check, or ts), opens PAGE in the pinned chrome-headless-shell through
+//   load DIR PAGE           serves DIR on the loopback address (see serveDirectory), opens PAGE in the pinned chrome-headless-shell through
 //                           the raw pipe (test/browser/support/browser-pipe.js,
 //                           BROWSER_EXECUTABLE), and prints the probe's one-line report; exits 0 when everything loaded and
 //                           rendered, 1 when not, and 2 when the probe never reported
@@ -28,10 +27,8 @@
 
 import { existsSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { stripTypeScriptTypes } from "node:module";
 import { dirname, extname, join, normalize, relative } from "node:path";
 
-import { settings } from "../test/browser/support/browser-cases.js";
 import { launch } from "../test/browser/support/browser-pipe.js";
 
 /** The root of the repository, whose installed lit /deps/ answers. */
@@ -221,27 +218,13 @@ function page(dir, name, base, ext, module = ".js") {
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 
 /**
- * Serves DIR over plain http on a free port of the loopback address, /deps/ answered from the
- * directory the installed lit sits in, as the browser tier's server answers it. MODE:
- *
- *   static  every file as it is, as any static server sends a release
- *   check   as the check's browser tier serves the working tree (browser-cases.js): a .js
- *           path that isn't there, with a .ts file beside it, answered with that file's
- *           JavaScript, its types stripped by node's stripTypeScriptTypes; a .ts path isn't served
- *   ts      the same, and a .ts path answered with its own JavaScript, its types stripped, as
- *           text/javascript
+ * Serves DIR over plain http on a free port of the loopback address, every file as it is, /deps/
+ * answered from the directory the installed lit sits in, as the browser tier's server answers it.
  */
-async function serveDirectory(dir, mode) {
+async function serveDirectory(dir) {
   const deps = dirname(realpathSync(join(root, "node_modules/lit")));
-  const strip = (file) => stripTypeScriptTypes(readFileSync(file, "utf8"));
-  const body = (file) => {
-    if (mode === "ts" && file.endsWith(".ts") && existsSync(file)) return strip(file);
-    if (types[extname(file)] === undefined) return undefined;
-    if (existsSync(file)) return readFileSync(file);
-    const source = file.replace(/\.js$/, ".ts");
-    if (mode === "static" || source === file || !existsSync(source)) return undefined;
-    return strip(source);
-  };
+  const body = (file) =>
+    types[extname(file)] !== undefined && existsSync(file) ? readFileSync(file) : undefined;
   const server = createServer((request, response) => {
     const path = normalize(decodeURIComponent(new URL(request.url, "http://host").pathname));
     const file = path.startsWith("/deps/")
@@ -267,7 +250,7 @@ async function serveDirectory(dir, mode) {
 
 /** Opens the URL, awaits the probe's report, prints its line, and exits by its verdict. */
 async function report(url) {
-  const browser = await launch(settings);
+  const browser = await launch();
   let timer;
   try {
     const tab = await browser.open(url);
@@ -292,8 +275,8 @@ async function report(url) {
   }
 }
 
-async function load(dir, path, mode) {
-  const server = await serveDirectory(dir, mode);
+async function load(dir, path) {
+  const server = await serveDirectory(dir);
   try {
     return await report(`${server.origin}/${path}`);
   } finally {
