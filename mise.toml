@@ -121,6 +121,11 @@ description = "Serve the demo pages from the working tree on the loopback addres
 run = "node scripts/demo.js"
 dir = "{{config_root}}"
 
+[tasks.measure]
+description = "Record the import extension's rows (evidence 5), outside the check: the layers built by tsc in the .js form (the sources as they are) and the .ts form (a scratch copy, every relative .js specifier rewritten to .ts, emitted with rewriteRelativeImportExtensions), each form's emit type-checked as a consumer reads it, loaded unbundled in the pinned chrome-headless-shell through the raw pipe, and built through Vite without and with the local CSS plugin (scripts/css-sheets.js) and loaded; and each form's sources loaded with no build, from the check's server and one that answers .ts, by node's type stripping, and under Vite's dev server; one dated markdown report on stdout; reads no network, writes nothing to the working tree"
+run = "scripts/measure.sh"
+dir = "{{config_root}}"
+
 [tasks.currency]
 description = "Report every mise tool and package.json dependency and devDependency pinned behind its latest (typescript against typescript-eslint's peer range), one line each, exiting nonzero if any; reads the network, writes nothing"
 run = "scripts/currency.sh"
