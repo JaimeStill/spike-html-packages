@@ -6,7 +6,7 @@
 // into #verdict, and test/browser/components.test.js passes on every case holding, and exactly
 // as many as it expects.
 
-import { baselineLook, look } from "./probe.js";
+import { baselineLook, look } from "./probe.ts";
 
 /** One case of the report: what the components did, and whether that holds. */
 interface Case {
@@ -22,9 +22,9 @@ interface BadgeElement extends HTMLElement {
 
 /** Each component's tag and the module that defines it. */
 const components = {
-  "sl-pagination-lit-shadow": () => import("../../../layers/components/pagination-lit-shadow.js"),
-  "sl-entry-lit-shadow": () => import("../../../layers/components/entry-lit-shadow.js"),
-  "sl-status-badge": () => import("../../../layers/components/status-badge.js"),
+  "sl-pagination-lit-shadow": () => import("../../../layers/components/pagination-lit-shadow.ts"),
+  "sl-entry-lit-shadow": () => import("../../../layers/components/entry-lit-shadow.ts"),
+  "sl-status-badge": () => import("../../../layers/components/status-badge.ts"),
 };
 
 /** Lets pending updates land: Lit renders in a microtask queued when a property changes. */

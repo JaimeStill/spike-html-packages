@@ -1,7 +1,7 @@
 // adapted from spike-html-design v0.7.0: test/keys.test.js, the keys runtime's and its help
 // dialog's cases, their assertions kept and their harness this repository's browser tier: the
 // fixtures (test/fixtures/keys*.html, adapted from v0.7.0's) served from the working tree by
-// support/browser-cases.js's server, which answers layers/foundation/keys.js and keys-help.js with
+// support/browser-cases.js's server, which answers layers/foundation/keys.js and keys-help.ts with
 // the .ts sources' JavaScript, in one browser on one driver (support/browser-<name>.js), under
 // node:test, with node:assert/strict for bun:test's expect. A key press is a real one, sent by
 // Input.dispatchKeyEvent through the page's cdp(), as v0.7.0's Bun.WebView harness sent it. The
@@ -27,7 +27,7 @@ const driver = process.env.BROWSER_DRIVER ?? "pipe";
 const { launch } = await import(`./support/browser-${driver}.js`);
 
 // The help module, by its path on the server: the failed-load case's server refuses it.
-const HELP_MODULE = "/layers/foundation/keys-help.js";
+const HELP_MODULE = "/layers/foundation/keys-help.ts";
 
 // The working tree served, so a fixture imports the modules by relative URL; chromium runs no
 // relative module script from file://. A second server refuses the help module, for the case
@@ -761,7 +761,7 @@ describe("keys: the help dialog", () => {
   // fetchedHelp resolves to whether the page has fetched keys-help.js.
   const fetchedHelp = (page) =>
     page.evaluate(`performance.getEntriesByType("resource")
-      .some(({ name }) => name.endsWith("/layers/foundation/keys-help.js"))`);
+      .some(({ name }) => name.endsWith("/layers/foundation/keys-help.ts"))`);
 
   // openHelp opens the dialog from its Help button, a show-modal invoker, and waits for it.
   async function openHelp(page) {

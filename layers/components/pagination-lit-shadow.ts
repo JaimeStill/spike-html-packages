@@ -1,19 +1,12 @@
-// adapted from spike-html-conventions a88828a: layers/components/pagination-lit-shadow.ts, adopting
-// the foundation's reset and elements sheets by their own CSS module scripts in place of
-// conventions' layers/foundation/baseline.ts, which held the same two in the same order.
-//
-// Pagination, Lit with a shadow root: a container for a page of entries, its controls around the
-// host's own children. Ported from herald's pagination-controls onto go-web-sdk's Page envelope.
-// Its controls are bare: `static styles` adopts the foundation's reset and elements sheets, each a
-// CSS module script and each wrapped in its own foundation.* layer, in cascade order, which give
-// them the look the page's baseline gives a light-DOM control, then pagination-shadow.css, its
-// layout alone, unlayered and so above both. The tokens reach the root from the page's entry.
+// Pagination, Lit with a shadow root: a page of entries between its summary and its controls.
+// Adapted from spike-html-conventions (a88828a): layers/components/pagination-lit-shadow.ts,
+// adopting the reset and elements sheets directly in place of its foundation/baseline.ts.
 
 import { html, LitElement, nothing, type PropertyDeclarations } from "lit";
 
 import elements from "../foundation/baseline/elements.css" with { type: "css" };
 import reset from "../foundation/baseline/reset.css" with { type: "css" };
-import { define, emit } from "../foundation/dom.js";
+import { define, emit } from "../foundation/dom.ts";
 import styles from "./pagination-shadow.css" with { type: "css" };
 
 /** The tag this version defines. */

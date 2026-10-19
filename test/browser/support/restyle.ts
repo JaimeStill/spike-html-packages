@@ -16,10 +16,10 @@
 // test/browser/components.test.js runs it; it passes when both buttons painted from the source
 // before the edit, an opaque color, so the tokens loaded, and both take the edit after it.
 
-import type { EntryItem } from "../../../layers/components/entry-lit-shadow.js";
+import type { EntryItem } from "../../../layers/components/entry-lit-shadow.ts";
 import elements from "../../../layers/foundation/baseline/elements.css" with { type: "css" };
-import { directories } from "../../../demo/documents.js";
-import { versions, type Version } from "./versions.js";
+import { directories } from "../../../demo/documents.ts";
+import { versions, type Version } from "./versions.ts";
 
 /** The background the edit gives every button: a color no source sets. */
 const edited = "rgb(1, 2, 3)";

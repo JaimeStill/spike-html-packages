@@ -1,151 +1,22 @@
-// adapted from spike-html-design v0.7.0: modules/keys.js, typed: the code is v0.7.0's, with its
-// store, settings, and bindings named as types.
-//
-// keys: the page's keyboard shortcuts. It binds none itself: a page binds an element by giving it
-// data-keys, and a script binds a handler with register(). The grammar is keys-grammar.js's.
-//
-// A page loads it as a plain module script, not render-blocking, since no shortcut is pressed
-// before first paint:
-//
-//   <script type="module" src=".../keys.js"></script>
-//
-// An element carrying data-keys is a binding: when its keys are pressed, keys clicks it, so its
-// native action or invoker command runs, or focuses it when it is a field (input, textarea,
-// select, or contenteditable). keys reads the page at each press, so adding or removing an
-// element or its attribute adds or removes its binding. A malformed data-keys binds nothing and
-// logs one console warning per element and value.
-//
-// A press matches by keys-grammar's matches(). keys is silent while the press's target is a field,
-// even for a combination; while an input method composes (isComposing, or keyCode 229); on the
-// keys "Dead" and "Process"; with AltGraph held; on a repeat; on an event already handled
-// (defaultPrevented); and on a modifier pressed alone, so holding Shift neither starts nor ends
-// a sequence. A press keys acts on, or that starts or continues a sequence, is marked handled.
-//
-// Escape releases a field: an Escape pressed in a field, with no modal open and on an event no
-// other listener handled, not composing and not a repeat, blurs the field, so the page's
-// shortcuts work again. Only a field, so a reading position j or k left on a section survives.
-// keys doesn't mark it handled, so the field's own Escape still runs: a search input clears.
-// Inside an open modal the dialog keeps Escape, and keys does nothing. It is no binding: the off
-// switch doesn't cover it, it fires no keys-fire, and it ends no sequence.
-//
-// Sequences: each press must follow the last within the wait, 1500 ms by default. A press that
-// doesn't continue the sequence in progress ends it and is dropped, not tried as a new start.
-// When one binding is a prefix of another ("g" and "g c"), keys waits for the next press: one
-// that continues runs the longer, and when the wait ends the shorter runs. A press that drops
-// the sequence runs neither.
-//
-// Scope: while a modal dialog is open, only element bindings inside it are active and register()
-// bindings pause. Otherwise an element binding is active unless it is disabled, inside [inert],
-// or not visible. When two active bindings share keys, the first wins: elements in document
-// order, then register() bindings in registration order.
-//
-// The store is one per page, a plain object at a well-known global key,
-// globalThis[Symbol.for("spike-html-design.keys")]. Every copy of this module shares it,
-// whatever URL or tag it was loaded from, and the copy that loads first installs the one
-// document keydown listener, so a key never fires twice. The store's shape is public API, frozen
-// with v0.6.0:
-//
-//   {
-//     registered: { keys, label, handler }[],  register()'s bindings, in registration order:
-//                                              keys as written, label a string, and handler.
-//     wait: number,                            the package's sequence wait in ms, 1500, read at
-//                                              each press; the reader's stored wait wins over it.
-//     listening: boolean,                      whether a copy has installed the listener.
-//   }
-//
-// A copy that finds a store already there uses it as it is.
-//
-// Every binding is pressed as written: a chord or a combination is spelled out in it ("g c",
-// "Mod+k").
-//
-// The reader's settings are stored per origin as JSON under localStorage key
-// "spike-html-design.keys", holding only the settings the reader changed:
-//
-//   {
-//     enabled?: boolean,                   the off switch; true, the default, is on.
-//     wait?: 1000 | 1500 | 3000 | 5000,    the sequence wait in ms, over the store's.
-//   }
-//
-// An unknown name or invalid value reads as its default, and unparseable JSON, or storage that
-// throws, as all defaults. keys reads them at each press, so another tab's change applies at
-// once. With the off switch off (enabled false), a binding whose presses are all character keys
-// with no Control, Alt, or Meta, a single key or a chord of them, doesn't fire, while a
-// combination with Control, Alt, or Meta still does (WCAG 2.1.4).
-//
-// aria-keyshortcuts: keys owns the attribute on every element carrying data-keys and writes it
-// from the binding, its single-press alternatives as keys-grammar's keyshortcuts() declares them
-// ("T", "Alt+T", "Shift+/"). A sequence declares nothing, nor does an alternative the off switch
-// covers, and the attribute is removed when nothing is left, or when an element's data-keys is
-// removed. keys rewrites it on load, when another tab changes the settings (a storage event),
-// when this page changes them through changeSettings(), and when an element's data-keys changes
-// or an element is added. It touches no element that never carried data-keys.
-//
-// The extension events, their names and details public API frozen with v0.6.0:
-//
-//   keys-fire       cancelable and bubbling, on the bound element, or on document for a
-//                   register() binding, before keys acts. Cancelling it stops the action.
-//                   detail: { binding, keys, label? }: binding the binding's normal string (all
-//                   its alternatives), keys the presses that fired it, each a normal string
-//                   ("g", "c"), and label a register() binding's label.
-//   keys-sequence   on document, as a sequence starts (its first press leaves a longer binding
-//                   pending), continues (a press keeps it pending), and ends.
-//                   detail: { state, presses, reason? }: state "start", "continue", or "end";
-//                   presses the presses so far, each a normal string; reason, on end, "fired"
-//                   (a binding ran, or its keys-fire was cancelled), "timeout" (the wait ended
-//                   with nothing complete), or "dropped" (a press didn't continue it; presses
-//                   leaves that press out). A press that fires a binding at once is no sequence
-//                   and dispatches none.
-//
-// The exports:
-//
-//   register(keys, label, handler)  binds keys to handler, with no element, and returns a
-//                                   function that removes exactly that binding, even when
-//                                   another shares its keys. handler is called with the
-//                                   keys-fire event. It throws a TypeError on a malformed keys,
-//                                   a label that isn't a string, or a handler that isn't a
-//                                   function.
-//   settings()                      the settings in effect: { enabled, wait }, the reader's
-//                                   where stored and valid, else the defaults, the wait the
-//                                   store's.
-//   changeSettings(change)          stores the reader's change, an object of some of
-//                                   settings()'s names, and returns settings(). A value of null
-//                                   removes that setting, and so does a default (enabled true,
-//                                   wait the store's). Nothing left removes the storage key.
-//                                   It throws a TypeError on an unknown name or invalid value.
-//   bindings(dialog)                the bindings that would be active were dialog closed, for the
-//                                   help module: the page outside dialog, under any other modal's
-//                                   scope, with dialog's own elements left out. Each is listed
-//                                   once per sequence, as the binding that fires it (first wins),
-//                                   and a binding left with no sequence is not listed. Each is
-//                                   { keys, label, element, sequences, off, run }: keys as
-//                                   written, label register()'s or null, element the bound
-//                                   element or null, sequences its parsed sequences, the off switch
-//                                   aside; off whether the off switch covers every one of them;
-//                                   run() acts as a press would, clicking or focusing the element
-//                                   or calling the handler, with no keys-fire dispatched, since
-//                                   nothing was pressed. A handler run this way receives an
-//                                   undispatched keys-fire event whose detail's keys is [].
-//
-// The help dialog: a page places a native <dialog> holding an element marked data-keys-list.
-// The copy that listens loads keys-help.js, beside itself, the first time such a dialog fires
-// beforetoggle to open, however it opens (a show-modal invoker, showModal(), or show()), and
-// fills the dialog's marked elements once it loads, then at each later open before it shows.
-// A load that fails is warned of on the console and imported again at the next open; chromium
-// keeps a failed module in the document, so a reload is what recovers. Until then the dialog
-// opens as the page wrote it.
+// The page's keyboard shortcuts: an element with data-keys is clicked or focused by its keys, and
+// register() binds a handler. One store at a well-known global key is shared by every copy, and
+// the first copy to load installs the one listener, so a key never fires twice.
+// Adapted from spike-html-design v0.7.0 (fe75220): modules/keys.js.
 
-import type * as Help from "./keys-help.js";
-import { keyshortcuts, matches, normalize, parse, problem, stringify } from "./keys-grammar.js";
-import type { Binding, KeyLike, Press, Sequence } from "./keys-grammar.js";
+import type * as Help from "./keys-help.ts";
+import { keyshortcuts, matches, normalize, parse, problem, stringify } from "./keys-grammar.ts";
+import type { Binding, KeyLike, Press, Sequence } from "./keys-grammar.ts";
 
-/** A register() binding, as the store holds it. */
+type Handler = (event: CustomEvent<FireDetail>) => void;
+
+/** A `register` binding, as the store holds it. */
 export interface Registered {
   keys: string;
   label: string;
-  handler: (event: CustomEvent<FireDetail>) => void;
+  handler: Handler;
 }
 
-/** The store, at its well-known global key: see above. */
+/** The store, public API: the registered bindings, the default wait in ms, and the listener flag. */
 export interface Store {
   registered: Registered[];
   wait: number;
@@ -158,24 +29,24 @@ export interface Settings {
   wait: number;
 }
 
-/** A change to the reader's settings: null removes a setting. */
+/** A change to the reader's settings; null removes a setting. */
 export type SettingsChange = { [name in keyof Settings]?: Settings[name] | null };
 
-/** keys-fire's detail. */
+/** keys-fire's detail: the binding's normal string, the presses that fired it, and its label. */
 export interface FireDetail {
   binding: string | null;
   keys: string[];
   label?: string;
 }
 
-/** keys-sequence's detail. */
+/** keys-sequence's detail: the sequence's state, its presses so far, and why it ended. */
 export interface SequenceDetail {
   state: "start" | "continue" | "end";
   presses: string[];
   reason?: "fired" | "timeout" | "dropped";
 }
 
-/** One binding bindings() lists for the help module. */
+/** A binding the help dialog lists, with `run` to act as a press would. */
 export interface Listed {
   keys: string;
   label: string | null;
@@ -185,42 +56,34 @@ export interface Listed {
   run: () => void;
 }
 
-// An active binding: an element's, or a register() binding's, with its parsed alternatives.
 type Active =
   | { el: HTMLElement; entry?: undefined; keys: string; alternatives: Binding }
   | { el?: undefined; entry: Registered; keys: string; alternatives: Binding };
 
-// A binding's sequence that matched the presses so far.
 interface Match {
   binding: Active;
   sequence: Sequence;
 }
 
 const KEY = Symbol.for("spike-html-design.keys");
-
-// The global object, read by the store's symbol key.
 const scope = globalThis as typeof globalThis & Record<symbol, Store | undefined>;
 scope[KEY] ??= { registered: [], wait: 1500, listening: false };
 const store: Store = scope[KEY];
 
-// mac resolves Mod: Meta on macOS, Control elsewhere. userAgentData is Chromium's, and not yet in
-// TypeScript's DOM types.
+// userAgentData is Chromium's and not yet in TypeScript's DOM types.
 const agent = navigator as Navigator & { userAgentData?: { platform: string } };
 const mac = /mac|iphone|ipad/i.test(agent.userAgentData?.platform ?? navigator.platform);
 
-// MODIFIER_KEYS are the event.key values of a modifier pressed alone.
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "CapsLock", "OS"]);
 
-export function register(
-  keys: string,
-  label: string,
-  handler: (event: CustomEvent<FireDetail>) => void,
-): () => void {
+/** Binds keys to a handler with no element; returns a function that removes this binding. */
+export function register(keys: string, label: string, handler: Handler): () => void {
   const reason = problem(keys);
   if (reason) throw new TypeError(`keys: ${reason}`);
   if (typeof label !== "string") throw new TypeError("keys: a binding's label must be a string");
-  if (typeof handler !== "function")
+  if (typeof handler !== "function") {
     throw new TypeError("keys: a binding's handler must be a function");
+  }
   const entry = { keys, label, handler };
   store.registered.push(entry);
   return () => {
@@ -229,10 +92,8 @@ export function register(
   };
 }
 
-// STORAGE is the localStorage key the reader's settings are stored under, per origin.
 const STORAGE = "spike-html-design.keys";
 
-// VALID holds, for each setting, whether a value is one the reader can choose.
 const VALID: Record<keyof Settings, (value: unknown) => boolean> = {
   enabled: (value) => typeof value === "boolean",
   wait: (value) => [1000, 1500, 3000, 5000].includes(value as number),
@@ -240,12 +101,9 @@ const VALID: Record<keyof Settings, (value: unknown) => boolean> = {
 
 const isSetting = (name: string): name is keyof Settings => name in VALID;
 
-// defaults are the settings in effect with none stored.
 const defaults = (): Settings => ({ enabled: true, wait: store.wait });
 
-// stored returns the reader's valid stored settings, {} when storage is empty, unparseable, or
-// throws, as it does with site data blocked. A name it doesn't know is left out, and so dropped
-// on the next write. An empty storage reads as JSON null, as v0.7.0's JSON.parse(null) did.
+/** The reader's valid stored settings; none when storage is empty, unparseable, or blocked. */
 function stored(): Partial<Settings> {
   let saved: unknown;
   try {
@@ -262,10 +120,12 @@ function stored(): Partial<Settings> {
   );
 }
 
+/** The settings in effect: the reader's where stored and valid, else the defaults. */
 export function settings(): Settings {
   return { ...defaults(), ...stored() };
 }
 
+/** Stores the reader's change, a default or null removing a setting, and returns the settings. */
 export function changeSettings(change: SettingsChange): Settings {
   const next: Record<string, unknown> = stored();
   const fallback = defaults();
@@ -281,43 +141,37 @@ export function changeSettings(change: SettingsChange): Settings {
     if (Object.keys(next).length === 0) localStorage.removeItem(STORAGE);
     else localStorage.setItem(STORAGE, JSON.stringify(next));
   } catch {
-    // Storage blocked: the change is lost, and the settings stay as they were.
+    // Storage is blocked: the change is lost.
   }
   declare();
   return settings();
 }
 
-// isCharacter reports whether press is a character key with no Control, Alt, or Meta: the
-// presses the off switch covers.
+// The off switch covers character keys alone, never a combination with Control, Alt, or Meta
+// (WCAG 2.1.4).
 const isCharacter = (press: Press): boolean =>
   !press.control && !press.alt && !press.meta && [...press.key].length === 1;
 
-// effective returns binding parsed under current, settings(). With the off switch off it leaves
-// out the alternatives it covers, so a binding may have none; null when the binding is malformed.
+/** The binding's alternatives the settings leave active, or null when it is malformed. */
 function effective(binding: string | null, current: Settings): Binding | null {
   const alternatives = parse(binding, { mac });
   if (!alternatives || current.enabled) return alternatives;
   return alternatives.filter((sequence) => !sequence.every(isCharacter));
 }
 
-// declare writes aria-keyshortcuts on every element carrying data-keys from its binding under
-// the off switch, and removes it where that declares nothing.
+/** Writes aria-keyshortcuts on every data-keys element, removing it where nothing is declared. */
 function declare(): void {
   const current = settings();
   for (const el of document.querySelectorAll("[data-keys]")) {
     const alternatives = effective(el.getAttribute("data-keys"), current);
     const value = alternatives && keyshortcuts(alternatives);
-    if (value) {
-      if (el.getAttribute("aria-keyshortcuts") !== value) {
-        el.setAttribute("aria-keyshortcuts", value);
-      }
-    } else el.removeAttribute("aria-keyshortcuts");
+    if (!value) el.removeAttribute("aria-keyshortcuts");
+    else if (el.getAttribute("aria-keyshortcuts") !== value) {
+      el.setAttribute("aria-keyshortcuts", value);
+    }
   }
 }
 
-// isField reports whether el types text, so a key pressed in it is text, not a shortcut. Only an
-// HTML element is one: isContentEditable is HTMLElement's, and input, textarea, and select hold
-// no other element a reader can focus.
 function isField(el: EventTarget | null): boolean {
   return (
     el instanceof HTMLElement &&
@@ -325,10 +179,9 @@ function isField(el: EventTarget | null): boolean {
   );
 }
 
-// warned holds each element's malformed data-keys values already warned about.
 const warned = new WeakMap<Element, Set<string | null>>();
 
-// elementBinding reads el's data-keys as a binding under current, or warns once and returns null.
+/** The element's binding, or null after warning once per element and value. */
 function elementBinding(el: HTMLElement, current: Settings): Active | null {
   const keys = el.getAttribute("data-keys");
   const alternatives = effective(keys, current);
@@ -341,20 +194,20 @@ function elementBinding(el: HTMLElement, current: Settings): Active | null {
   return null;
 }
 
-// active returns the bindings in effect, in the order the first wins: elements in document
-// order, then register()'s in registration order. A modal dialog narrows them to its elements.
-// With closed given, a dialog, they are those in effect were it closed: its elements are left
-// out, and it narrows nothing. data-keys binds an HTML element, which keys clicks or focuses.
+const isActiveElement = (el: HTMLElement): boolean =>
+  !el.matches(":disabled") && !el.closest("[inert]") && el.checkVisibility();
+
+/**
+ * The active bindings, first-wins order: elements in document order, then registered ones. An
+ * open modal narrows them to its elements; `closed` is a dialog treated as closed.
+ */
 function active(current: Settings, closed: Element | null = null): Active[] {
   const modal = [...document.querySelectorAll(":modal")].find((el) => el !== closed);
   const elements = [...document.querySelectorAll<HTMLElement>("[data-keys]")]
-    .filter((el) => !modal || modal.contains(el))
-    .filter((el) => !closed?.contains(el))
-    .filter((el) => !el.matches(":disabled") && !el.closest("[inert]") && el.checkVisibility())
+    .filter((el) => (!modal || modal.contains(el)) && !closed?.contains(el) && isActiveElement(el))
     .map((el) => elementBinding(el, current))
     .filter((binding) => binding !== null);
   if (modal) return elements;
-  // A registered binding's keys parsed when it registered, so it always parses here.
   const registered: Active[] = store.registered.map((entry) => ({
     entry,
     keys: entry.keys,
@@ -363,18 +216,16 @@ function active(current: Settings, closed: Element | null = null): Active[] {
   return [...elements, ...registered];
 }
 
-// pending is the sequence in progress, null between sequences: its presses, as keydown snapshots
-// and as normal strings, the first binding they complete while a longer waits, and the wait's
-// timer. It is this copy's, since only the copy that listens reads it.
 interface Pending {
   presses: KeyLike[];
   strings: string[];
   complete: Match | null;
   timer: number;
 }
+
 let pending: Pending | null = null;
 
-// snapshot keeps the fields matches() reads, since an event's are live only while it dispatches.
+// An event's fields are live only while it dispatches, so a pending press keeps a copy.
 const snapshot = ({ key, code, shiftKey, altKey, ctrlKey, metaKey }: KeyboardEvent): KeyLike => ({
   key,
   code,
@@ -384,68 +235,45 @@ const snapshot = ({ key, code, shiftKey, altKey, ctrlKey, metaKey }: KeyboardEve
   metaKey,
 });
 
-// passed reports whether event is one keys never acts on, a binding or Escape releasing a field:
-// one another listener handled, a repeat, or a press while an input method composes.
-function passed(event: KeyboardEvent): boolean {
-  return event.defaultPrevented || event.repeat || event.isComposing || event.keyCode === 229;
-}
+// keyCode 229 is a press an input method takes, where isComposing isn't yet set.
+const passed = (event: KeyboardEvent): boolean =>
+  event.defaultPrevented || event.repeat || event.isComposing || event.keyCode === 229;
 
-// silent reports whether keys leaves event alone.
-function silent(event: KeyboardEvent): boolean {
-  return (
-    passed(event) ||
-    event.key === "Dead" ||
-    event.key === "Process" ||
-    MODIFIER_KEYS.has(event.key) ||
-    event.getModifierState?.("AltGraph") ||
-    isField(event.target)
-  );
-}
+const silent = (event: KeyboardEvent): boolean =>
+  passed(event) ||
+  event.key === "Dead" ||
+  event.key === "Process" ||
+  MODIFIER_KEYS.has(event.key) ||
+  event.getModifierState?.("AltGraph") ||
+  isField(event.target);
 
-// release blurs the field event's Escape was pressed in and reports whether it did; see "Escape
-// releases a field". The field must still hold focus, so an Escape whose listener moved focus
-// on, as closing a dialog does, blurs nothing. It leaves the event unhandled, as the field's
-// native Escape runs after it.
+/** Blurs the field an Escape was pressed in, outside any modal, and reports whether it did. */
 function release(event: KeyboardEvent): boolean {
   const field = document.activeElement;
-  if (
-    event.key !== "Escape" ||
-    passed(event) ||
-    field !== event.target ||
-    !isField(field) ||
-    document.querySelector(":modal")
-  ) {
-    return false;
-  }
-  // isField() holds it an HTML element.
+  if (event.key !== "Escape" || passed(event) || field !== event.target) return false;
+  if (!isField(field) || document.querySelector(":modal")) return false;
   (field as HTMLElement).blur();
   return true;
 }
 
-// sequenceEvent dispatches keys-sequence on document.
-function sequenceEvent(
+function announce(
   state: SequenceDetail["state"],
   presses: string[],
   reason?: SequenceDetail["reason"],
 ): void {
-  const detail: SequenceDetail = reason
-    ? { state, presses: [...presses], reason }
-    : { state, presses: [...presses] };
+  const detail: SequenceDetail = { state, presses: [...presses], ...(reason && { reason }) };
   document.dispatchEvent(new CustomEvent("keys-sequence", { detail }));
 }
 
-// end ends the sequence in progress for reason. A fired sequence ends before its binding acts, so
-// an indicator clears before the action, and a handler that throws leaves no sequence behind.
+// Ends before the binding acts, so a handler that throws leaves no sequence behind.
 function end(reason: NonNullable<SequenceDetail["reason"]>): void {
   if (!pending) return;
   clearTimeout(pending.timer);
   const { strings } = pending;
   pending = null;
-  sequenceEvent("end", strings, reason);
+  announce("end", strings, reason);
 }
 
-// fireEvent returns the keys-fire event for binding, its keys sequence, the presses that fired
-// it.
 function fireEvent(binding: Active, sequence: Sequence): CustomEvent<FireDetail> {
   const detail: FireDetail = {
     binding: normalize(binding.keys, { mac }),
@@ -455,19 +283,18 @@ function fireEvent(binding: Active, sequence: Sequence): CustomEvent<FireDetail>
   return new CustomEvent("keys-fire", { bubbles: true, cancelable: true, detail });
 }
 
-// act runs binding: it clicks or focuses the element, or calls register()'s handler with event.
 function act(binding: Active, event: CustomEvent<FireDetail>): void {
   if (binding.entry) binding.entry.handler(event);
   else if (isField(binding.el)) binding.el.focus();
   else binding.el.click();
 }
 
-// fire dispatches keys-fire for a binding's matched sequence and, unless it is cancelled, acts.
 function fire({ binding, sequence }: Match): void {
   const event = fireEvent(binding, sequence);
   if ((binding.el ?? document).dispatchEvent(event)) act(binding, event);
 }
 
+/** The bindings active were the dialog closed, each sequence listed once under the one it fires. */
 export function bindings(dialog: Element | null): Listed[] {
   const current = settings();
   const seen = new Set<string>();
@@ -492,40 +319,31 @@ export function bindings(dialog: Element | null): Listed[] {
   return listed;
 }
 
-// help is keys-help.js once loaded, and loading the promise of it, or of null when the load
-// fails; see "The help dialog".
 let help: typeof Help | null = null;
 let loading: Promise<typeof Help | null> | null = null;
 
-// onbeforetoggle has the help module fill a dialog holding [data-keys-list] as it opens: before
-// it shows when the module is loaded, and on the first open once the module loads.
-function onbeforetoggle(event: ToggleEvent): void {
-  const dialog = event.target;
-  if (event.newState !== "open" || !(dialog instanceof HTMLDialogElement)) return;
-  if (!dialog.querySelector("[data-keys-list]")) return;
-  if (help) {
-    help.fill(dialog);
-    return;
-  }
-  loading ??= import(new URL("./keys-help.js", import.meta.url).href).then(
-    (module: typeof Help) => {
-      help = module;
-      return module;
-    },
+function loadHelp(): Promise<typeof Help | null> {
+  loading ??= import("./keys-help.ts").then(
+    (module) => (help = module),
     (error: unknown) => {
-      // A failed load is forgotten, so the next open tries again; this open shows the dialog as
-      // the page wrote it, its own Close still working.
+      // Forgotten, so the next open retries; Chromium keeps the failed fetch until a reload.
       loading = null;
       console.warn("keys: the help module failed to load", error);
       return null;
     },
   );
-  loading.then((module) => module?.fill(dialog));
+  return loading;
 }
 
-// onkey reads the settings and the bindings in effect and matches the press against them, after
-// the presses pending. A complete match with no longer one waiting fires at once; a longer one
-// waiting starts or continues the sequence; nothing matching drops the sequence in progress.
+function onbeforetoggle(event: ToggleEvent): void {
+  const dialog = event.target;
+  if (event.newState !== "open" || !(dialog instanceof HTMLDialogElement)) return;
+  if (!dialog.querySelector("[data-keys-list]")) return;
+  if (help) help.fill(dialog);
+  else loadHelp().then((module) => module?.fill(dialog));
+}
+
+/** Matches a press, after those pending, and fires, waits for a longer binding, or drops. */
 function onkey(event: KeyboardEvent): void {
   if (release(event) || silent(event)) return;
   const presses = [...(pending?.presses ?? []), snapshot(event)];
@@ -542,7 +360,6 @@ function onkey(event: KeyboardEvent): void {
       else longer ??= { binding, sequence };
     }
   }
-  // The complete match, or with none the longer one: with no longer one waiting, the complete.
   const matched = complete ?? longer;
   if (!matched) {
     if (pending) end("dropped");
@@ -560,33 +377,23 @@ function onkey(event: KeyboardEvent): void {
   }
   const started = !pending;
   if (pending) clearTimeout(pending.timer);
-  // The timer reads this sequence's held match: any later press replaces pending and clears it.
   const next: Pending = { presses, strings, complete, timer: 0 };
   pending = next;
   next.timer = setTimeout(() => {
-    const held = next.complete;
-    end(held ? "fired" : "timeout");
-    if (held) fire(held);
+    end(next.complete ? "fired" : "timeout");
+    if (next.complete) fire(next.complete);
   }, current.wait);
-  sequenceEvent(started ? "start" : "continue", strings);
+  announce(started ? "start" : "continue", strings);
 }
 
-// The copy that listens also keeps aria-keyshortcuts current: now, on another tab's change to
-// the settings (a storage event, key null when storage is cleared), and on a change to an
-// element's data-keys or an element added. An element whose data-keys
-// is removed loses the aria-keyshortcuts keys wrote on it.
-if (!store.listening) {
-  store.listening = true;
-  document.addEventListener("keydown", onkey);
-  // beforetoggle doesn't bubble, so it is heard in the capture phase.
-  document.addEventListener("beforetoggle", onbeforetoggle, true);
+/** Keeps aria-keyshortcuts current as data-keys elements and the stored settings change. */
+function observe(): void {
   declare();
   addEventListener("storage", (event) => {
     if (event.key === STORAGE || event.key === null) declare();
   });
   new MutationObserver((records) => {
     for (const { target, attributeName, oldValue } of records) {
-      // An attribute record's target is the element whose attribute changed.
       const element = target as Element;
       if (
         attributeName === "data-keys" &&
@@ -604,4 +411,12 @@ if (!store.listening) {
     attributeOldValue: true,
     attributeFilter: ["data-keys"],
   });
+}
+
+if (!store.listening) {
+  store.listening = true;
+  document.addEventListener("keydown", onkey);
+  // beforetoggle doesn't bubble.
+  document.addEventListener("beforetoggle", onbeforetoggle, true);
+  observe();
 }

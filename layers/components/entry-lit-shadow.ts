@@ -1,18 +1,12 @@
-// adapted from spike-html-conventions a88828a: layers/components/entry-lit-shadow.ts, adopting the
-// foundation's reset and elements sheets by their own CSS module scripts in place of conventions'
-// layers/foundation/baseline.ts, which held the same two in the same order.
-//
-// Entry, Lit with a shadow root: one directory or one file of a document hierarchy, as a button
-// that opens it. The button is bare: `static styles` adopts the foundation's reset and elements
-// sheets, each a CSS module script, in cascade order, which give it the look the page's baseline
-// gives a light-DOM button, then entry-shadow.css, its layout and its parts' type, unlayered and
-// so above both. The tokens reach the root from the page's entry.
+// Entry, Lit with a shadow root: one directory or file of a document hierarchy, as a button.
+// Adapted from spike-html-conventions (a88828a): layers/components/entry-lit-shadow.ts, adopting
+// the reset and elements sheets directly in place of its foundation/baseline.ts.
 
 import { html, LitElement, nothing, type PropertyDeclarations } from "lit";
 
 import elements from "../foundation/baseline/elements.css" with { type: "css" };
 import reset from "../foundation/baseline/reset.css" with { type: "css" };
-import { define, emit } from "../foundation/dom.js";
+import { define, emit } from "../foundation/dom.ts";
 import styles from "./entry-shadow.css" with { type: "css" };
 
 /** The tag this version defines. */

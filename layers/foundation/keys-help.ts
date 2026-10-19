@@ -1,64 +1,31 @@
-// adapted from spike-html-design v0.7.0: modules/keys-help.js, typed: the code is v0.7.0's, with
-// the DOM nodes it reads named by their element types.
-//
-// keys-help: the help dialog's contents, loaded by keys.js the first time a dialog holding an
-// element marked data-keys-list opens, never before. The page places the dialog and opens it
-// itself, with a visible button and the built-in show-modal command:
-//
-//   <button type="button" commandfor="help" command="show-modal" data-keys="?">Help <kbd>?</kbd></button>
-//   <dialog id="help" aria-labelledby="help-title">
-//     <h2 id="help-title">Keyboard shortcuts</h2>
-//     <div data-keys-list></div>
-//     <button type="button" commandfor="help" command="close" data-keys="?">Close <kbd>?</kbd></button>
-//   </dialog>
-//
-//   fill(dialog)    fills each [data-keys-list] in dialog: keys.js calls it each time dialog opens.
-//
-// A marked element is filled, in order, with:
-//
-//   - a table of the bindings that would be active with the dialog closed, keys.js's bindings(),
-//     one row per binding: its keys, each press's labels (keys-grammar's labels()) drawn as
-//     sibling <kbd> elements with "+" between a combination's and "then" between presses, and "or"
-//     between alternatives; then its action, a button that closes the dialog and runs the binding
-//     as a press would. The button's text is the bound element's aria-label, else its text with
-//     its <kbd> elements left out, and the joiners between two of them ("+", "then"), else, for a
-//     field, its <label>'s text so read, else its keys as written; a register() binding's is
-//     register()'s label. A row the off switch covers stays listed, marked data-keys-off with a
-//     visible "off" after its keys; its button still runs the action, since a click is not a
-//     character-key shortcut. Last comes a fixed row, marked data-keys-fixed: <kbd>Esc</kbd>,
-//     "Leave a field", keys.js's Escape that releases a field. It is always listed and never
-//     marked off, since it is no binding, and its action is plain text, not a button: it has
-//     nothing to run from the dialog.
-//   - the reader's settings, written through keys.js's changeSettings(): the off switch for
-//     character-key shortcuts and the sequence wait, each a native control in one fieldset. A
-//     change re-renders the table at once.
-//   - a note for screen-reader users on passing a key through.
-//
-// It adds no CSS: the baseline's elements layer styles the table, the controls, and kbd.
-// Every name it sets comes from the page or a script, so it is set as text, never parsed as
-// markup.
+// The keys help dialog's contents: the bindings table, the reader's settings, and a screen-reader
+// note, filled into each [data-keys-list] of a dialog as it opens. keys.ts loads it lazily.
+// Adapted from spike-html-design v0.7.0 (fe75220): modules/keys-help.js.
 
-import { bindings, changeSettings, settings } from "./keys.js";
-import type { Listed } from "./keys.js";
-import { labels } from "./keys-grammar.js";
-import type { Sequence } from "./keys-grammar.js";
+import { bindings, changeSettings, settings } from "./keys.ts";
+import type { Listed } from "./keys.ts";
+import { labels } from "./keys-grammar.ts";
+import type { Sequence } from "./keys-grammar.ts";
 
-// WAITS are the sequence waits the reader picks from, in ms.
 const WAITS = [1000, 1500, 3000, 5000];
 
-// NOTE is the screen-reader note, fixed English text.
 const NOTE =
   "Screen readers: a screen reader may take a key before the page does. To pass the next key " +
   "through, press NVDA+F2 in NVDA, JAWS+3 in JAWS, Narrator+3 in Narrator, or VO+Tab in VoiceOver.";
 
-// runs holds each row button's binding runner.
 const runs = new WeakMap<Element, () => void>();
-
-// wired holds each marked element whose listeners are installed, with the dialog it sits in.
 const wired = new WeakMap<Element, HTMLDialogElement>();
 
-// textOf returns el's text with its kbd elements left out, and with them the text between two
-// sibling kbd, the joiner a key hint writes ("+", "then"), whitespace collapsed and trimmed.
+function element<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const el = document.createElement(tag);
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+/** The element's text without its key hints: each kbd, and the joiner between two of them. */
 function textOf(el: Element): string {
   const copy = el.cloneNode(true) as Element;
   for (const kbd of copy.querySelectorAll("kbd")) {
@@ -76,8 +43,7 @@ function textOf(el: Element): string {
   return (copy.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
-// labelOf returns a binding's label: see the module comment. A field's labels are its <label>s;
-// an element that can't be labelled has none.
+/** A row's action label: aria-label, else its text, else its field's label, else its keys. */
 function labelOf({ element, label, keys }: Listed): string {
   if (!element) return label ?? "";
   const aria = element.getAttribute("aria-label")?.trim();
@@ -88,8 +54,6 @@ function labelOf({ element, label, keys }: Listed): string {
   return (field && textOf(field)) || keys;
 }
 
-// keysOf returns a binding's sequences drawn as nodes: sibling kbd elements, "+" within a
-// press, "then" between presses, "or" between alternatives.
 function keysOf(sequences: Sequence[]): (string | Node)[] {
   const nodes: (string | Node)[] = [];
   sequences.forEach((sequence, a) => {
@@ -98,63 +62,55 @@ function keysOf(sequences: Sequence[]): (string | Node)[] {
       if (p > 0) nodes.push(" then ");
       press.forEach((name, k) => {
         if (k > 0) nodes.push("+");
-        const kbd = document.createElement("kbd");
-        kbd.textContent = name;
-        nodes.push(kbd);
+        nodes.push(element("kbd", name));
       });
     });
   });
   return nodes;
 }
 
-// escapeRow returns the fixed row for Escape releasing a field.
-function escapeRow(): HTMLTableRowElement {
-  const row = document.createElement("tr");
-  row.dataset.keysFixed = "";
-  const keys = document.createElement("td");
-  const kbd = document.createElement("kbd");
-  kbd.textContent = "Esc";
-  keys.append(kbd);
-  const action = document.createElement("td");
-  action.textContent = "Leave a field";
-  row.append(keys, action);
-  return row;
+function row(keys: Node, action: Node): HTMLTableRowElement {
+  const tr = element("tr");
+  const cells = [keys, action].map((content) => {
+    const td = element("td");
+    td.append(content);
+    return td;
+  });
+  tr.append(...cells);
+  return tr;
 }
 
-// table returns the bindings table for dialog, the fixed Escape row last.
+function bindingRow(binding: Listed): HTMLTableRowElement {
+  const keys = new DocumentFragment();
+  keys.append(...keysOf(binding.sequences));
+  if (binding.off) keys.append(element("small", " off"));
+  const button = element("button", labelOf(binding));
+  button.type = "button";
+  runs.set(button, binding.run);
+  const tr = row(keys, button);
+  if (binding.off) tr.dataset.keysOff = "";
+  return tr;
+}
+
+// Escape releasing a field is no binding: always listed, never off, with nothing to run.
+function escapeRow(): HTMLTableRowElement {
+  const tr = row(element("kbd", "Esc"), new Text("Leave a field"));
+  tr.dataset.keysFixed = "";
+  return tr;
+}
+
 function table(dialog: HTMLDialogElement): HTMLTableElement {
-  const listed = bindings(dialog);
-  const el = document.createElement("table");
+  const el = element("table");
   el.dataset.keysTable = "";
   el.innerHTML = `<thead><tr><th scope="col">Keys</th><th scope="col">Action</th></tr></thead><tbody></tbody>`;
-  for (const binding of listed) {
-    const row = document.createElement("tr");
-    const keys = document.createElement("td");
-    keys.append(...keysOf(binding.sequences));
-    if (binding.off) {
-      row.dataset.keysOff = "";
-      const off = document.createElement("small");
-      off.textContent = " off";
-      keys.append(off);
-    }
-    const action = document.createElement("td");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = labelOf(binding);
-    runs.set(button, binding.run);
-    action.append(button);
-    row.append(keys, action);
-    el.tBodies[0].append(row);
-  }
-  el.tBodies[0].append(escapeRow());
+  el.tBodies[0].append(...bindings(dialog).map(bindingRow), escapeRow());
   return el;
 }
 
-// waitControl returns a label holding the wait's select, at wait. A wait it doesn't list, as a
-// page's store.wait can be, shows as a first option whose empty value removes the reader's.
+// A page's store.wait may be one the reader can't pick: it shows as an option that clears theirs.
 function waitControl(wait: number): HTMLLabelElement {
-  const label = document.createElement("label");
-  const select = document.createElement("select");
+  const label = element("label");
+  const select = element("select");
   select.name = "wait";
   const shown = (ms: number) => `${ms / 1000} s`;
   if (!WAITS.includes(wait)) select.append(new Option(shown(wait), "", false, true));
@@ -163,31 +119,25 @@ function waitControl(wait: number): HTMLLabelElement {
   return label;
 }
 
-// form returns the settings fieldset, at the settings in effect.
 function form(): HTMLFieldSetElement {
   const current = settings();
-  const fieldset = document.createElement("fieldset");
+  const fieldset = element("fieldset");
   fieldset.dataset.keysSettings = "";
-  const legend = document.createElement("legend");
-  legend.textContent = "Settings";
-  const on = document.createElement("label");
-  const enabled = document.createElement("input");
+  const enabled = element("input");
   Object.assign(enabled, { type: "checkbox", name: "enabled", checked: current.enabled });
+  const on = element("label");
   on.append(enabled, " Character-key shortcuts (combinations with Control, Alt, or Meta stay on)");
-  const p = document.createElement("p");
+  const p = element("p");
   p.append(waitControl(current.wait));
-  fieldset.append(legend, on, p);
+  fieldset.append(element("legend", "Settings"), on, p);
   return fieldset;
 }
 
-// render replaces list's table with one drawn now.
 function render(list: Element, dialog: HTMLDialogElement): void {
   list.querySelector(":scope > [data-keys-table]")?.remove();
   list.prepend(table(dialog));
 }
 
-// wire installs list's listeners once: a row button closes dialog and runs its binding, and a
-// settings change is stored and re-renders the table.
 function wire(list: Element, dialog: HTMLDialogElement): void {
   if (wired.get(list) === dialog) return;
   wired.set(list, dialog);
@@ -199,22 +149,20 @@ function wire(list: Element, dialog: HTMLDialogElement): void {
     run();
   });
   list.addEventListener("change", (event) => {
-    // The settings' controls: the checkbox, an input, and the select, which has no checked.
     const { name, type, checked, value } = event.target as HTMLInputElement;
     if (!name) return;
-    let setting: boolean | number | null = checked;
-    if (type !== "checkbox") setting = value === "" ? null : Number(value);
+    const setting = type === "checkbox" ? checked : value === "" ? null : Number(value);
     changeSettings({ [name]: setting });
     render(list, dialog);
   });
 }
 
+/** Fills each [data-keys-list] in the dialog; keys.ts calls it at each open. */
 export function fill(dialog: HTMLDialogElement): void {
   for (const list of dialog.querySelectorAll("[data-keys-list]")) {
     wire(list, dialog);
-    const note = document.createElement("p");
+    const note = element("p", NOTE);
     note.dataset.keysNote = "";
-    note.textContent = NOTE;
     list.replaceChildren(form(), note);
     render(list, dialog);
   }

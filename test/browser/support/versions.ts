@@ -30,8 +30,8 @@ export const versions: Record<string, Version> = {
     entry: "sl-entry-lit-shadow",
     load: () =>
       Promise.all([
-        import("../../../layers/components/pagination-lit-shadow.js"),
-        import("../../../layers/components/entry-lit-shadow.js"),
+        import("../../../layers/components/pagination-lit-shadow.ts"),
+        import("../../../layers/components/entry-lit-shadow.ts"),
       ]),
   },
 };

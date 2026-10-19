@@ -1,8 +1,5 @@
-// from spike-html-conventions a88828a: layers/foundation/dom.ts
-//
-// The foundation layer: the platform alone, no package and no other layer. Every other layer may
-// import it. eslint.config.js's layer table holds the import rules for this tree; STANDARDS.md
-// says what belongs in each layer.
+// The foundation's DOM helpers: the platform alone, no package and no other layer.
+// From spike-html-conventions (a88828a): layers/foundation/dom.ts.
 
 /** Defines a custom element once, so a second import of its module is harmless. */
 export function define(tag: string, element: CustomElementConstructor): void {

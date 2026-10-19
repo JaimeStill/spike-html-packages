@@ -7,9 +7,9 @@
 // a reader sees, through a shadow root or not). test/browser/components.test.js runs it in the
 // one version versions.ts holds and passes on every case holding.
 
-import type { EntryItem } from "../../../layers/components/entry-lit-shadow.js";
-import { continued, directories, files, pageSizes, type Page } from "../../../demo/documents.js";
-import { versions, type PaginationElement, type Version } from "./versions.js";
+import type { EntryItem } from "../../../layers/components/entry-lit-shadow.ts";
+import { continued, directories, files, pageSizes, type Page } from "../../../demo/documents.ts";
+import { versions, type PaginationElement, type Version } from "./versions.ts";
 
 /** The contract every entry version keeps. The fixture's Directory and File fit its `item`. */
 interface EntryElement extends HTMLElement {

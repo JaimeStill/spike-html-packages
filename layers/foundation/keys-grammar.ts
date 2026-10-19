@@ -1,54 +1,8 @@
-// adapted from spike-html-design v0.7.0: modules/keys-grammar.js, typed: the code is v0.7.0's,
-// with its parsed shapes named as types.
-//
-// keys-grammar: the binding grammar keys reads, with no DOM: it parses and normalizes a binding,
-// matches a press against a keydown, and formats a binding for display and for
-// aria-keyshortcuts. It touches no global and loads nothing, so the
-// runtime, the help module, and an outside module share it.
-//
-// A binding is a string in @github/hotkey's grammar:
-//
-//   "," separates alternatives, each a binding of its own: "?, Shift+/".
-//   " " separates the presses of a sequence: "g c". Runs of whitespace are one separator.
-//   "+" joins a combination of modifiers with exactly one key: "Control+Shift+K". The modifiers
-//       are Control, Alt, Meta, Shift, and Mod, which is Meta on macOS and Control elsewhere;
-//       their names fold case and normalize to that order. "Plus" and "Space" name those keys.
-//
-// It differs from @github/hotkey in three ways. A letter written without Shift matches either
-// case while Shift is up, so caps lock doesn't defeat it, and "Shift+T" (or "Shift+t") requires
-// Shift. A symbol is written as the character typed, "?", and Shift is ignored for it, where
-// @github/hotkey writes "Shift+?". A named key is a UI Events key value, "Escape" or "ArrowUp",
-// written as it is spelled there.
-//
-// A malformed string parses to null and binds nothing: an empty string or alternative, an empty
-// press around a "+", an unknown or repeated modifier, a modifier alone, two keys in one
-// combination, or a multi-letter key that isn't Plus, Space, or a named key. problem() says
-// which, for the runtime's TypeError and warning. A "," always separates, so the comma key can't
-// be bound.
-//
-// A parsed binding is an array of alternatives, each a sequence: an array of presses, each
-//
-//   { key, control, alt, meta, shift }
-//
-// key the event.key value it matches ("t" lowercase for a letter, "?", "+", " ", "Escape"), and
-// each modifier whether it is held. For a symbol shift is always false, since it is ignored.
-//
-// The exports:
-//
-//   parse(binding, { mac })   the parsed binding, or null when it is malformed. mac resolves Mod.
-//   problem(binding)          why binding is malformed, or null when it parses.
-//   stringify(parsed)         a parsed binding, sequence, or press as its normal string.
-//   normalize(binding, opts)  stringify(parse(binding, opts)), or null when it is malformed.
-//   matches(press, event)     whether a keydown-like { key, code, shiftKey, altKey, ctrlKey,
-//                             metaKey } is press.
-//   labels(sequence)          a sequence for display, as presses of key labels.
-//   keyshortcuts(binding)     a parsed binding's aria-keyshortcuts value, or null for none.
-//
-// parse() and problem() take any value, as v0.7.0's did: a binding that isn't a string is
-// malformed, not a type error, since a page's data-keys and a script's register() reach them
-// unchecked.
+// The keys family's binding grammar, with no DOM: @github/hotkey's, with a letter matching either
+// case unless Shift is written and a symbol written as the character typed, Shift ignored.
+// Adapted from spike-html-design v0.7.0 (fe75220): modules/keys-grammar.js.
 
-/** One press: the event.key it matches, and whether each modifier is held. */
+/** One press: the `event.key` it matches, and whether each modifier is held. */
 export interface Press {
   key: string;
   control: boolean;
@@ -63,7 +17,7 @@ export type Sequence = Press[];
 /** A parsed binding: its alternatives. */
 export type Binding = Sequence[];
 
-/** The fields of a keydown that matches() reads. */
+/** The fields of a keydown that `matches` reads. */
 export interface KeyLike {
   key: string;
   code: string;
@@ -73,23 +27,18 @@ export interface KeyLike {
   metaKey: boolean;
 }
 
-/** parse()'s and normalize()'s options: mac resolves Mod to Meta. */
+/** Parsing options: `mac` resolves Mod to Meta, else to Control. */
 export interface ParseOptions {
   mac?: boolean;
 }
 
-// MODIFIERS are the modifier names in their normal order, each to its press field.
 const MODIFIERS = { Control: "control", Alt: "alt", Meta: "meta", Shift: "shift" } as const;
-
 type Modifier = keyof typeof MODIFIERS;
-
 const MODIFIER_NAMES = Object.keys(MODIFIERS) as Modifier[];
 
-// NAMED are the keys the grammar names, name to event.key.
 const NAMED: Record<string, string> = { plus: "+", space: " " };
 
-// US_SHIFTED is the US layout's Shift row, each symbol to the physical key it is typed on with
-// Shift, so aria-keyshortcuts, which names physical keys, declares "?" as "Shift+/".
+// aria-keyshortcuts names physical keys, so a shifted symbol is declared by the US key it is on.
 const US_SHIFTED: Record<string, string> = {
   "~": "`",
   "!": "1",
@@ -114,48 +63,48 @@ const US_SHIFTED: Record<string, string> = {
   "?": "/",
 };
 
-// isLetter reports whether key is one cased character, a letter of any script.
-const isLetter = (key: string): boolean =>
-  [...key].length === 1 && key.toLowerCase() !== key.toUpperCase();
+const isSingle = (key: string): boolean => [...key].length === 1;
+const isLetter = (key: string): boolean => isSingle(key) && key.toLowerCase() !== key.toUpperCase();
 const isAsciiLetter = (key: string): boolean => /^[a-z]$/i.test(key);
 const isDigit = (key: string): boolean => /^[0-9]$/.test(key);
-
-// isSymbol reports whether key is one character that is neither a letter, a digit, nor
-// whitespace: a key whose character Shift makes, so Shift is ignored for it.
 const isSymbol = (key: string): boolean =>
-  [...key].length === 1 && !isLetter(key) && !isDigit(key) && key !== " ";
+  isSingle(key) && !isLetter(key) && !isDigit(key) && key !== " ";
 
-// pressOf parses one press, a combination such as "Alt+Shift+T", into a press, or returns the
-// reason it is malformed as a string.
+function modifierOf(name: string, mac: boolean): Modifier | undefined {
+  const lower = name.toLowerCase();
+  if (lower === "mod") return mac ? "Meta" : "Control";
+  return MODIFIER_NAMES.find((modifier) => modifier.toLowerCase() === lower);
+}
+
+function keyOf(name: string): string | undefined {
+  if (isSingle(name)) return isLetter(name) ? name.toLowerCase() : name;
+  return NAMED[name.toLowerCase()] ?? (/^[A-Z][A-Za-z0-9]*$/.test(name) ? name : undefined);
+}
+
+/** One combination, such as "Alt+Shift+T", as a press, or why it is malformed. */
 function pressOf(token: string, mac: boolean): Press | string {
   const parts = token.split("+");
   const name = parts.pop() ?? "";
   const press: Press = { key: "", control: false, alt: false, meta: false, shift: false };
   for (const part of parts) {
-    const lower = part.toLowerCase();
-    const modifier: Modifier | undefined =
-      lower === "mod"
-        ? mac
-          ? "Meta"
-          : "Control"
-        : MODIFIER_NAMES.find((m) => m.toLowerCase() === lower);
     if (part === "") return `"${token}" has an empty key around a "+"; write the + key as Plus`;
+    const modifier = modifierOf(part, mac);
     if (!modifier) return `"${token}" joins "${part}", which is not a modifier, to another key`;
     if (press[MODIFIERS[modifier]]) return `"${token}" repeats ${modifier}`;
     press[MODIFIERS[modifier]] = true;
   }
   if (name === "") return `"${token}" ends in "+" with no key; write the + key as Plus`;
-  if ([...name].length === 1) press.key = isLetter(name) ? name.toLowerCase() : name;
-  else if (name.toLowerCase() in NAMED) press.key = NAMED[name.toLowerCase()];
-  else if (["mod", ...Object.values(MODIFIERS)].includes(name.toLowerCase())) {
-    return `"${token}" is a modifier with no key`;
-  } else if (/^[A-Z][A-Za-z0-9]*$/.test(name)) press.key = name;
-  else return `"${token}" names no key; a named key is spelled as its event.key, as Escape`;
-  if (isSymbol(press.key)) press.shift = false;
+  if (modifierOf(name, mac)) return `"${token}" is a modifier with no key`;
+  const key = keyOf(name);
+  if (key === undefined) {
+    return `"${token}" names no key; a named key is spelled as its event.key, as Escape`;
+  }
+  press.key = key;
+  if (isSymbol(key)) press.shift = false;
   return press;
 }
 
-// parsed parses binding into its alternatives, or returns the reason it is malformed.
+/** A binding's alternatives, or why it is malformed. */
 function parsed(binding: unknown, mac: boolean): Binding | string {
   if (typeof binding !== "string") return "a binding must be a string";
   const alternatives: Binding = [];
@@ -173,28 +122,28 @@ function parsed(binding: unknown, mac: boolean): Binding | string {
   return alternatives;
 }
 
+/** The parsed binding, or null when it is malformed; any value is accepted. */
 export function parse(binding: unknown, { mac = false }: ParseOptions = {}): Binding | null {
   const result = parsed(binding, mac);
   return typeof result === "string" ? null : result;
 }
 
+/** Why the binding is malformed, or null when it parses. */
 export function problem(binding: unknown): string | null {
   const result = parsed(binding, false);
   return typeof result === "string" ? result : null;
 }
 
-// keyName writes a press's key as the grammar spells it: Plus and Space by name, a letter
-// uppercase when Shift is written and lowercase otherwise.
-function keyName(press: Press): string {
-  if (press.key === "+") return "Plus";
-  if (press.key === " ") return "Space";
-  if (isLetter(press.key)) return press.shift ? press.key.toUpperCase() : press.key;
-  return press.key;
+const modifiersOf = (press: Press): Modifier[] =>
+  MODIFIER_NAMES.filter((modifier) => press[MODIFIERS[modifier]]);
+
+function keyName({ key, shift }: Press): string {
+  if (key === "+") return "Plus";
+  if (key === " ") return "Space";
+  return isLetter(key) && shift ? key.toUpperCase() : key;
 }
 
-// modifiersOf returns the modifier names a press holds, in normal order.
-const modifiersOf = (press: Press): Modifier[] => MODIFIER_NAMES.filter((m) => press[MODIFIERS[m]]);
-
+/** A binding, sequence, or press as its normal string. */
 export function stringify(value: Binding | Sequence | Press): string {
   if (!Array.isArray(value)) return [...modifiersOf(value), keyName(value)].join("+");
   if (value.length > 0 && !Array.isArray(value[0])) {
@@ -203,24 +152,21 @@ export function stringify(value: Binding | Sequence | Press): string {
   return (value as Binding).map((sequence) => stringify(sequence)).join(", ");
 }
 
+/** The binding's normal string, or null when it is malformed. */
 export function normalize(binding: unknown, options?: ParseOptions): string | null {
   const result = parse(binding, options);
   return result && stringify(result);
 }
 
-// matches compares by event.key, with the modifiers exact: Control, Alt, and Meta are held iff
-// press holds them. A letter compares case-folded and needs Shift as written, so caps lock and
-// "t" match while Shift+T doesn't. With Alt held, an ASCII letter or digit compares by
-// event.code, since Option and AltGr change the character; so does an ASCII letter whose
-// event.key is a letter outside ASCII, a layout such as Russian, where KeyJ is j. A symbol
-// ignores Shift. Composition, repeats, fields, and AltGraph are the runtime's to filter.
+/** Whether a keydown is the press. */
 export function matches(press: Press, event: KeyLike): boolean {
-  if (Boolean(event.ctrlKey) !== press.control) return false;
-  if (Boolean(event.altKey) !== press.alt) return false;
-  if (Boolean(event.metaKey) !== press.meta) return false;
+  if (!!event.ctrlKey !== press.control || !!event.altKey !== press.alt) return false;
+  if (!!event.metaKey !== press.meta) return false;
   if (isSymbol(press.key)) return event.key === press.key;
-  if (Boolean(event.shiftKey) !== press.shift) return false;
+  if (!!event.shiftKey !== press.shift) return false;
   if (isAsciiLetter(press.key)) {
+    // Option and AltGr change the character, and a non-Latin layout types another letter on the
+    // same key, so these compare by the physical key.
     if (event.altKey || (isLetter(event.key) && !isAsciiLetter(event.key))) {
       return event.code === `Key${press.key.toUpperCase()}`;
     }
@@ -231,34 +177,23 @@ export function matches(press: Press, event: KeyLike): boolean {
   return event.key === press.key;
 }
 
-// label writes a key for display: a letter as its keycap, uppercase whatever case was written,
-// Space by name, anything else as its event.key.
 function label(key: string): string {
   if (key === " ") return "Space";
   return isLetter(key) ? key.toUpperCase() : key;
 }
 
-// labels returns a sequence as its presses, each its modifiers' names in normal order then its
-// key's label: "g t" is [["G"], ["T"]] and "Alt+T" [["Alt", "T"]]. The help module draws each
-// label a kbd, "+" between a press's and "then" between presses.
+/** A sequence for display: each press as its modifiers' names, then its key's label. */
 export function labels(sequence: Sequence): string[][] {
   return sequence.map((press) => [...modifiersOf(press), label(press.key)]);
 }
 
-// keyshortcuts returns binding's aria-keyshortcuts: each alternative that is one press, its
-// modifiers then its key, as WAI-ARIA names physical keys ("T", "Alt+T", "Control+Shift+K"), a
-// symbol declared by its US physical key with Shift ("?" as "Shift+/"), joined by spaces. A
-// sequence declares nothing, so a binding of sequences alone returns null.
+/** The binding's aria-keyshortcuts: its single-press alternatives, or null for none. */
 export function keyshortcuts(binding: Binding): string | null {
   const declared = binding
     .filter((sequence) => sequence.length === 1)
     .map(([press]) => {
-      const physical: string | undefined = US_SHIFTED[press.key];
-      const shown = {
-        ...press,
-        key: physical ?? press.key,
-        shift: press.shift || Boolean(physical),
-      };
+      const physical = US_SHIFTED[press.key];
+      const shown = { ...press, key: physical ?? press.key, shift: press.shift || !!physical };
       return [...modifiersOf(shown), label(shown.key)].join("+");
     });
   return declared.length > 0 ? [...new Set(declared)].join(" ") : null;

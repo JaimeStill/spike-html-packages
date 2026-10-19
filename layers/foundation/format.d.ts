@@ -1,8 +1,5 @@
-// from spike-html-conventions a88828a: layers/foundation/format.d.ts
-//
-// The foundation's formatters, declared: spike-html-apps implements them on Intl alone (no
-// Temporal). Each takes the locale Intl takes, the user agent's when it is undefined, and the
-// options of the Intl formatter beneath it.
+// The foundation's Intl formatters, declared; spike-html-apps implements them.
+// From spike-html-conventions (a88828a): layers/foundation/format.d.ts.
 
 /** Options for formatBytes: Intl.NumberFormat's, less its style and unit, which it sets. */
 export type BytesOptions = Omit<Intl.NumberFormatOptions, "style" | "unit">;

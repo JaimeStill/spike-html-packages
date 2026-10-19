@@ -10,6 +10,8 @@
     "strict": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,

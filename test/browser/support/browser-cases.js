@@ -17,8 +17,8 @@
 // node_modules/.pnpm, as spike-html-conventions a88828a's unbundled server mapped it. No tool
 // rewrites a specifier: the browser resolves each one, as it would from any static server.
 //
-// The foundation's modules are TypeScript, imported by .js specifiers: a request for a .js file
-// that isn't there, with a .ts file beside it, is answered with that .ts file's JavaScript, its
+// The foundation's modules are TypeScript, imported by .ts specifiers: a request for a .ts file,
+// or for a .js file that isn't there with a .ts file beside it, is answered with its JavaScript, its
 // types stripped by node's own stripTypeScriptTypes (node:module), which erases them in place, so
 // a line in the browser is the line in the source. tsconfig.json's erasableSyntaxOnly holds the
 // sources to syntax that stripping alone runs. Nothing is written: the check writes nothing.
@@ -75,14 +75,22 @@ export const componentsPage = "/test/fixtures/components.html";
 const timeout = 120_000;
 
 /** Each type the server serves, by extension; any other file isn't served. */
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
+const types = {
+  ".html": "text/html",
+  ".js": "text/javascript",
+  ".ts": "text/javascript",
+  ".css": "text/css",
+};
 
 /**
  * The body a path of the tree is served with, or undefined when it isn't served: a file of a type
- * the server serves, or a .js path's .ts source, its types stripped.
+ * the server serves, a .ts file or a .js path's .ts source, its types stripped.
  */
 function body(file) {
   if (types[extname(file)] === undefined) return undefined;
+  if (file.endsWith(".ts")) {
+    return existsSync(file) ? stripTypeScriptTypes(readFileSync(file, "utf8")) : undefined;
+  }
   try {
     return readFileSync(file);
   } catch {
