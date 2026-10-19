@@ -3,10 +3,13 @@
 // Adapted from spike-html-design v0.7.0 (fe75220): test/keys.test.js, its cases kept.
 
 import assert from "node:assert/strict";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { after, afterEach, before, describe, test } from "node:test";
 
 import { launch } from "./support/browser-pipe.js";
-import { serve } from "./support/server.js";
+import { root, serve } from "./support/server.js";
 
 const KEYS = "/dist/foundation/keys.js";
 const STORE = 'globalThis[Symbol.for("spike-html-design.keys")]';
@@ -816,6 +819,48 @@ describe("keys: the help dialog", () => {
     await page.goto(fixture(HELP));
     await attempt();
     assert.equal(requests(), 2);
+  });
+
+  test("of two copies at two URLs, the first installs the listener and loads the help beside it", async () => {
+    // a/ and b/ both link to dist/, so the page holds two copies of keys.js at two URLs.
+    const tree = await mkdtemp(join(tmpdir(), "keys-copies-"));
+    await symlink(join(root, "dist"), join(tree, "a"));
+    await symlink(join(root, "dist"), join(tree, "b"));
+    await writeFile(
+      join(tree, "copies.html"),
+      `<!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <title>keys help copies</title>
+          <script type="module">
+            import * as a from "./a/foundation/keys.js";
+            import * as b from "./b/foundation/keys.js";
+            window.copies = a.register !== b.register;
+          </script>
+        </head>
+        <body>
+          <button type="button" commandfor="help" command="show-modal">Help</button>
+          <dialog id="help"><div data-keys-list></div></dialog>
+        </body>
+      </html>`,
+    );
+    const copies = await serve(tree);
+    try {
+      const page = await browser.open(`${copies.origin}/copies.html`);
+      pages.push(page);
+      assert.equal(await page.evaluate("window.copies"), true);
+      await openHelp(page);
+      // A second listener would load b's help too.
+      assert.deepEqual(
+        await page.evaluate(`performance.getEntriesByType("resource").map(({ name }) => name)
+          .filter((name) => name.endsWith("/keys-help.js"))`),
+        [`${copies.origin}/a/foundation/keys-help.js`],
+      );
+    } finally {
+      await copies.stop();
+      await rm(tree, { recursive: true });
+    }
   });
 
   test("showModal() from script, or the ? key, opens and fills it too", async () => {
