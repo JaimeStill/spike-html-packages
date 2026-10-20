@@ -1,6 +1,6 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** handoff
+- **State:** idle
 - **Task:** none
 - **Branch:** none
 
@@ -102,11 +102,6 @@ Out of scope  Unchanged: any tag, push, or publish; one package against
               pages and apps; reweighing the lint and the manager.
 Door          two-way: nothing leaves the spike repository.
 ```
-
-## Handoff
-
-merge: pull request #1 (layers) is open with the accepted brief; the merge was not run
-(permission denied in-session). Merge it, then switch main, pull, and delete the local branch.
 
 ## Decisions
 
