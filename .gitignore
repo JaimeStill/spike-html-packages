@@ -2,3 +2,8 @@
 .claude/plans/
 .claude/briefs/
 node_modules
+# The release build (mise run build, and the check's first step).
+dist/
+# lit in pnpm's, npm's, and bun's caches, for the check's offline consumer installs (mise run
+# install warms them).
+.cache/

@@ -1,5 +1,4 @@
-# mise run never installs a missing tool first (task.run_auto_install, on by default): the check
-# reads no network, and fails naming mise run install, the one task that installs tools.
+# Tasks never install a missing tool; mise run install is the one task that reads the network.
 [settings]
 task.run_auto_install = false
 
@@ -8,18 +7,15 @@ task.run_auto_install = false
 # A consumer only: the fixtures install the releases under npm, pnpm, and bun.
 bun = "1.4.3"
 node = "26.12.0"
-# npm 12, its own pin: node 26.12.0 bundles npm 11.20.0, from before npm 12 refused git
-# dependencies by default.
+# Its own pin: node 26.12.0 bundles npm 11, from before npm 12 refused git dependencies.
 npm = "12.2.1"
 pnpm = "12.14.0"
 shellcheck = "0.11.0"
 "github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
 "npm:vite" = "8.3.4"
 
-# The browser tier's browser: Chrome for Testing's chrome-headless-shell, one generic linux64 zip.
-# Chrome for Testing publishes no checksums, so the sha256 and size are ours, taken from the
-# download by hand at each bump; mise refuses a download that doesn't match. Its latest is the
-# Stable channel of Chrome for Testing's last-known-good versions.
+# The browser tier's browser. Chrome for Testing publishes no checksums: take the sha256 and size
+# from the download by hand at each bump.
 [tools."http:chrome-headless-shell"]
 version = "155.0.8059.84"
 version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
@@ -28,23 +24,87 @@ version_json_path = ".channels.Stable.version"
 [tools."http:chrome-headless-shell".platforms]
 linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c", size = "125033980" }
 
+[tasks.preflight]
+description = "Fail naming mise run install when a tool the tasks need is missing"
+hide = true
+run = "scripts/preflight.sh"
+
+[tasks.lint]
+description = "Run the three linters: ESLint, Prettier, and shellcheck"
+depends = ["lint:eslint", "lint:format", "lint:shell"]
+
+[tasks."lint:eslint"]
+description = "Lint with ESLint, the layer direction included"
+depends = ["preflight"]
+run = "pnpm exec eslint ."
+
+[tasks."lint:format"]
+description = "Check the format with Prettier"
+depends = ["preflight"]
+run = "pnpm exec prettier --check ."
+
+[tasks."lint:shell"]
+description = "Shellcheck the scripts"
+run = "shellcheck scripts/*.sh"
+
+[tasks.types]
+description = "Type-check the layers and the browser cases with tsc"
+depends = ["types:layers", "types:browser"]
+
+[tasks."types:layers"]
+description = "Type-check the layers and the demo with tsc"
+depends = ["preflight"]
+run = "tsc --noEmit -p ."
+
+[tasks."types:browser"]
+description = "Type-check the browser cases' in-page modules against dist/ with tsc"
+depends = ["build"]
+run = "tsc --noEmit -p test/browser"
+
+[tasks.build]
+description = "Build the release from layers/ into dist/"
+depends = ["preflight"]
+run = "scripts/build.sh"
+
+[tasks."test:unit"]
+description = "Run the unit tier on the sources and on a release it builds itself"
+depends = ["preflight"]
+run = "node --test 'test/unit/*.test.js'"
+
+[tasks."test:browser"]
+description = "Run the browser tier on dist/ in the pinned chrome-headless-shell"
+depends = ["preflight browser", "build"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.js'"
+
+[tasks."test:consumers"]
+description = "Install the packed release offline under pnpm, npm, and bun, and check each"
+depends = ["build"]
+run = "scripts/consumers.sh"
+
 [tasks.check]
-description = "Lint the shell scripts with shellcheck; reads no network, writes nothing. The layers task grows it to spike-html-conventions' check"
-run = '''
-set -eu
-cd "$MISE_PROJECT_ROOT"
-find . -name '*.sh' -not -path './node_modules/*' -not -path './.git/*' -print0 \
-  | xargs -0 -r shellcheck
-'''
+description = "Run every check; reads no network; writes dist/ and .cache/ in the repository"
+depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumers"]
 
 [tasks.install]
-description = "Install every mise.toml pin; reads the network"
-run = "mise install"
-dir = "{{config_root}}"
+description = "Install the pins and node_modules, and warm the consumer caches; reads the network"
+run = "scripts/install.sh"
+
+[tasks.installs]
+description = "Install the packed release under each manager and list each install's files"
+depends = ["build"]
+run = "scripts/consumers.sh list"
+
+[tasks.demo]
+description = "Serve the demo pages, on dist/, on the loopback address until Ctrl-C"
+depends = ["build"]
+run = "node scripts/demo.js"
+
+[tasks.measure]
+description = "Print the import extension's facts as a dated markdown table; reads no network"
+depends = ["preflight browser"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/measure.js"
 
 [tasks.currency]
-description = "Report every mise tool pinned behind its latest, one line each, exiting nonzero if any; reads the network, writes nothing"
+description = "Report every pin behind its latest, exiting nonzero if any"
 run = "scripts/currency.sh"
-# Without mise's own command echo, so a current tree prints nothing at all.
 quiet = true
-dir = "{{config_root}}"

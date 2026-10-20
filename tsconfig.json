@@ -1,0 +1,21 @@
+// Adapted from spike-html-conventions (a88828a): tsconfig.json, its include narrowed to the layers
+// and the demo's modules. test/browser/tsconfig.json checks the browser cases against dist/.
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": [],
+    "strict": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": false
+  },
+  "include": ["layers", "demo"]
+}

@@ -1,96 +1,112 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
+- **State:** handoff
 - **Task:** none
 - **Branch:** none
 
 ## Tasks
 
-1. [ ] layers
+1. [x] layers
 2. [ ] layout
 3. [ ] hosting
 4. [ ] registries
 5. [ ] consumers
 6. [ ] answer
 
-## Task brief · layers
+## Task brief · layers (revised)
 
 ```
-Problem       The spike has nothing to package yet. spike-html-conventions'
-              layers exist only on its untagged main (a88828a), and
-              spike-html-design v0.7.0's tools and modules aren't in the
-              self-layered, @import-free form a shadow root adopts. Every
-              later task needs a release build of real layers (.js, .d.ts,
-              and .css beside them), and the import extension is still
-              open (evidence 4, 5).
-Behaviors     1. The foundation carries spike-html-conventions' port (tokens
-                 with Flexoki, regular, and mono; reset; elements), its DOM
-                 helpers, and its formatter declarations. Each copied file
-                 names its source repository and commit.
-              2. v0.7.0's tools ship as three self-layered, @import-free
-                 sheets: utilities (scroll, tables), structure (field
-                 stacks), and meta (buttons and hue variants), each in its
-                 own foundation.<concern> layer. The page entry states the
-                 layer order and links them. Each class computes the same
-                 styles as v0.7.0's under the default profiles.
-              3. v0.7.0's registry and keys family (grammar, runtime, help)
-                 are typed .ts foundation modules that keep v0.7.0's tested
-                 behavior: DOM-free logic in the unit tier, the help dialog
-                 in the browser tier.
-              4. The Lit shadow-root pagination, entry, and status badge
-                 adopt the foundation's reset and elements sheets before
-                 their own layout-only sheet, and pass their contract cases
-                 in the browser tier.
-              5. The SDK declarations stay type-only, and the declaration
-                 test holds them free of runtime code.
-              6. The check is spike-html-conventions' check over these
-                 layers: ESLint + Prettier with the layer-direction table,
-                 tsc, shellcheck, the unit tier under node --test, and the
-                 browser tier on the pinned chrome-headless-shell.
-              7. The release build emits every .ts module as an unbundled,
-                 unminified ES module .js with its .d.ts, and every .css
-                 beside its emitted module. exports and files name the built
-                 .js, its types, and every .css. The check fails when an
-                 export points at a missing file or a source .css has no
-                 built copy.
-              8. A locally packed release installs offline under npm, pnpm,
-                 and bun. Each install's files match files (bun's the whole
-                 pack), and every export resolves. This runs in the check.
-              9. A measure run builds the layers with .js specifiers and
-                 with .ts specifiers rewritten by tsc. For each, it records
-                 whether the emit loads unbundled in the pinned Chromium and
-                 builds through Vite with the local CSS plugin. The sources
-                 keep the form the architect picks at a review stop, and the
-                 README records both results (evidence 5).
-Test seams    The packed release as a consumer installs and imports it: its
-              exports map, resolved by the fixtures and loaded by the browser
-              tier.
-Slices        1. Foundation CSS: the port, the three lateral-concern sheets,
-                 and the page entry, checked against v0.7.0's computed
-                 styles. Demo: a page of every tool class on the defaults.
-              2. Foundation modules: DOM helpers, formatter declarations,
-                 registry, and keys family, in the unit and browser tiers.
-                 Demo: a page binding keys with the help dialog.
-              3. Components and SDK declarations: the three Lit shadow
-                 components on the baseline, with contract cases and the
-                 declaration test. Demo: the components rendered on a page.
-              4. Release build: tsc emit with .css beside it, exports and
-                 files, the integrity test, and offline installs of the
-                 packed tarball under npm, pnpm, and bun. Demo: the three
-                 installs' file lists.
-              5. Import extension: both specifier forms built, loaded
-                 unbundled, and built through Vite, with the README's
-                 results. Demo: the dated measure rows.
-Out of scope  Any tag, push of a release, or registry publish (hosting,
-              registries); one package against workspace packages (layout);
-              preferences, theme-menu, register, and conformance; the five
-              non-default profiles; the vanilla and light-DOM component
-              versions; apps and SDK implementations; consumer pages and
-              apps (consumers); reweighing the lint and the package manager
-              (answer).
-Door          two-way: nothing leaves the spike repository; no tag, no
-              publish.
+Problem       Slices 1-5 deliver the layers, the release build, and the
+              offline installs, but not in a form the workspace can build
+              on. The copies keep their sources' essay prose, the harness
+              rests on workarounds (a .js-to-.ts stripping server, :hover
+              rewriting, a closed-port proxy, a 640-line measure), and
+              mise.toml and scripts/ can't be read by a person. Every later
+              task (layout, hosting, registries, consumers) inherits this
+              code and this harness.
+Behaviors     1-8. Unchanged from the first brief (7cddb86): the foundation port,
+                 the three self-layered tool sheets at v0.7.0's computed
+                 styles, the typed registry and keys family, the three Lit
+                 shadow components on reset and elements, the type-only
+                 SDK, the check's tools, the release build with exports
+                 and files and its integrity test, and the offline installs
+                 under npm, pnpm, and bun.
+              9. The sources use .ts relative specifiers, emitted as .js by
+                 tsc with rewriteRelativeImportExtensions. The emitted .js
+                 carries only .js specifiers, the help module included.
+                 node runs the sources by type stripping. The handwritten
+                 .d.ts keep .js specifiers, since they ship as written. The
+                 README records the measured facts in a short table,
+                 including that tsc's emitted .d.ts keep .ts specifiers and
+                 TypeScript 7.0.2 and 6.0.3 accept them.
+              10. The help dialog loads lazily through a literal
+                 import("./keys-help.ts"). Its behavior is unchanged
+                 (first open loads it, a failed load retries, two copies at
+                 two URLs each load their own), and it builds through Vite
+                 with the local CSS plugin into its own chunk that loads.
+              11. Every module under layers/ reads at the bar of
+                 spike-html-conventions' layers/ code: a short header
+                 naming the layer and the provenance (source repository and
+                 commit), a one-line doc comment per export, and comments
+                 only where the code can't say why. The behaviors live in
+                 the tests and the README, not in comment essays.
+              12. The browser tier tests the built dist/, the files that
+                 ship, through the pinned chrome-headless-shell. No server
+                 transforms what it serves. Hover is compared through
+                 CSS.forcePseudoState, not by rewriting the sheets.
+              13. The offline installs use each package manager's own
+                 offline mode against caches that `mise run install` warms,
+                 with no proxy.
+              14. mise.toml is a list of small named tasks. Each has a
+                 one-line description and runs one script or one command.
+                 check is a depends list (lint, types, build, test:unit,
+                 test:browser, test:consumers), and each runs on its own.
+                 Prose about the layout lives in the README.
+                 The repository is laid out by role:
+                   layers/           the sources
+                   scripts/          one entry script per task, nothing else
+                   test/unit/        node --test, sources by type stripping
+                   test/browser/     node --test on dist/, with support/
+                                     holding the pipe driver and the static
+                                     server
+                   test/consumers/   the npm, pnpm, and bun fixtures
+                   test/fixtures/    v0.7.0's pages and sheets, as copied
+                   demo/             the demo pages only
+Test seams    Unchanged: the packed release as a consumer installs and
+              imports it, and the built dist/ as the browser tier loads it.
+Slices        1. Structure: mise.toml split into named tasks with check as a
+                 depends list; files moved to the layout in behavior 14;
+                 the description paragraphs and inline scripts move out.
+                 No behavior change. Demo: `mise tasks` and each test:*
+                 task running alone.
+              2. Sources: .ts specifiers with rewriteRelativeImportExtensions;
+                 the copied modules (keys, keys-grammar, keys-help,
+                 registry, components) rewritten to behavior 11's bar with
+                 the literal lazy import. The existing unit and browser
+                 cases hold the behavior. Demo: `node layers/foundation/
+                 keys-grammar.ts` imports; dist/ has only .js specifiers.
+              3. Browser tier on dist/: the static server without
+                 transforms, forcePseudoState for hover, the test files cut
+                 to the cases v0.7.0 and conventions proved and nothing
+                 extra. Demo: the browser tier against a fresh build.
+              4. Consumers, currency, and measure: offline installs by the
+                 managers' own offline flags; currency.sh simplified; the
+                 measure replaced by a short `mise run measure` for
+                 behaviors 9 and 10 (Vite build of the help chunk
+                 included); the README's Measures section rewritten to its
+                 facts. Demo: `mise run measure` and the three installs.
+Out of scope  Unchanged: any tag, push, or publish; one package against
+              workspace packages; preferences, theme-menu, register, and
+              conformance; the non-default profiles; the vanilla and
+              light-DOM versions; apps, SDK implementations, consumer
+              pages and apps; reweighing the lint and the manager.
+Door          two-way: nothing leaves the spike repository.
 ```
+
+## Handoff
+
+merge: pull request #1 (layers) is open with the accepted brief; the merge was not run
+(permission denied in-session). Merge it, then switch main, pull, and delete the local branch.
 
 ## Decisions
 
@@ -123,6 +139,40 @@ Door          two-way: nothing leaves the spike repository; no tag, no
   spike-html-conventions (main a88828a), read-only; herald is spike-html-apps' concern. The spike
   keeps no references files.
 - setup: the release tool and the lint choice wait on the layout task's evidence.
+- layers: redirected at the review stop. Slices 1-5 work but miss the workspace's bar: essay
+  prose in the copies, harness workarounds, and mise.toml and scripts/ a person can't follow.
+  Four rework slices on the same branch.
+- layers: .ts relative specifiers with rewriteRelativeImportExtensions, not .js. They match the
+  tsconfig's erasableSyntaxOnly and verbatimModuleSyntax, and node runs the sources unbuilt.
+- layers: the help dialog loads through a literal import(), not import(new URL(...).href). Vite
+  and tsc can both see a literal, and the module still resolves relative to itself.
+- layers: copied modules are rewritten to the workspace standard, keeping their behavior and a
+  provenance line; the bar is spike-html-conventions' layers/ code at a88828a, not its scripts/.
+- layers: the harness is rebuilt on standard mechanisms: browser tests on dist/,
+  CSS.forcePseudoState for hover, the package managers' own offline modes. mise.toml becomes
+  small named tasks, and the repository is laid out by role.
+- layers: the tool sheets' layer order is meta, structure, utilities, after elements, which keeps
+  v0.7.0's computed styles where a button combines with scroll or field classes.
+- layers: the page entry is `layers/foundation/page.css`: one `@layer` statement, then the
+  baseline and the three sheets.
+- layers: `exports` maps a pattern per layer for modules and sheets; `./sdk/*.js` and
+  `./foundation/format.js` are types-only; `files` is `["dist"]`.
+- layers: the consumer caches live in the repository's `.cache/consumers/`, warmed by
+  `mise run install`, because pnpm's default store follows the project's filesystem (tmpfs here).
+  The check therefore writes `.cache/` too.
+- layers: one consumer fixture, `test/consumers/consumer/`, copied once per manager, replaces
+  three identical fixtures.
+- layers: the browser tier's in-page case modules are plain `.js` with JSDoc, loaded unbuilt
+  beside `dist/`.
+- layers: only the copy that installed the listener loads the help module, as in v0.7.0. The test
+  for behavior 10's "two copies each load their own" proves that the first copy loads the help
+  beside it.
+- layers: tsc's emitted `.d.ts` keep `.ts` relative specifiers. typescript-go 7.0.2 and
+  typescript 6.0.3 accept them, as the README records; other `.d.ts` readers are unmeasured, and
+  the registries (JSR) may find more.
+- layers: Vite 8.3.4 still needs the local CSS module script plugin
+  (`test/fixtures/measure/css-sheets.js`); without it, a build fails with MISSING_EXPORT on `.css`
+  imports. The consumers task builds on this.
 
 ## Pending edits
 

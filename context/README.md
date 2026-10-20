@@ -48,6 +48,7 @@ Copies, each naming its source repository and commit:
   declarations, the Lit shadow components, and the SDK declarations.
 - spike-html-design v0.7.0's tools, split into three lateral-concern sheets (utilities, structure,
   meta), and its registry and keys family (grammar, runtime, help).
+- spike-html-conventions' `.prettierrc.json` at main a88828a, as written.
 
 Lit is the one runtime dependency. The fixtures install the releases under npm, pnpm, and bun.
 Registry trials publish for real under `@jaimestill` at 0.0.x, to GitHub Packages and to JSR.
@@ -86,6 +87,58 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 - `spike-html-design`, at v0.7.0: the tools and modules copied.
 - `spike-html-conventions`, at main a88828a: the layers copied and the toolchain adopted.
+
+## Layout
+
+- `layers/`: the sources: the foundation, the components, and the SDK.
+- `scripts/`: one entry script per task.
+- `test/unit/`: `node --test` on the sources, types stripped, and on the release build;
+  `layers-tree.js` holds the layer direction's cases.
+- `test/browser/`: `node --test` on `dist/` in the pinned chrome-headless-shell; `support/` holds
+  the pipe driver, the static server, and the case modules the pages import: the tools'
+  `computed-styles.js` and the components' `probe.js` and `restyle.js`.
+- `test/consumers/`: the consumer fixture that pnpm, npm, and bun each install, and the manifest
+  step, `consumers.js`.
+- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages and their `keys-indicator.js`; the components page; and
+  the measure page, a Vite page with its CSS plugin.
+- `demo/`: the demo pages, and `documents.js`, the listings they show, which the browser cases'
+  components modules also import.
+
+## Tasks
+
+- `mise run install`: `scripts/install.sh`, the mise pins, node_modules, and the consumer caches;
+  the one task that reads the network.
+- `mise run check`: lint, types, build, and the three tiers; reads no network; in the repository it
+  writes only `dist/` and the consumer caches in `.cache/`.
+- `mise run lint`: `lint:eslint` (with the layer direction), `lint:format` (Prettier), and
+  `lint:shell` (shellcheck).
+- `mise run types`: tsc, typescript-go, as `types:layers` over the layers and the demo, and
+  `types:browser` over the browser cases' in-page modules against `dist/`.
+- `mise run build`: the release, `layers/` into `dist/`.
+- `mise run test:unit`, `test:browser`, `test:consumers`: the three tiers, each runnable alone.
+  `test:unit` builds the release it checks into a temporary directory, so it needs no `dist/`.
+- `mise run installs`: the consumer installs, with each install's file list.
+- `mise run demo`: the demo pages, on a fresh `dist/`, served on the loopback address.
+- `mise run measure`: the import extension's facts, below.
+- `mise run currency`: every pin behind its latest.
+
+## Measures
+
+`mise run measure` builds the release and a Vite page in a scratch directory, loads the page in the
+pinned chrome-headless-shell, and prints the import extension's facts (evidence 5) as a dated
+table. It reads no network and leaves nothing behind. The table of 2026-10-19:
+
+| measure | result |
+| --- | --- |
+| the emitted .js names its modules by .js relative specifiers, the help import included | yes: 7 specifiers |
+| the emitted .d.ts keep .ts specifiers | yes: foundation/keys.d.ts |
+| typescript-go 7.0.2 checks a consumer of dist/**/*.d.ts | yes |
+| typescript 6.0.3 checks a consumer of dist/**/*.d.ts | yes |
+| node 26.12.0 runs layers/foundation/keys-grammar.ts | yes |
+| node resolves layers/foundation/keys.ts's imports | yes: it stops at evaluation, on document |
+| Vite 8.3.4 builds the page, keys-help in its own chunk | yes: assets/keys-help-9UbzHt4S.js |
+| chrome-headless-shell 155.0.8059.84 renders the built page's three components | yes: 3/3 with adopted sheets |
+| chrome-headless-shell 155.0.8059.84 loads the help chunk, which fills the dialog | yes: assets/keys-help-9UbzHt4S.js fetched; dialog filled |
 
 ## The answer
 
