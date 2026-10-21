@@ -344,7 +344,7 @@ function loadHelp(): Promise<typeof Help | null> {
   loading ??= import("./keys-help.ts").then(
     (module) => (help = module),
     (error: unknown) => {
-      // Forgotten, so the next open retries; Chromium keeps the failed fetch until a reload.
+      // Forgotten, so the next open retries, and the browser requests the module again.
       loading = null;
       console.warn("keys: the help module failed to load", error);
       return null;

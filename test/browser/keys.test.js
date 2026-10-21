@@ -812,13 +812,13 @@ describe("keys: the help dialog", () => {
     await attempt();
     const failed = "keys: the help module failed to load";
     assert.deepEqual(await page.evaluate("window.warned"), [failed, failed]);
-    // Chromium keeps a failed module fetch in the document's module map, so the second import
-    // fails without a request; a document loaded later fetches it afresh.
-    assert.equal(requests(), 1);
+    // Chromium 156 keeps no failed module fetch in the module map, so each import requests the
+    // module again, and so does a document loaded later.
+    assert.equal(requests(), 2);
     assert.deepEqual(await page.evaluate("window.unhandled"), []);
     await page.goto(fixture(HELP));
     await attempt();
-    assert.equal(requests(), 2);
+    assert.equal(requests(), 3);
   });
 
   test("of two copies at two URLs, the first installs the listener and loads the help beside it", async () => {
