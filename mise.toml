@@ -6,13 +6,13 @@ task.run_auto_install = false
 [tools]
 # A consumer only: the fixtures install the releases under npm, pnpm, and bun.
 bun = "1.4.3"
-node = "26.12.0"
-# Its own pin: node 26.12.0 bundles npm 11, from before npm 12 refused git dependencies.
+node = "26.12.1"
+# Its own pin: node 26.12.1 bundles npm 11, from before npm 12 refused git dependencies.
 npm = "12.2.1"
 pnpm = "12.14.0"
 shellcheck = "0.11.0"
 "github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
-"npm:vite" = "8.3.4"
+"npm:vite" = "8.3.5"
 
 # The browser tier's browser. Chrome for Testing publishes no checksums: take the sha256 and size
 # from the download by hand at each bump.
