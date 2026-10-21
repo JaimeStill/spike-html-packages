@@ -2,8 +2,9 @@
 # Installs the packed releases under pnpm, npm, and bun, each offline from its cache in
 # .cache/consumers/, and checks each install: the one package into test/consumers/one/, the three
 # layer packages into test/consumers/layers/, and the components alone into
-# test/consumers/components/, holding each manager to the measured facts below. `list` also prints the one package's and the
-# three packages' installed files; `warm` fills the caches from the network.
+# test/consumers/components/, holding each manager to the measured facts below. `list` also prints
+# the one package's and the three packages' installed files; `warm` fills the caches from the
+# network.
 # Adapted from spike-html-conventions (a88828a): scripts/consumers.sh.
 set -euo pipefail
 
@@ -40,12 +41,17 @@ fail() {
   exit 1
 }
 
-# Repo-local caches: pnpm's default store sits on the project's filesystem, here the scratch's.
+# Repo-local caches. pnpm's default store sits on the project's filesystem, here the scratch's, and
+# its metadata cache (cacheDir), which --offline resolves from, in the home directory: both go in
+# .cache/consumers/pnpm/.
 install() {
   local manager=$1 project=$2
   shift 2
   case $manager in
-    pnpm) pnpm install --dir "$project" --store-dir "$caches/pnpm" "$@" ;;
+    pnpm)
+      pnpm install --dir "$project" --store-dir "$caches/pnpm" \
+        --config.cache-dir="$caches/pnpm" "$@"
+      ;;
     npm) npm install --prefix "$project" --cache "$caches/npm" --no-audit --no-fund "$@" ;;
     bun) bun install --cwd "$project" --cache-dir "$caches/bun" "$@" ;;
   esac

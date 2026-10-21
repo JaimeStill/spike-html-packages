@@ -72,7 +72,11 @@ const firstError = (output) => output.split("\n").find((line) => /error/i.test(l
 // `cache`. npm has no workspace: protocol, so its copies declare each sibling by version.
 const offline = ["--offline", "--no-audit", "--no-fund"];
 const layouts = [
-  { name: "pnpm", manager: "pnpm", args: (cache) => ["--store-dir", cache, "--offline"] },
+  {
+    name: "pnpm",
+    manager: "pnpm",
+    args: (cache) => ["--store-dir", cache, `--config.cache-dir=${cache}`, "--offline"],
+  },
   { name: "npm hoisted", manager: "npm", args: (cache) => ["--cache", cache, ...offline] },
   {
     name: "npm linked",
