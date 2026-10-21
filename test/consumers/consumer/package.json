@@ -5,6 +5,6 @@
   "description": "A test fixture, never released: scripts/consumers.sh installs it under pnpm, npm, and bun, with the packed release beside this manifest.",
   "type": "module",
   "dependencies": {
-    "spike-html-packages": "file:spike-html-packages.tgz"
+    "@jaimestill/spike-html-packages": "file:spike-html-packages.tgz"
   }
 }

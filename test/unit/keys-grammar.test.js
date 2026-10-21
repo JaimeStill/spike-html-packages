@@ -1,4 +1,4 @@
-// The keys family's binding grammar, on layers/foundation/keys-grammar.ts as node runs it.
+// The keys family's binding grammar, on packages/foundation/src/keys-grammar.ts as node runs it.
 // Adapted from spike-html-design v0.7.0 (fe75220): test/keys-grammar.test.js, on node:test.
 
 import assert from "node:assert/strict";
@@ -11,7 +11,7 @@ import {
   parse,
   problem,
   stringify,
-} from "../../layers/foundation/keys-grammar.ts";
+} from "../../packages/foundation/src/keys-grammar.ts";
 
 // press builds a parsed press: key, then the modifiers it holds.
 const press = (key, held = {}) => ({

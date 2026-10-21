@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-const url = new URL("../../layers/foundation/registry.ts", import.meta.url).href;
+const url = new URL("../../packages/foundation/src/registry.ts", import.meta.url).href;
 const KEY = Symbol.for("spike-html-design.registry");
 
 /** The names v0.7.0's lean and full registration modules list, per facet, in order. */

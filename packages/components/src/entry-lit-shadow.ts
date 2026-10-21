@@ -4,9 +4,9 @@
 
 import { html, LitElement, nothing, type PropertyDeclarations } from "lit";
 
-import elements from "../foundation/baseline/elements.css" with { type: "css" };
-import reset from "../foundation/baseline/reset.css" with { type: "css" };
-import { define, emit } from "../foundation/dom.ts";
+import elements from "@jaimestill/spike-html-packages-foundation/baseline/elements.css" with { type: "css" };
+import reset from "@jaimestill/spike-html-packages-foundation/baseline/reset.css" with { type: "css" };
+import { define, emit } from "@jaimestill/spike-html-packages-foundation/dom.js";
 import styles from "./entry-shadow.css" with { type: "css" };
 
 /** The tag this version defines. */

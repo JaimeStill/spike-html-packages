@@ -1,5 +1,5 @@
-// The components from dist/: conventions' 27 probe cases, its restyle case, and the sheets each
-// shadow root adopts, on test/fixtures/components.html.
+// The components from the one package's dist/: conventions' 27 probe cases, its restyle case, and
+// the sheets each shadow root adopts, on test/fixtures/components.html.
 // Adapted from spike-html-conventions (a88828a): scripts/browser.test.js.
 
 import assert from "node:assert/strict";
@@ -50,7 +50,7 @@ describe("components", { timeout: 60_000 }, () => {
     try {
       const { adopted, label } = await page.evaluate(`(async () => {
         const sheet = async (path) =>
-          (await import("/dist/" + path, { with: { type: "css" } })).default;
+          (await import("/packages/spike-html-packages/dist/" + path, { with: { type: "css" } })).default;
         const reset = await sheet("foundation/baseline/reset.css");
         const elements = await sheet("foundation/baseline/elements.css");
         const components = [
@@ -60,7 +60,7 @@ describe("components", { timeout: 60_000 }, () => {
         ];
         const adopted = {};
         for (const [tag, module, own] of components) {
-          await import("/dist/components/" + module + ".js");
+          await import("/packages/spike-html-packages/dist/components/" + module + ".js");
           const ownSheet = await sheet("components/" + own);
           const element = document.body.appendChild(document.createElement(tag));
           await element.updateComplete;

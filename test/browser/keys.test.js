@@ -1,5 +1,5 @@
-// The keys runtime and its help dialog from dist/, pressed with real keys through the DevTools
-// Protocol on test/fixtures/keys*.html.
+// The keys runtime and its help dialog from the one package's dist/, pressed with real keys
+// through the DevTools Protocol on test/fixtures/keys*.html.
 // Adapted from spike-html-design v0.7.0 (fe75220): test/keys.test.js, its cases kept.
 
 import assert from "node:assert/strict";
@@ -11,7 +11,7 @@ import { after, afterEach, before, describe, test } from "node:test";
 import { launch } from "./support/browser-pipe.js";
 import { root, serve } from "./support/server.js";
 
-const KEYS = "/dist/foundation/keys.js";
+const KEYS = "/packages/spike-html-packages/dist/foundation/keys.js";
 const STORE = 'globalThis[Symbol.for("spike-html-design.keys")]';
 // The sequence wait the tests set, short so a test waits it out quickly.
 const WAIT = 150;
@@ -679,7 +679,7 @@ describe("keys: aria-keyshortcuts", () => {
   });
 });
 
-// The help dialog: keys loads dist/foundation/keys-help.js the first time a dialog holding
+// The help dialog: keys loads foundation/keys-help.js the first time a dialog holding
 // [data-keys-list] opens, and it fills the dialog.
 describe("keys: the help dialog", () => {
   const HELP = "keys-help.html";
@@ -822,10 +822,11 @@ describe("keys: the help dialog", () => {
   });
 
   test("of two copies at two URLs, the first installs the listener and loads the help beside it", async () => {
-    // a/ and b/ both link to dist/, so the page holds two copies of keys.js at two URLs.
+    // a/ and b/ both link to the one package's dist/, so the page holds two copies of keys.js at
+    // two URLs.
     const tree = await mkdtemp(join(tmpdir(), "keys-copies-"));
-    await symlink(join(root, "dist"), join(tree, "a"));
-    await symlink(join(root, "dist"), join(tree, "b"));
+    await symlink(join(root, "packages/spike-html-packages/dist"), join(tree, "a"));
+    await symlink(join(root, "packages/spike-html-packages/dist"), join(tree, "b"));
     await writeFile(
       join(tree, "copies.html"),
       `<!doctype html>

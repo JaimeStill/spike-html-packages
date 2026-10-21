@@ -1,10 +1,11 @@
-// The import extension's facts (README, Measures) as a dated markdown table. Builds the release
-// and a Vite page in a scratch directory it removes, loads the page in the pinned
-// chrome-headless-shell, and reads no network.
+// The import extension's facts (README, Measures) as a dated markdown table. Copies the one
+// package's build (mise run build) and builds a Vite page beside it in a scratch directory it
+// removes, loads the page in the pinned chrome-headless-shell, and reads no network.
 
 import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
+  cpSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -18,6 +19,9 @@ import { serve } from "../test/browser/support/server.js";
 import { listFiles } from "../test/consumers/release.js";
 
 const root = join(import.meta.dirname, "..");
+const one = join(root, "packages/spike-html-packages");
+const grammarSource = "packages/foundation/src/keys-grammar.ts";
+const keysSource = "packages/foundation/src/keys.ts";
 const fixture = join(root, "test/fixtures/measure");
 const scratch = mkdtempSync(join(tmpdir(), "measure."));
 const dist = join(scratch, "dist");
@@ -47,9 +51,8 @@ const row = (measure, holds, observed) =>
 const firstError = (output) => output.split("\n").find((line) => /error/i.test(line)) ?? output;
 
 try {
-  const build = run(join(root, "scripts/build.sh"), [dist]);
-  if (!build.ok) throw new Error(`the build failed: ${build.output}`);
-  symlinkSync(join(root, "node_modules"), join(scratch, "node_modules"));
+  cpSync(join(one, "dist"), dist, { recursive: true });
+  symlinkSync(join(one, "node_modules"), join(scratch, "node_modules"));
   const built = listFiles(dist);
 
   const emitted = built.filter((path) => path.endsWith(".js"));
@@ -98,18 +101,18 @@ try {
     );
   }
 
-  const grammar = run("node", ["layers/foundation/keys-grammar.ts"]);
+  const grammar = run("node", [grammarSource]);
   row(
-    `node ${process.versions.node} runs layers/foundation/keys-grammar.ts`,
+    `node ${process.versions.node} runs ${grammarSource}`,
     grammar.ok,
     grammar.ok ? "" : firstError(grammar.output),
   );
   // keys.ts needs a DOM, so it stops at evaluation, which node reaches only once every import
   // has resolved and linked.
-  const keys = run("node", ["layers/foundation/keys.ts"]);
+  const keys = run("node", [keysSource]);
   const linked = keys.output.includes("ReferenceError: document is not defined");
   row(
-    "node resolves layers/foundation/keys.ts's imports",
+    `node resolves ${keysSource}'s imports`,
     linked,
     linked ? "it stops at evaluation, on document" : firstError(keys.output),
   );

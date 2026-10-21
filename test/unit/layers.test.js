@@ -32,7 +32,7 @@ const lit = {
 
 /** Writes `files` to a scratch tree by `write`, with a stub lit in its node_modules so the
  * resolver finds it, and returns the files ESLint flagged with any of `rules`, after checking that
- * it linted every code file written under layers/ and parsed each. -c takes the repo's config,
+ * it linted every code file written under packages/ and parsed each. -c takes the repo's config,
  * whose patterns then match from the working directory, the scratch tree, and whose plugins load
  * from the repo's node_modules. */
 function flagged(files, rules, write = writeTree) {
@@ -43,14 +43,18 @@ function flagged(files, rules, write = writeTree) {
     for (const [name, source] of Object.entries(lit)) {
       writeFileSync(join(scratch, "node_modules", "lit", name), `${source}\n`);
     }
-    const run = spawnSync(eslint, ["-c", join(root, "eslint.config.js"), "-f", "json", "layers"], {
-      cwd: scratch,
-      encoding: "utf8",
-    });
+    const run = spawnSync(
+      eslint,
+      ["-c", join(root, "eslint.config.js"), "-f", "json", "packages"],
+      {
+        cwd: scratch,
+        encoding: "utf8",
+      },
+    );
     assert.equal(run.error, undefined, `eslint didn't run: ${run.error}`);
     assert.ok(run.status === 0 || run.status === 1, `eslint exited ${run.status}: ${run.stderr}`);
     const report = JSON.parse(run.stdout);
-    const code = written.filter((path) => path.startsWith("layers/") && /\.(js|ts)$/.test(path));
+    const code = written.filter((path) => path.startsWith("packages/") && /\.(js|ts)$/.test(path));
     assert.equal(report.length, code.length);
     const fatal = report.filter((file) => file.messages.some((m) => m.fatal));
     assert.deepEqual(
@@ -89,24 +93,24 @@ describe("layer import direction", () => {
 
 // Each file imports the stylesheet beside it in one form; layers-tree.js's targets() reads a .css
 // specifier as a directory, so this tree is written as it stands, the stylesheet with it.
-const sheet = "layers/components/x.css";
+const sheet = "packages/components/x.css";
 const refusedCss = {
-  "layers/components/side-effect.ts": `import "./x.css";`,
-  "layers/components/default.ts": `import sheet from "./x.css";`,
-  "layers/components/json.ts": `import sheet from "./x.css" with { type: "json" };`,
-  "layers/components/export.ts": `export { default } from "./x.css";`,
-  "layers/components/export-all.ts": `export * from "./x.css";`,
-  "layers/components/dynamic.ts": `await import("./x.css");`,
-  "layers/components/dynamic-json.ts": `await import("./x.css", { with: { type: "json" } });`,
-  "layers/components/dynamic-module.ts": `await import("./x.css", { with: { type: "css" } });`,
-  "layers/components/dynamic-quoted.ts": `await import("./x.css", { "with": { "type": "css" } });`,
-  "layers/components/dynamic-template.ts": "await import(`./x.css`, { with: { type: 'css' } });",
-  "layers/components/dynamic-computed.ts": "const name = 'x'; await import(`./${name}.css`);",
+  "packages/components/side-effect.ts": `import "./x.css";`,
+  "packages/components/default.ts": `import sheet from "./x.css";`,
+  "packages/components/json.ts": `import sheet from "./x.css" with { type: "json" };`,
+  "packages/components/export.ts": `export { default } from "./x.css";`,
+  "packages/components/export-all.ts": `export * from "./x.css";`,
+  "packages/components/dynamic.ts": `await import("./x.css");`,
+  "packages/components/dynamic-json.ts": `await import("./x.css", { with: { type: "json" } });`,
+  "packages/components/dynamic-module.ts": `await import("./x.css", { with: { type: "css" } });`,
+  "packages/components/dynamic-quoted.ts": `await import("./x.css", { "with": { "type": "css" } });`,
+  "packages/components/dynamic-template.ts": "await import(`./x.css`, { with: { type: 'css' } });",
+  "packages/components/dynamic-computed.ts": "const name = 'x'; await import(`./${name}.css`);",
 };
 const cssModules = {
-  "layers/components/module.ts": `import sheet from "./x.css" with { type: "css" };`,
-  "layers/components/quoted.ts": `import sheet from "./x.css" with { "type": "css" };`,
-  "layers/components/export-module.ts": `export { default } from "./x.css" with { type: "css" };`,
+  "packages/components/module.ts": `import sheet from "./x.css" with { type: "css" };`,
+  "packages/components/quoted.ts": `import sheet from "./x.css" with { "type": "css" };`,
+  "packages/components/export-module.ts": `export { default } from "./x.css" with { type: "css" };`,
 };
 
 /** Writes `files` under `dir` as they stand, with the stylesheet they import; returns the paths. */
@@ -135,24 +139,24 @@ describe("a .css import is a static CSS module script", () => {
 // import; the allowed files import the same declarations for their types alone, from another layer
 // and from within the declaration's own layer.
 const declarationFiles = {
-  "layers/sdk/api.d.ts": "export declare const x: number;\nexport interface X {}",
-  "layers/foundation/format.d.ts": "export declare function formatBytes(bytes: number): string;",
+  "packages/sdk/api.d.ts": "export declare const x: number;\nexport interface X {}",
+  "packages/foundation/format.d.ts": "export declare function formatBytes(bytes: number): string;",
 };
 const valueDeclarations = {
-  "layers/sdk/value.ts": `import { x } from "./api.js";`,
-  "layers/sdk/side-effect.ts": `import "./api.js";`,
-  "layers/sdk/inline-type.ts": `import { type X } from "./api.js";`,
-  "layers/sdk/export.ts": `export { x } from "./api.js";`,
-  "layers/sdk/export-all.ts": `export * from "./api.js";`,
-  "layers/sdk/dynamic.ts": `await import("./api.js");`,
-  "layers/components/format.ts": `import { formatBytes } from "../foundation/format.js";`,
-  "layers/foundation/internal.ts": `import { formatBytes } from "./format.js";`,
+  "packages/sdk/value.ts": `import { x } from "./api.js";`,
+  "packages/sdk/side-effect.ts": `import "./api.js";`,
+  "packages/sdk/inline-type.ts": `import { type X } from "./api.js";`,
+  "packages/sdk/export.ts": `export { x } from "./api.js";`,
+  "packages/sdk/export-all.ts": `export * from "./api.js";`,
+  "packages/sdk/dynamic.ts": `await import("./api.js");`,
+  "packages/components/format.ts": `import { formatBytes } from "../foundation/format.js";`,
+  "packages/foundation/internal.ts": `import { formatBytes } from "./format.js";`,
 };
 const typeDeclarations = {
-  "layers/sdk/type.ts": `import type { X, x } from "./api.js";`,
-  "layers/sdk/export-type.ts": `export type { X } from "./api.js";`,
-  "layers/components/typeof.ts": `import type { formatBytes } from "../foundation/format.js";\nexport type Format = typeof formatBytes;`,
-  "layers/foundation/internal-type.ts": `import type { formatBytes } from "./format.js";`,
+  "packages/sdk/type.ts": `import type { X, x } from "./api.js";`,
+  "packages/sdk/export-type.ts": `export type { X } from "./api.js";`,
+  "packages/components/typeof.ts": `import type { formatBytes } from "../foundation/format.js";\nexport type Format = typeof formatBytes;`,
+  "packages/foundation/internal-type.ts": `import type { formatBytes } from "./format.js";`,
 };
 
 /** Writes `files` under `dir` as they stand, with the declarations they import; returns the

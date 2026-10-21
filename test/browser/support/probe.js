@@ -5,7 +5,7 @@
 
 import { continued, directories, files, pageSizes } from "../../../demo/documents.js";
 
-/** @import { EntryItem } from "../../../dist/components/entry-lit-shadow.js" */
+/** @import { EntryItem } from "../../../packages/spike-html-packages/dist/components/entry-lit-shadow.js" */
 /** @import { Page } from "../../../demo/documents.js" */
 
 /**
@@ -42,8 +42,8 @@ export const version = {
   entry: "sl-entry-lit-shadow",
   load: () =>
     Promise.all([
-      import("../../../dist/components/pagination-lit-shadow.js"),
-      import("../../../dist/components/entry-lit-shadow.js"),
+      import("../../../packages/spike-html-packages/dist/components/pagination-lit-shadow.js"),
+      import("../../../packages/spike-html-packages/dist/components/entry-lit-shadow.js"),
     ]),
 };
 

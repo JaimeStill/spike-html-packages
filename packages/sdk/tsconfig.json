@@ -1,0 +1,11 @@
+// The package's build, src/ into dist/: tsc emits each module's .js and .d.ts.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

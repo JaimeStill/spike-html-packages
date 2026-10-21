@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Prints `<where>: <item> <pin> -> <latest>` for each mise tool and package.json dependency behind
-# its latest, and exits 1 if any; prints nothing when all are current. Reads the network.
+# its latest, the root's and each workspace package's, and exits 1 if any; prints nothing when all
+# are current. A sibling's workspace: range is no pin. Reads the network.
 # Adapted from spike-html-conventions (a88828a): scripts/currency.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -14,11 +15,20 @@ trailing=$(node -p '
 ' "$outdated")
 
 pins=$(node -p '
-  const { dependencies, devDependencies } = require("./package.json");
-  Object.entries({ ...dependencies, ...devDependencies }).map((pin) => pin.join(" ")).join("\n")
+  const { readdirSync } = require("node:fs");
+  const packages = readdirSync("packages").map((name) => "packages/" + name + "/package.json");
+  const manifests = ["package.json", ...packages];
+  manifests
+    .flatMap((path) => {
+      const { dependencies, devDependencies } = require("./" + path);
+      return Object.entries({ ...dependencies, ...devDependencies })
+        .filter(([, pin]) => !pin.startsWith("workspace:"))
+        .map(([name, pin]) => [path, name, pin].join(" "));
+    })
+    .join("\n")
 ')
 typescript_eslint=$(node -p 'require("./package.json").devDependencies["typescript-eslint"]')
-while read -r package pin; do
+while read -r manifest package pin; do
   latest=$(pnpm view "$package" version)
   # typescript is held to the newest version typescript-eslint's peer range accepts.
   if [[ $package == typescript ]]; then
@@ -28,7 +38,7 @@ while read -r package pin; do
       sort -V | tail -n 1)
   fi
   if [[ $pin != "$latest" ]]; then
-    trailing+=$'\n'"package.json: $package $pin -> $latest"
+    trailing+=$'\n'"$manifest: $package $pin -> $latest"
   fi
 done <<<"$pins"
 

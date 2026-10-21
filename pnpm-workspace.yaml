@@ -1,4 +1,9 @@
-# pnpm's settings for this package's install (mise run install), which has no workspace packages.
+# The workspace: one directory per package under packages/, the three layers and the one package
+# put together from their builds. The root is private and holds only the lint and type tooling.
+packages:
+  - packages/*
+
+# pnpm's settings for the workspace's install (mise run install).
 # (From spike-html-conventions a88828a: pnpm-workspace.yaml.)
 #
 # unrs-resolver, under eslint-plugin-import-x and eslint-import-resolver-typescript, has a
@@ -6,3 +11,7 @@
 # pnpm installs that dependency, so the script isn't run.
 allowBuilds:
   unrs-resolver: false
+
+# pnpm -r exec, which scripts/build.sh runs for the dependency order, would otherwise install when
+# it finds node_modules out of date; the check reads no network, and mise run install installs.
+verifyDepsBeforeRun: false

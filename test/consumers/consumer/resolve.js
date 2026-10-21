@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const name = "spike-html-packages";
+const name = "@jaimestill/spike-html-packages";
 const subpaths = JSON.parse(readFileSync(new URL("subpaths.json", import.meta.url), "utf8"));
 const installed = realpathSync(fileURLToPath(new URL(`node_modules/${name}/`, import.meta.url)));
 

@@ -8,7 +8,7 @@
          holding one entry per item of documents.js's pages, and the status badge. A page change or
          a page size change moves through the fixture's directories; every event is logged. Lit
          maps onto the demo server's /deps/, so the page runs served only: mise run demo. -->
-    <link rel="stylesheet" href="../dist/foundation/page.css" />
+    <link rel="stylesheet" href="../packages/spike-html-packages/dist/foundation/page.css" />
     <script type="importmap">
       {
         "imports": {
@@ -23,9 +23,9 @@
       }
     </script>
     <script type="module">
-      import "../dist/components/pagination-lit-shadow.js";
-      import "../dist/components/entry-lit-shadow.js";
-      import "../dist/components/status-badge.js";
+      import "../packages/spike-html-packages/dist/components/pagination-lit-shadow.js";
+      import "../packages/spike-html-packages/dist/components/entry-lit-shadow.js";
+      import "../packages/spike-html-packages/dist/components/status-badge.js";
       import { continued, directories, files, pageSizes } from "./documents.js";
 
       // say writes what an element sent into the log, newest first.

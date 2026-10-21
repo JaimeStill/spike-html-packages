@@ -1,4 +1,4 @@
-// The lint the check runs: the recommended rules, the layer direction in layers/, and every .css
+// The lint the check runs: the recommended rules, the layer direction in packages/, and every .css
 // import a CSS module script. test/unit/layers.test.js runs it over test/unit/layers-tree.js.
 // Adapted from spike-html-conventions (a88828a): eslint.config.js, its layer table cut to the
 // foundation, the components, and the SDK.
@@ -35,18 +35,18 @@ const cssImports = [
   })),
 ];
 
-// The layer table: each layer's directory and the layers it may import, "lit" the one package.
-// The foundation imports nothing but itself; a component imports the foundation and lit; the SDK
-// the foundation and lit, never a component. A file directly in layers/ imports nothing.
+// The layer table: each layer's package directory and the layers it may import, "lit" the one
+// package. The foundation imports nothing but itself; a component imports the foundation and lit;
+// the SDK the foundation and lit, never a component. A file directly in packages/ imports nothing.
 export const layers = [
-  { name: "foundation", path: "layers/foundation", may: ["foundation"] },
-  { name: "components", path: "layers/components", may: ["foundation", "components", "lit"] },
-  { name: "sdk", path: "layers/sdk", may: ["foundation", "sdk", "lit"] },
+  { name: "foundation", path: "packages/foundation", may: ["foundation"] },
+  { name: "components", path: "packages/components", may: ["foundation", "components", "lit"] },
+  { name: "sdk", path: "packages/sdk", may: ["foundation", "sdk", "lit"] },
 ];
 
 // Each layer is an element by its directory, matched from the root (partialMatch false), with a
 // second pattern for a file in a directory whose name starts with a dot, which micromatch's **
-// never enters, so ./.well-known/ and ./..x/ stay in their layer. A file directly in layers/ is a
+// never enters, so ./.well-known/ and ./..x/ stay in their layer. A file directly in packages/ is a
 // "loose" element with no policy.
 const elements = [
   ...layers.map(({ name, path }) => ({
@@ -54,7 +54,7 @@ const elements = [
     pattern: [path, `${path}/**/.*`],
     partialMatch: false,
   })),
-  { type: "loose", pattern: ["layers"], partialMatch: false },
+  { type: "loose", pattern: ["packages"], partialMatch: false },
 ];
 
 // The rule's default is disallow, and it checks every origin (lit is external) and local files no
@@ -70,30 +70,33 @@ const policies = layers.map(({ name, may }) => ({
   },
 }));
 
-// A declaration file (layers/sdk/*.d.ts, layers/foundation/format.d.ts) has no runtime, so an
-// import that resolves to one passes only as a type import, `import type` or `export type`, which
-// tsc erases: the last policy refuses any other kind, and as the last whose selector matches it
-// overrides the allows before it. The dependency's kind is the declaration's, so
-// `import { type X }` is a value import here, as it is to verbatimModuleSyntax, which keeps it as
-// `import {}` and so loads the file. checkInternals has the rule judge an import within one layer
-// too (the foundation's own import of format.d.ts); every row's policy allows its own layer.
+// A declaration file (packages/sdk/src/*.d.ts, packages/foundation/src/format.d.ts) has no
+// runtime, so an import that resolves to one passes only as a type import, `import type` or
+// `export type`, which tsc erases: the last policy refuses any other kind, and as the last whose
+// selector matches it overrides the allows before it. The dependency's kind is the declaration's,
+// so `import { type X }` is a value import here, as it is to verbatimModuleSyntax, which keeps it
+// as `import {}` and so loads the file. checkInternals has the rule judge an import within one
+// layer too (the foundation's own import of format.d.ts); every row's policy allows its own layer.
+// A sibling imported by its package name resolves to the .d.ts its build ships beside each .js, in
+// its dist/, so the policy holds the declarations outside a dist/ alone.
 const declarations = {
-  disallow: { to: { internalPath: "**/*.d.ts" }, dependency: { kind: "value" } },
+  disallow: { to: { internalPath: "!(dist/**)*.d.ts" }, dependency: { kind: "value" } },
   message:
     "A .d.ts file is a declaration with no runtime: import it with `import type` (or export " +
     "from it with `export type`), never as a value, a side effect, or an import().",
 };
 
 export default defineConfig([
-  // The release build and the consumer installs' caches, both gitignored, which ESLint doesn't read.
-  { ignores: ["dist/", ".cache/"] },
+  // The packages' builds and the consumer installs' caches, all gitignored, which ESLint doesn't
+  // read.
+  { ignores: ["**/dist/", ".cache/"] },
   { files: code, extends: [js.configs.recommended, tseslint.configs.recommended] },
   { files: code, languageOptions: { globals: globals.browser } },
   { files: code, rules: { "no-restricted-syntax": ["error", ...cssImports] } },
   // The suite and the scripts run on node; the browser tier's support/ also holds in-page modules.
   { files: ["test/**/*.js", "scripts/**"], languageOptions: { globals: globals.node } },
   {
-    files: ["layers/**"],
+    files: ["packages/**"],
     plugins: { boundaries, "import-x": importX },
     settings: {
       "import/resolver": { typescript: true },

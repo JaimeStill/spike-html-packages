@@ -3,11 +3,11 @@
 // Adapted from spike-html-conventions (a88828a): demo/restyle.ts, cut to the Lit shadow-root
 // version and loading dist/.
 
-import elements from "../../../dist/foundation/baseline/elements.css" with { type: "css" };
+import elements from "../../../packages/spike-html-packages/dist/foundation/baseline/elements.css" with { type: "css" };
 import { directories } from "../../../demo/documents.js";
 import { settle, version } from "./probe.js";
 
-/** @import { EntryItem } from "../../../dist/components/entry-lit-shadow.js" */
+/** @import { EntryItem } from "../../../packages/spike-html-packages/dist/components/entry-lit-shadow.js" */
 
 /** The background the edit gives every button: a color no source sets. */
 const edited = "rgb(1, 2, 3)";
