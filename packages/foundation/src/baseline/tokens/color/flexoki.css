@@ -6,7 +6,7 @@
  * The content is upstream's but for the block that wraps it in the foundation.tokens.color layer
  * and the layer names its comments give, spike-html-design.* upstream and foundation.* here.
  * Upstream's remarks on its entries describe upstream: here the file layers itself, imports
- * nothing, and layers/foundation/baseline.css imports it. The port is this repository's own code:
+ * nothing, and the foundation's baseline.css imports it. The port is this repository's own code:
  * Prettier formats it, and no test holds it to upstream.
  */
 

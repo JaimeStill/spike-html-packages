@@ -23,11 +23,13 @@ library or several packages, the hosting and repository layout, and the import e
 
 1. Hosting: one release delivered by git tag (installed, and loaded from jsDelivr /gh/), by
    release-asset tarball URL, by a registry, and by URL imports through an import map.
-2. Layout: the layers as one package with subpath exports against several workspace packages in
-   one repository, with the layer direction enforced at install by declared dependencies measured
-   against the lint rule alone.
-3. Tag naming: one repo-wide `vX.Y.Z` against per-package `pkg/vX.Y.Z` and `pkg@X.Y.Z`, each
-   resolved by npm, pnpm, bun, and jsDelivr.
+2. Layout: the layers as one package with subpath exports, as several workspace packages in one
+   repository, and as one repository per layer, with the layer direction enforced at install by
+   declared dependencies measured against the lint rules alone. The `hosting` task measures one
+   repository per layer.
+3. Tag naming: one repo-wide `vX.Y.Z` against per-package `pkg/vX.Y.Z` and `pkg@X.Y.Z` in one
+   repository, and against one repository per layer with its own tags, each resolved by npm, pnpm,
+   bun, and jsDelivr.
 4. The release build: tsc's `.js` and `.d.ts` with every `.css` copied beside them, `exports` and
    `files` naming them, carried in the tag, a release branch, or a release asset.
 5. The import extension: `.js` specifiers against `.ts` specifiers rewritten by tsc, the emit
@@ -50,8 +52,10 @@ Copies, each naming its source repository and commit:
   meta), and its registry and keys family (grammar, runtime, help).
 - spike-html-conventions' `.prettierrc.json` at main a88828a, as written.
 
-Lit is the one runtime dependency. The fixtures install the releases under npm, pnpm, and bun.
-Registry trials publish for real under `@jaimestill` at 0.0.x, to GitHub Packages and to JSR.
+The copied layers sit in three layer packages under `packages/`, one per layer; Layout below names
+them. Lit is the one runtime dependency, of the components package and the one package. The
+fixtures install the releases under npm, pnpm, and bun. Registry trials publish for real under
+`@jaimestill` at 0.0.x, to GitHub Packages and to JSR.
 
 ## Capabilities
 
@@ -70,7 +74,8 @@ The tasks, in the order they run; each cites the evidence it proves.
 1. `layers`: the copied layers, with the release build and the import extension, in the check
    (evidence 4, 5).
 2. `layout`: one package against workspace packages (evidence 2).
-3. `hosting`: the release by git tag, tarball, and import map, with tag naming (evidence 1, 3).
+3. `hosting`: the release by git tag, tarball, and import map, with tag naming, and one repository
+   per layer (evidence 1, 2, 3).
 4. `registries`: GitHub Packages and JSR (evidence 1).
 5. `consumers`: the page and Vite app consumers, and the release flow (evidence 6, 7).
 6. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
@@ -78,7 +83,7 @@ The tasks, in the order they run; each cites the evidence it proves.
 ## Releases
 
 0.y.z annotated tags, pushed as evidence by the tasks that need them and never changed or re-cut.
-Their form is the tag-naming evidence's to settle. The `layers` task pushes none.
+Their form is the tag-naming evidence's to settle. The `layers` and `layout` tasks push none.
 
 ## References
 
@@ -90,37 +95,81 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 ## Layout
 
-- `layers/`: the sources: the foundation, the components, and the SDK.
-- `scripts/`: one entry script per task.
-- `test/unit/`: `node --test` on the sources, types stripped, and on the release build;
-  `layers-tree.js` holds the layer direction's cases.
-- `test/browser/`: `node --test` on `dist/` in the pinned chrome-headless-shell; `support/` holds
-  the pipe driver, the static server, and the case modules the pages import: the tools'
-  `computed-styles.js` and the components' `probe.js` and `restyle.js`.
-- `test/consumers/`: the consumer fixture that pnpm, npm, and bun each install, and the manifest
-  step, `consumers.js`.
-- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages and their `keys-indicator.js`; the components page; and
-  the measure page, a Vite page with its CSS plugin.
-- `demo/`: the demo pages, and `documents.js`, the listings they show, which the browser cases'
-  components modules also import.
+- `packages/`: the pnpm workspace's four packages, each built into its own `dist/`:
+  - `foundation/`: `@jaimestill/spike-html-packages-foundation`, the baseline, the tool sheets,
+    the DOM helpers, the registry and keys family, and the formatter declarations. It exports the
+    ambient `*.css` declaration as its `./css` types subpath, and has no dependencies.
+  - `components/`: `@jaimestill/spike-html-packages-components`, the Lit shadow components. It
+    depends on lit 3.3.3 and on the foundation by `workspace:*`.
+  - `sdk/`: `@jaimestill/spike-html-packages-sdk`, the SDK declarations, types only, with no
+    dependencies.
+  - `spike-html-packages/`: `@jaimestill/spike-html-packages`, the one package. It has no sources:
+    `scripts/assemble.js` copies the three builds into its `dist/`, one directory per layer, and
+    rewrites each bare sibling specifier to a relative one. Lit is its one dependency, and the
+    three layer packages are its devDependencies.
+- `package.json`: the private root. It declares no runtime dependency and holds the lint and type
+  tooling.
+- `scripts/`: one entry script per task. `build.sh` builds the packages in pnpm's dependency order:
+  tsc for each layer package, with its `.css` and handwritten `.d.ts` copied beside the emit, and
+  `assemble.js` for the one package, last.
+- `test/unit/`: `node --test` on the sources, types stripped, and on release builds it makes in a
+  temporary directory; `layers-tree.js` holds the layer direction's cases.
+- `test/browser/`: `node --test` on the one package's `dist/` in the pinned chrome-headless-shell;
+  `support/` holds the pipe driver, the static server, and the case modules the pages import: the
+  tools' `computed-styles.js` and the components' `probe.js` and `restyle.js`.
+- `test/consumers/`: the consumer fixtures that pnpm, npm, and bun each install: `one/` the one
+  package, `layers/` the three layer packages, and `components/` the components alone, with an
+  undeclared import of the foundation. `consumers.js` writes each install's subpath list,
+  `resolve.js` resolves every subpath, and `release.js` holds the exports and integrity checks the
+  unit tier shares.
+- `test/fixtures/`: v0.7.0's pages and sheets, as copied; the keys pages and their
+  `keys-indicator.js`; the components page; and the measure's Vite page with its CSS plugin and
+  `resolve.config.js`, the Vite build that judges each install layout.
+- `demo/`: the demo pages, on the one package's build, and `documents.js`, the listings they show,
+  which the browser cases' components modules also import.
 
 ## Tasks
 
 - `mise run install`: `scripts/install.sh`, the mise pins, node_modules, and the consumer caches;
   the one task that reads the network.
 - `mise run check`: lint, types, build, and the three tiers; reads no network; in the repository it
-  writes only `dist/` and the consumer caches in `.cache/`.
-- `mise run lint`: `lint:eslint` (with the layer direction), `lint:format` (Prettier), and
-  `lint:shell` (shellcheck).
-- `mise run types`: tsc, typescript-go, as `types:layers` over the layers and the demo, and
-  `types:browser` over the browser cases' in-page modules against `dist/`.
-- `mise run build`: the release, `layers/` into `dist/`.
+  writes only each package's `dist/` and the consumer caches in `.cache/`.
+- `mise run lint`: `lint:eslint` (the layer table and import-x's manifest rules), `lint:format`
+  (Prettier), and `lint:shell` (shellcheck).
+- `mise run types`: tsc, typescript-go, as `types:foundation`, `types:components`, and `types:sdk`
+  over each layer package, the components against the foundation's build; `types:demo` over the
+  demo; and `types:browser` over the browser cases' in-page modules against the one package's
+  `dist/`.
+- `mise run build`: `scripts/build.sh`, each package into its `dist/` in dependency order, the one
+  package last.
 - `mise run test:unit`, `test:browser`, `test:consumers`: the three tiers, each runnable alone.
-  `test:unit` builds the release it checks into a temporary directory, so it needs no `dist/`.
-- `mise run installs`: the consumer installs, with each install's file list.
-- `mise run demo`: the demo pages, on a fresh `dist/`, served on the loopback address.
-- `mise run measure`: the import extension's facts, below.
-- `mise run currency`: every pin behind its latest.
+  `test:unit` builds the releases it checks into a temporary directory, so it needs no `dist/`.
+- `mise run installs`: the consumer installs, with the one package's and the three layer packages'
+  installed files.
+- `mise run demo`: the demo pages, on a fresh build of the one package, served on the loopback
+  address.
+- `mise run measure`: the import extension's facts and the layer violations' catchers, below.
+- `mise run currency`: every pin behind its latest, the root's and each package's.
+
+## Consumer installs
+
+`mise run test:consumers` packs each package with `pnpm pack`, installs the tarballs offline from
+`.cache/consumers/`, and fails if a manager departs from the facts below, measured 2026-10-21. Each
+manager installs in its default layout: pnpm isolated, npm hoisted, and bun hoisted, its default
+outside a workspace. `pnpm pack` writes the components' `workspace:*` foundation spec as `0.0.0`,
+which no registry holds, so a manager that looks it up needs an override:
+
+| consumer | pnpm | npm | bun |
+| --- | --- | --- | --- |
+| the three layer packages | overrides | none: it dedupes against the consumer's foundation | overrides |
+| the components alone | overrides | overrides | overrides |
+| the components alone, importing the undeclared foundation | unresolved | resolves | resolves |
+
+An override points the foundation at its tarball by a `file:` spec. pnpm 12 reads overrides only
+from `pnpm-workspace.yaml`, and npm and bun from `package.json`. pnpm links only a project's
+declared dependencies into its `node_modules`, so the undeclared import fails there; npm and bun
+hoist the foundation where it resolves. pnpm's store and its metadata cache (`cacheDir`), which
+`--offline` reads, both live in `.cache/consumers/pnpm/`.
 
 ## Measures
 
@@ -145,12 +194,15 @@ extension's facts (evidence 5). The table of 2026-10-21:
 The second lints the violation tree (`test/unit/layers-tree.js`), then installs it as a workspace
 under four layouts, each offline from a copy of the caches `mise run install` warms in
 `.cache/consumers/`: pnpm (isolated), npm hoisted, npm `--install-strategy=linked`, and bun
-`--linker isolated`. Each row is one case, the four-form edges by their side-effect import. A layout
-catches a case when a resolver named for it can't resolve the import there: tsc for a type import,
-and for the rest node, running the case, and Vite, in one `vite build` of the layout with every case
-an entry (`test/fixtures/measure/resolve.config.js`). Each cell names the resolvers that fail and
-why, and where node and Vite disagree, which one resolves. The root's devDependencies are stub
-packages, packed beside the tree. The table of 2026-10-21:
+`--linker isolated`. Its bun column is the isolated linker, not the hoisted layout the consumer tier
+installs with. Each row is one case; an edge the tree writes in four import forms appears once, by
+its side-effect import. The `table` column is the lint's layer table, and `manifest rules` are
+import-x's no-extraneous-dependencies and no-relative-packages. A layout catches a case when a
+resolver named for it can't resolve the import there: tsc for a type import, and for the rest node,
+running the case, and Vite, in one `vite build` of the layout with every case an entry
+(`test/fixtures/measure/resolve.config.js`). Each cell names the resolvers that fail and why, and
+where node and Vite disagree, which one resolves. The root's devDependencies are stub packages,
+packed beside the tree. The table of 2026-10-21:
 
 | case | import | resolved by | table | manifest rules | pnpm | npm hoisted | npm linked | bun isolated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

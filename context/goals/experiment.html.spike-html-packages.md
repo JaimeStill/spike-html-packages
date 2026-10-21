@@ -95,7 +95,7 @@ Door          two-way: nothing leaves the repository. The names become one-way
 
 ## Progress
 
-slices 5/5 committed · standards — · spec — · editor —
+slices 5/5 committed · standards ✓ · spec ✓ (1 gap closed) · editor ✓
 
 ## Decisions
 
@@ -192,6 +192,25 @@ slices 5/5 committed · standards — · spec — · editor —
   retried before the brief, else the next task's currency takes it.
 - layout: chrome-headless-shell 156 no longer caches a failed module fetch, so the help retry
   test counts a request per import(); keys.ts's retry was already right.
+- layout: scripts/build.sh takes the build order from pnpm (`pnpm -r exec pwd`) but runs tsc
+  itself, since pnpm's PATH puts node_modules/.bin's typescript 6.0.3 ahead of typescript-go.
+- layout: pnpm-workspace.yaml sets `verifyDepsBeforeRun: false`, so `pnpm -r exec` never
+  installs; the check reads no network, and `mise run install` installs.
+- layout: foundation's exports map `./css.js` to null, so the ambient `*.css` declaration is a
+  types subpath only and `./*.js` gives it no runtime subpath.
+- layout: the one package declares its siblings as devDependencies, so a consumer installs none;
+  `pnpm pack` writes them as 0.0.0 devDependencies, which a registry publish would carry.
+- layout: the lint's declaration policy applies to `!(dist/**)*.d.ts`, so a value import of a
+  types-only sibling subpath by package name passes the lint; node and Vite catch it ("not
+  exported"), as the measure records.
+- layout: pnpm's metadata cache (cacheDir) is kept in .cache/consumers/pnpm, beside its store,
+  because `--offline` resolves from it and its default is in the home directory.
+- layout: the measure judges value imports with Vite beside node; they disagree on the absolute
+  path (Vite resolves it from its root) and the percent-encoded segment (node resolves it).
+- layout: the consumer tier installs in each manager's default layout (pnpm isolated, npm hoisted,
+  bun hoisted outside a workspace); the measure alone covers npm linked and bun isolated.
+- layout: the consumer tier's overrides point the foundation at its tarball by `file:`, since
+  npm's `$ref` needs the package as a direct dependency, which the components-alone consumer lacks.
 
 ## Pending edits
 
