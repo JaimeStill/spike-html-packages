@@ -1,10 +1,16 @@
-// The import extension's facts (README, Measures) as a dated markdown table. Builds the release
-// and a Vite page in a scratch directory it removes, loads the page in the pinned
-// chrome-headless-shell, and reads no network.
+// The README's Measures as two dated markdown tables, in a scratch directory it removes, reading no
+// network. The import extension's facts: it copies the one package's build (mise run build), builds
+// a Vite page beside it, and loads the page in the pinned chrome-headless-shell. The layer
+// violations' catchers: it lints test/unit/layers-tree.js's violation tree, then installs the tree
+// as a workspace under each package manager's layout, offline from copies of the caches mise run
+// install warms in .cache/consumers/, and has tsc, or node and Vite, resolve each case's import.
 
 import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -12,20 +18,41 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { launch } from "../test/browser/support/browser-pipe.js";
 import { serve } from "../test/browser/support/server.js";
 import { listFiles } from "../test/consumers/release.js";
+import {
+  externals,
+  extraneous,
+  lint,
+  manifests,
+  relativePackages,
+  sources,
+  table,
+  uncaught,
+  violations,
+  writeTree,
+} from "../test/unit/layers-tree.js";
 
 const root = join(import.meta.dirname, "..");
+const one = join(root, "packages/spike-html-packages");
+const grammarSource = "packages/foundation/src/keys-grammar.ts";
+const keysSource = "packages/foundation/src/keys.ts";
 const fixture = join(root, "test/fixtures/measure");
 const scratch = mkdtempSync(join(tmpdir(), "measure."));
 const dist = join(scratch, "dist");
 const rows = [];
+const layoutRows = [];
 
-/** Runs a command, returning whether it exited 0 and its stdout and stderr, trimmed. */
-function run(command, args, cwd = root) {
-  const { status, stdout, stderr } = spawnSync(command, args, { cwd, encoding: "utf8" });
+/** Runs a command, with `env` added to the environment, returning whether it exited 0 and its
+ * stdout and stderr, trimmed. */
+function run(command, args, cwd = root, env = {}) {
+  const { status, stdout, stderr } = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
   return { ok: status === 0, output: `${stdout}${stderr}`.trim() };
 }
 
@@ -46,10 +73,243 @@ const row = (measure, holds, observed) =>
 /** The first line of a failed command's output. */
 const firstError = (output) => output.split("\n").find((line) => /error/i.test(line)) ?? output;
 
+// The install layouts: each manager's offline install of the workspace, from its cache in
+// `cache`. npm has no workspace: protocol, so its copies declare each sibling by version.
+const offline = ["--offline", "--no-audit", "--no-fund"];
+const layouts = [
+  {
+    name: "pnpm",
+    manager: "pnpm",
+    args: (cache) => ["--store-dir", cache, `--config.cache-dir=${cache}`, "--offline"],
+  },
+  { name: "npm hoisted", manager: "npm", args: (cache) => ["--cache", cache, ...offline] },
+  {
+    name: "npm linked",
+    manager: "npm",
+    args: (cache) => ["--cache", cache, ...offline, "--install-strategy=linked"],
+  },
+  {
+    name: "bun isolated",
+    manager: "bun",
+    args: (cache) => ["--cache-dir", cache, "--offline", "--linker", "isolated"],
+  },
+];
+
+// One case per edge: a forms() edge by its side-effect import, the other three forms left out, and
+// the uncaught edge, four forms of one value import, by the first.
+const cases = {
+  ...sources(
+    Object.fromEntries(
+      Object.entries(violations).filter(
+        ([path]) => !/\/forms\/.*-(type|export|dynamic)\.ts$/.test(path),
+      ),
+    ),
+  ),
+  ...Object.fromEntries(Object.entries(uncaught).slice(0, 1)),
+};
+// tsc judges a type import, which has no runtime. node, which runs the sources unbuilt, and Vite,
+// which builds them, judge the rest. They disagree on an absolute path, which Vite reads from its
+// root, and on a percent-encoded segment, which node resolves and Vite doesn't.
+const judges = (source) => (source.startsWith("import type") ? ["tsc"] : ["node", "Vite"]);
+// tsc's codes for an import it can't resolve, and node's, each by what it says of the import.
+const tscUnresolved = ["TS2307", "TS2792", "TS2834", "TS2835"];
+const nodeUnresolved = {
+  ERR_MODULE_NOT_FOUND: "not found",
+  ERR_PACKAGE_PATH_NOT_EXPORTED: "not exported",
+  ERR_UNSUPPORTED_DIR_IMPORT: "a directory",
+};
+
+/** The workspace's manifests for `manager`'s copy: the root's devDependencies cut to the two the
+ * cases import, each a packed stub in stubs/, and for npm and bun a workspaces field, which pnpm
+ * reads from pnpm-workspace.yaml. With `plain`, each workspace: spec becomes the sibling's version. */
+function layoutManifests(manager, plain) {
+  const versions = Object.fromEntries(Object.values(manifests).map((m) => [m.name, m.version]));
+  return Object.fromEntries(
+    Object.entries(manifests).map(([dir, manifest]) => {
+      const copy = structuredClone(manifest);
+      if (!dir) {
+        copy.devDependencies = {
+          eslint: "file:stubs/eslint.tgz",
+          typescript: "file:stubs/typescript.tgz",
+        };
+        if (manager !== "pnpm") copy.workspaces = ["packages/*"];
+      }
+      for (const field of ["dependencies", "devDependencies"]) {
+        for (const [name, spec] of Object.entries(copy[field] ?? {})) {
+          if (plain && spec.startsWith("workspace:")) copy[field][name] = versions[name];
+        }
+      }
+      return [dir, copy];
+    }),
+  );
+}
+
+/** Writes the cases under `dir` for `manager`, with the stubs packed beside them. */
+function writeLayout(dir, manager, plain) {
+  writeTree(dir, cases, { manifests: layoutManifests(manager, plain), link: false });
+  if (manager === "pnpm") {
+    copyFileSync(join(root, "pnpm-workspace.yaml"), join(dir, "pnpm-workspace.yaml"));
+  }
+  for (const name of ["eslint", "typescript"]) {
+    const stub = join(dir, "stubs", name, "package");
+    mkdirSync(stub, { recursive: true });
+    for (const [path, source] of Object.entries(externals[name])) {
+      writeFileSync(join(stub, path), source);
+    }
+    const manifest = JSON.parse(externals[name]["package.json"]);
+    manifest.version = manifests[""].devDependencies[name];
+    writeFileSync(join(stub, "package.json"), JSON.stringify(manifest));
+    const packed = run("tar", [
+      "-czf",
+      join(dir, "stubs", `${name}.tgz`),
+      "-C",
+      dirname(stub),
+      "package",
+    ]);
+    if (!packed.ok) throw new Error(`tar: ${packed.output}`);
+    rmSync(dirname(stub), { recursive: true });
+  }
+}
+
+/** Installs `dir` by `layout`, from its manager's cache under `caches`. */
+function install({ manager, args }, dir, caches) {
+  const flag = { pnpm: "--dir", npm: "--prefix", bun: "--cwd" }[manager];
+  return run(manager, ["install", flag, dir, ...args(join(caches, manager))], dir);
+}
+
+/** Each case by what each of its judges says resolving its import under `dir`: the reason it can't,
+ * or "". */
+function resolveCases(dir) {
+  const found = Object.fromEntries(Object.keys(cases).map((path) => [path, {}]));
+  const typed = Object.keys(cases).filter((path) => judges(cases[path]).includes("tsc"));
+  const values = Object.keys(cases).filter((path) => !typed.includes(path));
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify({ extends: join(root, "tsconfig.json"), include: typed }),
+  );
+  const checked = run("tsc", ["-p", dir, "--pretty", "false"], dir).output;
+  for (const path of typed) {
+    const errors = checked.split("\n").filter((line) => line.startsWith(`${path}(`));
+    found[path].tsc =
+      tscUnresolved.find((code) => errors.some((line) => line.includes(code))) ?? "";
+  }
+  for (const path of values) {
+    const ran = run("node", [join(dir, path)], dir);
+    const code = ran.ok ? undefined : ran.output.match(/code: '(ERR_\w+)'/)?.[1];
+    found[path].node = nodeUnresolved[code] ?? "";
+  }
+  // One build of the layout, every value case an entry, judged by resolve.config.js.
+  const resolved = join(dir, "vite-resolved.json");
+  const built = run(
+    "vite",
+    ["build", dir, "--config", join(fixture, "resolve.config.js"), "--configLoader", "native"],
+    dir,
+    { MEASURE_CASES: JSON.stringify(values), MEASURE_RESOLVED: resolved },
+  );
+  if (!built.ok || !existsSync(resolved))
+    throw new Error(`vite can't judge ${dir}:\n${built.output}`);
+  const vite = JSON.parse(readFileSync(resolved, "utf8"));
+  for (const path of values) {
+    if (!(path in vite)) throw new Error(`vite didn't judge ${path}`);
+    found[path].Vite = vite[path];
+  }
+  return found;
+}
+
+/** A layout's cell: which judges can't resolve the case's import, and why, from `judged`, each
+ * judge by its reason or "". */
+function caught(judged) {
+  const by = Object.entries(judged);
+  const failed = by.filter(([, reason]) => reason);
+  const resolves = by.filter(([, reason]) => !reason).map(([name]) => name);
+  if (!failed.length) return "no";
+  if (resolves.length) {
+    const named = failed.map(([name, reason]) => `${name} only (${reason})`).join(", ");
+    return `${named}; ${resolves.join(", ")} resolves`;
+  }
+  const reasons = new Set(failed.map(([, reason]) => reason));
+  return reasons.size === 1
+    ? `yes: ${failed.map(([name]) => name).join(", ")} (${[...reasons][0]})`
+    : `yes: ${failed.map(([name, reason]) => `${name} (${reason})`).join(", ")}`;
+}
+
+/** The layer violations' table: each case's catchers by the lint and by each install layout. Its
+ * own scratch directory, since a node_modules above an install, as the first table's link to the one
+ * package's, would resolve what the layout leaves out. */
+function measureLayouts() {
+  const scratch = mkdtempSync(join(tmpdir(), "measure-layouts."));
+  try {
+    for (let dir = dirname(scratch); dir !== dirname(dir); dir = dirname(dir)) {
+      if (existsSync(join(dir, "node_modules"))) throw new Error(`${dir} holds a node_modules`);
+    }
+    layoutTable(scratch);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+/** Fills layoutRows from installs under `scratch`. */
+function layoutTable(scratch) {
+  const caches = join(scratch, "caches");
+  for (const manager of ["pnpm", "npm", "bun"]) {
+    const cache = join(root, ".cache/consumers", manager);
+    if (!existsSync(cache)) throw new Error(`${cache} is missing; run mise run install`);
+    cpSync(cache, join(caches, manager), { recursive: true });
+  }
+
+  const linted = join(scratch, "lint");
+  writeTree(linted, { ...sources(violations), ...uncaught });
+  const rules = {};
+  for (const file of lint(linted)) {
+    rules[file.filePath.slice(linted.length + 1)] = new Set(file.messages.map((m) => m.ruleId));
+  }
+
+  const results = {};
+  for (const layout of layouts) {
+    const dir = join(scratch, layout.name.replace(" ", "-"));
+    writeLayout(dir, layout.manager, layout.manager === "npm");
+    const installed = install(layout, dir, caches);
+    if (!installed.ok)
+      throw new Error(`${layout.name} can't install offline:\n${installed.output}`);
+    results[layout.name] = resolveCases(dir);
+  }
+
+  // npm on the manifests pnpm and bun install, workspace:* specs and all.
+  const declared = join(scratch, "npm-workspace");
+  writeLayout(declared, "npm", false);
+  const refused = install(layouts[1], declared, caches);
+  const gap = refused.ok
+    ? "npm installs the workspace:* specs"
+    : `npm refuses the workspace:* specs (${refused.output.split("\n").find((line) => /workspace:/.test(line)) ?? firstError(refused.output)}), so its copies declare each sibling by its version, ${manifests["packages/foundation"].version}`;
+
+  const names = layouts.map(({ name }) => name);
+  const yes = (reason) => (reason ? `yes: ${reason}` : "no");
+  layoutRows.push(
+    `| case | import | resolved by | table | manifest rules | ${names.join(" | ")} |`,
+    `| --- | --- | --- | --- | --- | ${names.map(() => "---").join(" | ")} |`,
+  );
+  for (const [path, source] of Object.entries(cases)) {
+    const by = rules[path] ?? new Set();
+    const manifest = [extraneous, relativePackages]
+      .filter((rule) => by.has(rule))
+      .map((rule) => rule.replace("import-x/", ""))
+      .join(", ");
+    const cells = [
+      path.replace(/^packages\//, ""),
+      `\`${source}\``,
+      judges(source).join(", "),
+      by.has(table) ? "yes" : "no",
+      yes(manifest),
+      ...names.map((name) => caught(results[name][path])),
+    ];
+    layoutRows.push(`| ${cells.join(" | ")} |`);
+  }
+  layoutRows.push("", `${gap}.`);
+}
+
 try {
-  const build = run(join(root, "scripts/build.sh"), [dist]);
-  if (!build.ok) throw new Error(`the build failed: ${build.output}`);
-  symlinkSync(join(root, "node_modules"), join(scratch, "node_modules"));
+  cpSync(join(one, "dist"), dist, { recursive: true });
+  symlinkSync(join(one, "node_modules"), join(scratch, "node_modules"));
   const built = listFiles(dist);
 
   const emitted = built.filter((path) => path.endsWith(".js"));
@@ -98,18 +358,18 @@ try {
     );
   }
 
-  const grammar = run("node", ["layers/foundation/keys-grammar.ts"]);
+  const grammar = run("node", [grammarSource]);
   row(
-    `node ${process.versions.node} runs layers/foundation/keys-grammar.ts`,
+    `node ${process.versions.node} runs ${grammarSource}`,
     grammar.ok,
     grammar.ok ? "" : firstError(grammar.output),
   );
   // keys.ts needs a DOM, so it stops at evaluation, which node reaches only once every import
   // has resolved and linked.
-  const keys = run("node", ["layers/foundation/keys.ts"]);
+  const keys = run("node", [keysSource]);
   const linked = keys.output.includes("ReferenceError: document is not defined");
   row(
-    "node resolves layers/foundation/keys.ts's imports",
+    `node resolves ${keysSource}'s imports`,
     linked,
     linked ? "it stops at evaluation, on document" : firstError(keys.output),
   );
@@ -174,6 +434,8 @@ try {
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }
+measureLayouts();
 
 const date = new Date().toISOString().slice(0, 10);
 console.log(`## Measures, ${date}\n\n| measure | result |\n| --- | --- |\n${rows.join("\n")}`);
+console.log(`\n## Layer violations, ${date}\n\n${layoutRows.join("\n")}`);

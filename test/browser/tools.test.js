@@ -1,6 +1,6 @@
-// The tool sheets in dist/ against v0.7.0's: every element of demo/tools.html computes the same,
-// at rest and hovered, and dropping any one declaration shows. The page entry's layer order and
-// default profiles are read from the same page.
+// The tool sheets in the one package's dist/ against v0.7.0's: every element of demo/tools.html
+// computes the same, at rest and hovered, and dropping any one declaration shows. The page entry's
+// layer order and default profiles are read from the same page.
 // Adapted from spike-html-conventions (a88828a): scripts/browser.test.js.
 
 import assert from "node:assert/strict";
@@ -13,8 +13,8 @@ import { concerns, differences } from "./support/computed-styles.js";
 import { root, serve } from "./support/server.js";
 
 const reference = "/test/fixtures/v0.7.0/baseline.css";
-const entry = "/dist/foundation/page.css";
-const sheet = (concern) => `/dist/foundation/${concern}.css`;
+const entry = "/packages/spike-html-packages/dist/foundation/page.css";
+const sheet = (concern) => `/packages/spike-html-packages/dist/foundation/${concern}.css`;
 
 /** The foundation's layers, in the order the page entry states. */
 const LAYER_ORDER = [
@@ -135,7 +135,7 @@ describe("foundation tools", () => {
   test("with no profile attribute, the page entry applies DEFAULTS' profiles", async () => {
     const page = await toolsPage(entry);
     // A custom property keeps its source's line breaks.
-    const read = `import("/dist/foundation/registry.js").then(({ DEFAULTS }) => {
+    const read = `import("/packages/spike-html-packages/dist/foundation/registry.js").then(({ DEFAULTS }) => {
       const style = getComputedStyle(document.documentElement);
       const token = (name) => style.getPropertyValue(name).trim().replace(/\\s+/g, " ");
       return {
@@ -183,7 +183,7 @@ describe("foundation tools", () => {
   test("each sheet is self-layered and @import-free, and a shadow root adopts it alone", async () => {
     const page = await browser.open(`${server.origin}/demo/tools.html`);
     const adopted = await page.evaluate(`import("/test/browser/support/computed-styles.js")
-      .then((m) => m.adopt("/dist/foundation"))`);
+      .then((m) => m.adopt("/packages/spike-html-packages/dist/foundation"))`);
     await page.close();
     for (const concern of concerns) {
       assert.equal(adopted[concern].imports, 0, `${concern}.css holds an @import`);

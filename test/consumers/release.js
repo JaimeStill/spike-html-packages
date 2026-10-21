@@ -1,5 +1,7 @@
-// The release's shape: its exports map walked by Node's rules, and the build checked against the
-// sources, package.json's files, and exports. test/unit/release.test.js and consumers.js share it.
+// A release's shape: its exports map walked by Node's rules, and a package's build checked against
+// its sources, package.json's files, and exports. A layer package's sources are its src/; the one
+// package's are its siblings' builds, which it must name only by relative specifiers.
+// test/unit/release.test.js and consumers.js share it.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
@@ -13,7 +15,8 @@ export function listFiles(dir) {
     .sort();
 }
 
-/** The conditions of an exports entry, as { condition: target }; a bare target is "default". */
+/** The conditions of an exports entry, as { condition: target }; a bare target is "default", and
+ * null, which excludes its subpath, has none. */
 export function conditions(entry) {
   return typeof entry === "string" ? { default: entry } : { ...entry };
 }
@@ -87,7 +90,10 @@ export function subpathsOf(exports, file) {
   return found;
 }
 
-/** The dist/ paths a source in layers/ ships as. */
+/** The workspace's scope: a layer package is named in it for its layer. */
+const scope = "@jaimestill/spike-html-packages-";
+
+/** The dist/ paths a source in src/ ships as. */
 export function builtFrom(source) {
   if (source.endsWith(".d.ts") || source.endsWith(".css")) return [`dist/${source}`];
   if (source.endsWith(".ts")) {
@@ -95,6 +101,48 @@ export function builtFrom(source) {
     return [`dist/${base}.js`, `dist/${base}.d.ts`];
   }
   return [];
+}
+
+/** The dist/ path a layer's built file ships as in the one package: its path in the layer's
+ * directory, but for the foundation's ambient declaration, the one package's own ./css. */
+export function assembledFrom(layer, path) {
+  if (layer === "foundation" && path === "dist/css.d.ts") return path;
+  return `dist/${layer}/${path.slice("dist/".length)}`;
+}
+
+/** The siblings the one package is put together from, its devDependencies in the scope; none for
+ * a layer package. */
+function siblingsOf(manifest) {
+  return Object.keys(manifest.devDependencies ?? {}).filter((name) => name.startsWith(scope));
+}
+
+/** Each source of root's build, by the label a problem names it with, and the built paths it ships
+ * as: a layer package's src/ by builtFrom, or the one package's siblings' builds, read through its
+ * node_modules, by assembledFrom. */
+function sourcesOf(root, manifest) {
+  const siblings = siblingsOf(manifest);
+  if (siblings.length === 0) {
+    return listFiles(join(root, "src")).map((source) => [`src/${source}`, builtFrom(source)]);
+  }
+  return siblings.flatMap((name) =>
+    listFiles(join(root, "node_modules", name, "dist")).map((path) => [
+      `${name}'s dist/${path}`,
+      [assembledFrom(name.slice(scope.length), `dist/${path}`)],
+    ]),
+  );
+}
+
+/** Each built .js and .d.ts that names a sibling by a bare specifier, one line each: the one
+ * package installs without its siblings, so it must name their files by relative specifiers. */
+function bareSiblings(root, built) {
+  const bare = new RegExp(`"(${scope}[^"]*)"`, "g");
+  return built
+    .filter((path) => path.endsWith(".js") || path.endsWith(".d.ts"))
+    .flatMap((path) =>
+      [...readFileSync(join(root, path), "utf8").matchAll(bare)].map(
+        ([, specifier]) => `${path} names ${specifier}, a bare sibling specifier`,
+      ),
+    );
 }
 
 /** What keeps root's dist/ from being the release its package.json declares, one line each. */
@@ -107,17 +155,17 @@ export function releaseProblems(root) {
 
   // The build against the sources: each source's emit or copy is there, and nothing else is.
   const expected = new Set();
-  for (const source of listFiles(join(root, "layers"))) {
-    const outputs = builtFrom(source);
-    if (outputs.length === 0) problems.push(`layers/${source} isn't a .ts, .d.ts, or .css source`);
+  for (const [source, outputs] of sourcesOf(root, manifest)) {
+    if (outputs.length === 0) problems.push(`${source} isn't a .ts, .d.ts, or .css source`);
     for (const output of outputs) {
       expected.add(output);
-      if (!builtSet.has(output)) problems.push(`layers/${source} has no built ${output}`);
+      if (!builtSet.has(output)) problems.push(`${source} has no built ${output}`);
     }
   }
   for (const path of built) {
-    if (!expected.has(path)) problems.push(`${path} is built from no source in layers/`);
+    if (!expected.has(path)) problems.push(`${path} is built from no source`);
   }
+  if (siblingsOf(manifest).length > 0) problems.push(...bareSiblings(root, built));
 
   // files ships the build: each built file lies under an entry of files.
   const shipped = (path) =>
@@ -129,11 +177,13 @@ export function releaseProblems(root) {
     if (!shipped(path)) problems.push(`${path} isn't under package.json's files`);
   }
 
-  // exports: every entry well formed, every built file reachable, every pattern key reaching a
-  // built file, and every target a reachable subpath or an exact key resolves to built.
+  // exports: every entry well formed or null, which excludes its subpath, every built file
+  // reachable, every pattern key reaching a built file, and every target a reachable subpath or an
+  // exact key resolves to built.
   const subpaths = new Set();
   const used = new Set();
   for (const [key, entry] of Object.entries(exports)) {
+    if (entry === null) continue;
     const targets = Object.values(conditions(entry));
     if (targets.length === 0 || targets.some((target) => typeof target !== "string")) {
       problems.push(`exports["${key}"] isn't a target or a flat object of condition targets`);

@@ -1,34 +1,8 @@
 {
-  "name": "spike-html-packages",
+  "name": "spike-html-packages-workspace",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "files": [
-    "dist"
-  ],
-  "exports": {
-    "./css": {
-      "types": "./dist/css.d.ts"
-    },
-    "./foundation/format.js": {
-      "types": "./dist/foundation/format.d.ts"
-    },
-    "./foundation/*.js": {
-      "types": "./dist/foundation/*.d.ts",
-      "default": "./dist/foundation/*.js"
-    },
-    "./foundation/*.css": "./dist/foundation/*.css",
-    "./components/*.js": {
-      "types": "./dist/components/*.d.ts",
-      "default": "./dist/components/*.js"
-    },
-    "./components/*.css": "./dist/components/*.css",
-    "./sdk/*.js": {
-      "types": "./dist/sdk/*.d.ts"
-    }
-  },
-  "dependencies": {
-    "lit": "3.3.3"
-  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "eslint": "10.13.0",
@@ -38,6 +12,6 @@
     "globals": "17.13.0",
     "prettier": "3.9.10",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.2"
+    "typescript-eslint": "8.72.0"
   }
 }

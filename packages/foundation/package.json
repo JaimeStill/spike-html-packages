@@ -1,0 +1,22 @@
+{
+  "name": "@jaimestill/spike-html-packages-foundation",
+  "version": "0.0.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "./css": {
+      "types": "./dist/css.d.ts"
+    },
+    "./css.js": null,
+    "./format.js": {
+      "types": "./dist/format.d.ts"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*.css": "./dist/*.css"
+  }
+}

@@ -17,6 +17,16 @@ The architecture pages that apply, in the architecture repository:
   changed or re-cut. Their form is the tag-naming evidence's to settle.
 - Copied files name their source repository and commit.
 
+## Packages
+
+- A layer package is named `@jaimestill/spike-html-packages-<layer>`, one per row of the lint's
+  layer table, and the tool sheets stay in the foundation package.
+- A package resolves a sibling only through its declared dependency and the sibling's built
+  `dist/`, as a consumer does: no source condition, project references, or `paths` aliases.
+- The workspace root is private and declares no runtime dependency.
+- The one package, `@jaimestill/spike-html-packages`, is assembled from the layer builds by
+  `scripts/assemble.js`, never written by hand.
+
 ## Code
 
 - Code meets the bar of spike-html-conventions' `layers/` code at a88828a: a 2–4 line header, a
@@ -24,5 +34,5 @@ The architecture pages that apply, in the architecture repository:
 - A provenance line reads `From|Adapted from <repo> (<commit>): <path>`.
 - Sources use `.ts` relative specifiers, which tsc rewrites; handwritten `.d.ts` keep `.js`.
 - A lazy load uses a literal `import()`.
-- The browser tier tests `dist/`, and no server transforms what it serves.
+- The browser tier tests the one package's `dist/`, and no server transforms what it serves.
 - A mise task runs one script or one command, and `check` is a depends list.

@@ -10,8 +10,8 @@
     <p>Two copies of the keys module, loaded from two URLs, share one store and one listener: T clicks the button once, and each copy's register() binding fires once.</p>
     <button type="button" data-keys="t">Theme <kbd>T</kbd></button>
     <script type="module">
-      import * as a from "../../dist/foundation/keys.js?a";
-      import * as b from "../../dist/foundation/keys.js?b";
+      import * as a from "../../packages/spike-html-packages/dist/foundation/keys.js?a";
+      import * as b from "../../packages/spike-html-packages/dist/foundation/keys.js?b";
 
       window.log = [];
       document.querySelector("button").addEventListener("click", () => window.log.push("t"));

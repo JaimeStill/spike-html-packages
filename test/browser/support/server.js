@@ -1,6 +1,6 @@
 // The browser tier's static server: the repository root, or another directory, over plain http on
-// the loopback address, every file sent as it is on disk. The pages load the built dist/, so
-// nothing needs transforming.
+// the loopback address, every file sent as it is on disk. The pages load the one package's built
+// dist/, so nothing needs transforming.
 
 import { realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -14,8 +14,8 @@ export const root = join(import.meta.dirname, "../../..");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 
 // Under pnpm, lit's own dependencies sit beside it, not in node_modules/, so the pages' import maps
-// name lit and its dependencies under /deps/, this directory.
-const deps = dirname(realpathSync(join(root, "node_modules/lit")));
+// name lit and its dependencies under /deps/, this directory: the lit the one package depends on.
+const deps = dirname(realpathSync(join(root, "packages/spike-html-packages/node_modules/lit")));
 
 /** The file a request's path names: under /deps/ one of lit's packages, otherwise the tree's. */
 function file(tree, pathname) {

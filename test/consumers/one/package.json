@@ -1,0 +1,10 @@
+{
+  "name": "consumer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A test fixture, never released: scripts/consumers.sh installs it under pnpm, npm, and bun, with the packed one package beside this manifest.",
+  "type": "module",
+  "dependencies": {
+    "@jaimestill/spike-html-packages": "file:spike-html-packages.tgz"
+  }
+}

@@ -8,49 +8,34 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
-import { allowed, violations, writeTree } from "./layers-tree.js";
+import {
+  allowed,
+  extraneous,
+  lint,
+  relativePackages,
+  sources,
+  table,
+  uncaught,
+  unresolved,
+  violations,
+  writeTree,
+} from "./layers-tree.js";
 
 const root = join(import.meta.dirname, "../..");
 const eslint = join(root, "node_modules", ".bin", "eslint");
-const dependencies = "boundaries/dependencies";
-const unresolved = "import-x/no-unresolved";
+const rules = [table, extraneous, relativePackages, unresolved];
 
-// The stub lit package: its name, a module, and its types, all the resolver reads.
-const lit = {
-  "package.json": JSON.stringify({
-    name: "lit",
-    type: "module",
-    exports: { ".": { types: "./index.d.ts", default: "./index.js" } },
-  }),
-  "index.js": "export const html = () => {};\nexport class LitElement {}",
-  "index.d.ts": [
-    "export declare const html: () => void;",
-    "export declare class LitElement {}",
-    "export interface ReactiveController {}",
-  ].join("\n"),
-};
-
-/** Writes `files` to a scratch tree by `write`, with a stub lit in its node_modules so the
- * resolver finds it, and returns the files ESLint flagged with any of `rules`, after checking that
- * it linted every code file written under layers/ and parsed each. -c takes the repo's config,
- * whose patterns then match from the working directory, the scratch tree, and whose plugins load
- * from the repo's node_modules. */
-function flagged(files, rules, write = writeTree) {
+/** Writes `files` to a scratch tree by `write` and returns each file ESLint flagged with any of
+ * `watched`, by its path, to the sorted rules that flagged it, after checking that it linted every
+ * code file written under packages/ outside a build and parsed each. */
+function flagged(files, watched, write = writeTree) {
   const scratch = mkdtempSync(join(tmpdir(), "layers-"));
   try {
     const written = write(scratch, files);
-    mkdirSync(join(scratch, "node_modules", "lit"), { recursive: true });
-    for (const [name, source] of Object.entries(lit)) {
-      writeFileSync(join(scratch, "node_modules", "lit", name), `${source}\n`);
-    }
-    const run = spawnSync(eslint, ["-c", join(root, "eslint.config.js"), "-f", "json", "layers"], {
-      cwd: scratch,
-      encoding: "utf8",
-    });
-    assert.equal(run.error, undefined, `eslint didn't run: ${run.error}`);
-    assert.ok(run.status === 0 || run.status === 1, `eslint exited ${run.status}: ${run.stderr}`);
-    const report = JSON.parse(run.stdout);
-    const code = written.filter((path) => path.startsWith("layers/") && /\.(js|ts)$/.test(path));
+    const report = lint(scratch);
+    const code = written.filter(
+      (path) => path.startsWith("packages/") && !path.includes("/dist/") && /\.(js|ts)$/.test(path),
+    );
     assert.equal(report.length, code.length);
     const fatal = report.filter((file) => file.messages.some((m) => m.fatal));
     assert.deepEqual(
@@ -58,11 +43,14 @@ function flagged(files, rules, write = writeTree) {
       [],
       "every file parses, so each import is judged",
     );
-    return new Set(
-      report
-        .filter((file) => file.messages.some((m) => rules.includes(m.ruleId)))
-        .map((file) => file.filePath.slice(scratch.length + 1)),
-    );
+    const found = {};
+    for (const file of report) {
+      const by = [...new Set(file.messages.map((m) => m.ruleId))].filter((id) =>
+        watched.includes(id),
+      );
+      if (by.length > 0) found[file.filePath.slice(scratch.length + 1)] = by.sort();
+    }
+    return found;
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
@@ -75,38 +63,60 @@ describe("layer import direction", () => {
     assert.equal(run.stdout.trim(), `v${pin}`);
   });
 
-  test("every forbidden import draws the dependencies rule's diagnostic at its file", () => {
+  // One tree, so each case is judged beside the others, as a package's files are.
+  const files = { ...sources(violations), ...uncaught, ...allowed };
+  const found = flagged(files, rules);
+
+  test("every forbidden import draws exactly the rules its case names", () => {
+    const expected = Object.fromEntries(
+      Object.entries(violations).map(([path, { rules }]) => [path, rules]),
+    );
+    const caught = Object.fromEntries(Object.keys(expected).map((path) => [path, found[path]]));
+    assert.deepEqual(caught, expected);
+  });
+
+  test("a value import of a types-only sibling subpath by name draws no rule", () => {
     assert.deepEqual(
-      [...flagged(violations, [dependencies])].sort(),
-      Object.keys(violations).sort(),
+      Object.keys(uncaught).filter((path) => path in found),
+      [],
     );
   });
 
   test("a tree of allowed imports draws none", () => {
-    assert.deepEqual([...flagged(allowed, [dependencies, unresolved])], []);
+    assert.deepEqual(
+      Object.keys(allowed).filter((path) => path in found),
+      [],
+    );
+  });
+
+  test("no file outside the cases draws a rule", () => {
+    assert.deepEqual(
+      Object.keys(found).filter((path) => !(path in files)),
+      [],
+    );
   });
 });
 
 // Each file imports the stylesheet beside it in one form; layers-tree.js's targets() reads a .css
 // specifier as a directory, so this tree is written as it stands, the stylesheet with it.
-const sheet = "layers/components/x.css";
+const sheet = "packages/components/x.css";
 const refusedCss = {
-  "layers/components/side-effect.ts": `import "./x.css";`,
-  "layers/components/default.ts": `import sheet from "./x.css";`,
-  "layers/components/json.ts": `import sheet from "./x.css" with { type: "json" };`,
-  "layers/components/export.ts": `export { default } from "./x.css";`,
-  "layers/components/export-all.ts": `export * from "./x.css";`,
-  "layers/components/dynamic.ts": `await import("./x.css");`,
-  "layers/components/dynamic-json.ts": `await import("./x.css", { with: { type: "json" } });`,
-  "layers/components/dynamic-module.ts": `await import("./x.css", { with: { type: "css" } });`,
-  "layers/components/dynamic-quoted.ts": `await import("./x.css", { "with": { "type": "css" } });`,
-  "layers/components/dynamic-template.ts": "await import(`./x.css`, { with: { type: 'css' } });",
-  "layers/components/dynamic-computed.ts": "const name = 'x'; await import(`./${name}.css`);",
+  "packages/components/side-effect.ts": `import "./x.css";`,
+  "packages/components/default.ts": `import sheet from "./x.css";`,
+  "packages/components/json.ts": `import sheet from "./x.css" with { type: "json" };`,
+  "packages/components/export.ts": `export { default } from "./x.css";`,
+  "packages/components/export-all.ts": `export * from "./x.css";`,
+  "packages/components/dynamic.ts": `await import("./x.css");`,
+  "packages/components/dynamic-json.ts": `await import("./x.css", { with: { type: "json" } });`,
+  "packages/components/dynamic-module.ts": `await import("./x.css", { with: { type: "css" } });`,
+  "packages/components/dynamic-quoted.ts": `await import("./x.css", { "with": { "type": "css" } });`,
+  "packages/components/dynamic-template.ts": "await import(`./x.css`, { with: { type: 'css' } });",
+  "packages/components/dynamic-computed.ts": "const name = 'x'; await import(`./${name}.css`);",
 };
 const cssModules = {
-  "layers/components/module.ts": `import sheet from "./x.css" with { type: "css" };`,
-  "layers/components/quoted.ts": `import sheet from "./x.css" with { "type": "css" };`,
-  "layers/components/export-module.ts": `export { default } from "./x.css" with { type: "css" };`,
+  "packages/components/module.ts": `import sheet from "./x.css" with { type: "css" };`,
+  "packages/components/quoted.ts": `import sheet from "./x.css" with { "type": "css" };`,
+  "packages/components/export-module.ts": `export { default } from "./x.css" with { type: "css" };`,
 };
 
 /** Writes `files` under `dir` as they stand, with the stylesheet they import; returns the paths. */
@@ -123,7 +133,7 @@ describe("a .css import is a static CSS module script", () => {
   test("each import() of a .css file, and each static .css import without the css type, draws no-restricted-syntax, and only those", () => {
     const files = { ...refusedCss, ...cssModules };
     assert.deepEqual(
-      [...flagged(files, ["no-restricted-syntax"], writeSheets)].sort(),
+      Object.keys(flagged(files, ["no-restricted-syntax"], writeSheets)).sort(),
       Object.keys(refusedCss).sort(),
     );
   });
@@ -135,24 +145,24 @@ describe("a .css import is a static CSS module script", () => {
 // import; the allowed files import the same declarations for their types alone, from another layer
 // and from within the declaration's own layer.
 const declarationFiles = {
-  "layers/sdk/api.d.ts": "export declare const x: number;\nexport interface X {}",
-  "layers/foundation/format.d.ts": "export declare function formatBytes(bytes: number): string;",
+  "packages/sdk/api.d.ts": "export declare const x: number;\nexport interface X {}",
+  "packages/foundation/format.d.ts": "export declare function formatBytes(bytes: number): string;",
 };
 const valueDeclarations = {
-  "layers/sdk/value.ts": `import { x } from "./api.js";`,
-  "layers/sdk/side-effect.ts": `import "./api.js";`,
-  "layers/sdk/inline-type.ts": `import { type X } from "./api.js";`,
-  "layers/sdk/export.ts": `export { x } from "./api.js";`,
-  "layers/sdk/export-all.ts": `export * from "./api.js";`,
-  "layers/sdk/dynamic.ts": `await import("./api.js");`,
-  "layers/components/format.ts": `import { formatBytes } from "../foundation/format.js";`,
-  "layers/foundation/internal.ts": `import { formatBytes } from "./format.js";`,
+  "packages/sdk/value.ts": `import { x } from "./api.js";`,
+  "packages/sdk/side-effect.ts": `import "./api.js";`,
+  "packages/sdk/inline-type.ts": `import { type X } from "./api.js";`,
+  "packages/sdk/export.ts": `export { x } from "./api.js";`,
+  "packages/sdk/export-all.ts": `export * from "./api.js";`,
+  "packages/sdk/dynamic.ts": `await import("./api.js");`,
+  "packages/components/format.ts": `import { formatBytes } from "../foundation/format.js";`,
+  "packages/foundation/internal.ts": `import { formatBytes } from "./format.js";`,
 };
 const typeDeclarations = {
-  "layers/sdk/type.ts": `import type { X, x } from "./api.js";`,
-  "layers/sdk/export-type.ts": `export type { X } from "./api.js";`,
-  "layers/components/typeof.ts": `import type { formatBytes } from "../foundation/format.js";\nexport type Format = typeof formatBytes;`,
-  "layers/foundation/internal-type.ts": `import type { formatBytes } from "./format.js";`,
+  "packages/sdk/type.ts": `import type { X, x } from "./api.js";`,
+  "packages/sdk/export-type.ts": `export type { X } from "./api.js";`,
+  "packages/components/typeof.ts": `import type { formatBytes } from "../foundation/format.js";\nexport type Format = typeof formatBytes;`,
+  "packages/foundation/internal-type.ts": `import type { formatBytes } from "./format.js";`,
 };
 
 /** Writes `files` under `dir` as they stand, with the declarations they import; returns the
@@ -173,12 +183,12 @@ describe("a declaration file is imported for its types alone", () => {
 
   test("each value import of a .d.ts file draws the dependencies rule, and no type import does", () => {
     assert.deepEqual(
-      [...flagged(files, [dependencies], writeDeclarations)].sort(),
+      Object.keys(flagged(files, [table], writeDeclarations)).sort(),
       Object.keys(valueDeclarations).sort(),
     );
   });
 
   test("every import of a .d.ts file resolves", () => {
-    assert.deepEqual([...flagged(files, [unresolved], writeDeclarations)], []);
+    assert.deepEqual(Object.keys(flagged(files, [unresolved], writeDeclarations)), []);
   });
 });

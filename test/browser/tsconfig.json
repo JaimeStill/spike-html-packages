@@ -1,6 +1,10 @@
-// The browser cases' in-page modules, checked against the declarations dist/ ships rather than
-// the sources, which would declare the same custom elements twice.
+// The browser cases' in-page modules, checked against the declarations the one package's dist/
+// ships rather than the sources, which would declare the same custom elements twice.
 {
   "extends": "../../tsconfig.json",
-  "include": ["support/probe.js", "support/restyle.js", "../../dist/css.d.ts"]
+  "include": [
+    "support/probe.js",
+    "support/restyle.js",
+    "../../packages/spike-html-packages/dist/css.d.ts"
+  ]
 }

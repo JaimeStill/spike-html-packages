@@ -7,100 +7,90 @@
 ## Tasks
 
 1. [x] layers
-2. [ ] layout
+2. [x] layout
 3. [ ] hosting
 4. [ ] registries
 5. [ ] consumers
 6. [ ] answer
 
-## Task brief · layers (revised)
+## Task brief · layout
 
 ```
-Problem       Slices 1-5 deliver the layers, the release build, and the
-              offline installs, but not in a form the workspace can build
-              on. The copies keep their sources' essay prose, the harness
-              rests on workarounds (a .js-to-.ts stripping server, :hover
-              rewriting, a closed-port proxy, a 640-line measure), and
-              mise.toml and scripts/ can't be read by a person. Every later
-              task (layout, hosting, registries, consumers) inherits this
-              code and this harness.
-Behaviors     1-8. Unchanged from the first brief (7cddb86): the foundation port,
-                 the three self-layered tool sheets at v0.7.0's computed
-                 styles, the typed registry and keys family, the three Lit
-                 shadow components on reset and elements, the type-only
-                 SDK, the check's tools, the release build with exports
-                 and files and its integrity test, and the offline installs
-                 under npm, pnpm, and bun.
-              9. The sources use .ts relative specifiers, emitted as .js by
-                 tsc with rewriteRelativeImportExtensions. The emitted .js
-                 carries only .js specifiers, the help module included.
-                 node runs the sources by type stripping. The handwritten
-                 .d.ts keep .js specifiers, since they ship as written. The
-                 README records the measured facts in a short table,
-                 including that tsc's emitted .d.ts keep .ts specifiers and
-                 TypeScript 7.0.2 and 6.0.3 accept them.
-              10. The help dialog loads lazily through a literal
-                 import("./keys-help.ts"). Its behavior is unchanged
-                 (first open loads it, a failed load retries, two copies at
-                 two URLs each load their own), and it builds through Vite
-                 with the local CSS plugin into its own chunk that loads.
-              11. Every module under layers/ reads at the bar of
-                 spike-html-conventions' layers/ code: a short header
-                 naming the layer and the provenance (source repository and
-                 commit), a one-line doc comment per export, and comments
-                 only where the code can't say why. The behaviors live in
-                 the tests and the README, not in comment essays.
-              12. The browser tier tests the built dist/, the files that
-                 ship, through the pinned chrome-headless-shell. No server
-                 transforms what it serves. Hover is compared through
-                 CSS.forcePseudoState, not by rewriting the sheets.
-              13. The offline installs use each package manager's own
-                 offline mode against caches that `mise run install` warms,
-                 with no proxy.
-              14. mise.toml is a list of small named tasks. Each has a
-                 one-line description and runs one script or one command.
-                 check is a depends list (lint, types, build, test:unit,
-                 test:browser, test:consumers), and each runs on its own.
-                 Prose about the layout lives in the README.
-                 The repository is laid out by role:
-                   layers/           the sources
-                   scripts/          one entry script per task, nothing else
-                   test/unit/        node --test, sources by type stripping
-                   test/browser/     node --test on dist/, with support/
-                                     holding the pipe driver and the static
-                                     server
-                   test/consumers/   the npm, pnpm, and bun fixtures
-                   test/fixtures/    v0.7.0's pages and sheets, as copied
-                   demo/             the demo pages only
-Test seams    Unchanged: the packed release as a consumer installs and
-              imports it, and the built dist/ as the browser tier loads it.
-Slices        1. Structure: mise.toml split into named tasks with check as a
-                 depends list; files moved to the layout in behavior 14;
-                 the description paragraphs and inline scripts move out.
-                 No behavior change. Demo: `mise tasks` and each test:*
-                 task running alone.
-              2. Sources: .ts specifiers with rewriteRelativeImportExtensions;
-                 the copied modules (keys, keys-grammar, keys-help,
-                 registry, components) rewritten to behavior 11's bar with
-                 the literal lazy import. The existing unit and browser
-                 cases hold the behavior. Demo: `node layers/foundation/
-                 keys-grammar.ts` imports; dist/ has only .js specifiers.
-              3. Browser tier on dist/: the static server without
-                 transforms, forcePseudoState for hover, the test files cut
-                 to the cases v0.7.0 and conventions proved and nothing
-                 extra. Demo: the browser tier against a fresh build.
-              4. Consumers, currency, and measure: offline installs by the
-                 managers' own offline flags; currency.sh simplified; the
-                 measure replaced by a short `mise run measure` for
-                 behaviors 9 and 10 (Vite build of the help chunk
-                 included); the README's Measures section rewritten to its
-                 facts. Demo: `mise run measure` and the three installs.
-Out of scope  Unchanged: any tag, push, or publish; one package against
-              workspace packages; preferences, theme-menu, register, and
-              conformance; the non-default profiles; the vanilla and
-              light-DOM versions; apps, SDK implementations, consumer
-              pages and apps; reweighing the lint and the manager.
-Door          two-way: nothing leaves the spike repository.
+Problem       The layers ship as one package, and the layer direction is held
+              by the lint table alone. The hosting task's per-package tags, the
+              registries' scoped publishes, and the answer task's reweigh of
+              npm against pnpm and of ESLint against Biome all need the several-
+              package layout to exist, with a measure of what declared
+              dependencies enforce at install against what the lint catches
+              alone.
+Behaviors     1. A pnpm workspace of three packages:
+                 @jaimestill/spike-html-packages-foundation (no dependencies),
+                 -components (lit 3.3.3 and foundation, workspace:*), and -sdk
+                 (no dependencies), each with exports and files naming exactly
+                 its build. The root is private, declares no runtime
+                 dependency, and holds only the lint and type devDependencies.
+              2. Each package builds its .js and .d.ts with its .css and
+                 handwritten .d.ts beside them, in dependency order; a sibling
+                 resolves another only through its declared dependency and that
+                 package's built output, as a consumer resolves it. No source
+                 condition, no project references, no paths aliases.
+              3. Foundation owns the ambient "*.css" declaration as its ./css
+                 types subpath.
+              4. @jaimestill/spike-html-packages is a fourth workspace member
+                 put together from the three builds, with today's subpaths and
+                 lit as its only dependency; its build rewrites every bare
+                 sibling specifier to a relative one in .js and .d.ts. Every
+                 package passes the release integrity test, and the one
+                 package's test fails on any bare sibling specifier left.
+              5. The lint keeps the boundaries table, matched by package, and
+                 adds import-x's no-extraneous-dependencies and
+                 no-relative-packages.
+              6. The violation cases keep today's edges in four forms and add
+                 the workspace's: an undeclared sibling, an undeclared external
+                 (foundation→lit, sdk→lit), a relative path into a sibling, an
+                 import of a root devDependency, and a self-import by name.
+              7. `mise run measure` prints a dated table, one row per case,
+                 naming what catches it: the boundaries table, the manifest
+                 rules, and the install layout under pnpm, npm hoisted, npm
+                 linked, and bun isolated (tsc, node, or Vite can't resolve
+                 it). The npm copy records npm's lack of workspace:. No
+                 network, nothing left behind.
+              8. The consumer tier installs the one package as today, and the
+                 three packages' local tarballs, offline under pnpm, npm, and
+                 bun; it records how each manager meets components' packed
+                 foundation spec, and whether a consumer's undeclared import of
+                 foundation, reached only through components, resolves.
+              9. The browser tier and the demo load the one package's build.
+              10. The README's Layout and Measures and STANDARDS.md state the
+                 layout's facts and its packaging conventions; the README's
+                 evidence 2 and 3 name one repository per layer, which the
+                 hosting task measures.
+Test seams    The packed releases, one package and three, as a consumer
+              installs and imports them; and the violation trees, as the lint
+              and each install layout judge them.
+Slices        1. Upgrade: typescript-eslint 8.71.2 -> 8.72.0; done when
+                 `mise run currency` exits 0 and `mise run check` passes.
+              2. Workspace: three packages and the private root, sources moved
+                 one directory per package, sibling imports by package name,
+                 the dependency-ordered build, and the one package assembled
+                 with its rewrite and renamed. Existing tiers pass. Demo:
+                 `mise run check`; the one package's install file list matches
+                 today's apart from its name.
+              3. Lint: the manifest rules beside the table, and the workspace
+                 violation cases. Demo: the unit tier flags exactly the
+                 violating files.
+              4. Measure: the violation trees under the four install layouts,
+                 the dated table, the README. Demo: `mise run measure`.
+              5. Consumers: the three-tarball installs under pnpm, npm, bun.
+                 Demo: `mise run installs` with both layouts' file lists.
+Out of scope  Any tag, push, or publish; version and tag naming and delivery by
+              git tag, tarball URL, or import map (hosting); one repository per
+              layer (hosting); the registries; the Vite app and unbundled page
+              consumers and the release flow (consumers); reweighing npm/pnpm
+              and ESLint+Prettier/Biome (answer); a fourth layer package;
+              Biome's noUndeclaredDependencies.
+Door          two-way: nothing leaves the repository. The names become one-way
+              only when the registries task publishes to JSR.
 ```
 
 ## Decisions
@@ -168,7 +158,59 @@ Door          two-way: nothing leaves the spike repository.
 - layers: Vite 8.3.4 still needs the local CSS module script plugin
   (`test/fixtures/measure/css-sheets.js`); without it, a build fails with MISSING_EXPORT on `.css`
   imports. The consumers task builds on this.
+- layout: the layers become pnpm workspace packages in the repository, with the one package put
+  together from their builds; both layouts stay releasable.
+- layout: three packages, one per lint-table layer (foundation, components, sdk); the tool sheets
+  stay in foundation. A further layer is resolved when one is needed.
+- layout: the measure covers pnpm, npm hoisted, npm linked, and bun isolated, in scratch copies.
+- layout: the consumer tier installs the three packages' local tarballs in this task; URL and git
+  forms stay with hosting.
+- layout: the boundaries table stays, with import-x's no-extraneous-dependencies and
+  no-relative-packages added.
+- layout: workspace packages are scoped `@jaimestill/spike-html-packages-<layer>`.
+- layout: the one package is renamed `@jaimestill/spike-html-packages`.
+- layout: siblings resolve through built output in dependency order, not a source condition,
+  project references, or paths. It is the most common practice among publishing libraries (Vite,
+  typescript-eslint, lit, rushstack) and the only one that carries to one repository per layer,
+  as Go's pinned require with GOWORK=off does.
+- layout: foundation owns the ambient `*.css` declaration as its ./css subpath.
+- layout: the one package lives in its own workspace directory; the root is private with no
+  runtime dependency, so the root can't leak lit to foundation.
+- layout: the one package's build rewrites bare sibling specifiers to relative ones, not a
+  `#foundation` subpath import.
+- layout: the browser tier and the demo load only the one package's build.
+- layout: the architect's end state is one repository per layer, like ~/architecture's Go
+  repositories; the hosting task measures it with three scratch repositories by tag.
+- layout: held typescript at 6.0.3: typescript-eslint 8.72.0's peer range (<6.1.0) declines 7.x;
+  typescript-go 7.0.2 is the type checker.
+- layout: held eslint-plugin-boundaries at 7.2.0: 7.2.1 (2026-10-21T10:55Z) is younger than
+  pnpm 12's default minimum release age, and taking it would commit a minimumReleaseAgeExclude;
+  retried before the brief, else the next task's currency takes it.
+- layout: chrome-headless-shell 156 no longer caches a failed module fetch, so the help retry
+  test counts a request per import(); keys.ts's retry was already right.
+- layout: scripts/build.sh takes the build order from pnpm (`pnpm -r exec pwd`) but runs tsc
+  itself, since pnpm's PATH puts node_modules/.bin's typescript 6.0.3 ahead of typescript-go.
+- layout: pnpm-workspace.yaml sets `verifyDepsBeforeRun: false`, so `pnpm -r exec` never
+  installs; the check reads no network, and `mise run install` installs.
+- layout: foundation's exports map `./css.js` to null, so the ambient `*.css` declaration is a
+  types subpath only and `./*.js` gives it no runtime subpath.
+- layout: the one package declares its siblings as devDependencies, so a consumer installs none;
+  `pnpm pack` writes them as 0.0.0 devDependencies, which a registry publish would carry.
+- layout: the lint's declaration policy applies to `!(dist/**)*.d.ts`, so a value import of a
+  types-only sibling subpath by package name passes the lint; node and Vite catch it ("not
+  exported"), as the measure records.
+- layout: pnpm's metadata cache (cacheDir) is kept in .cache/consumers/pnpm, beside its store,
+  because `--offline` resolves from it and its default is in the home directory.
+- layout: the measure judges value imports with Vite beside node; they disagree on the absolute
+  path (Vite resolves it from its root) and the percent-encoded segment (node resolves it).
+- layout: the consumer tier installs in each manager's default layout (pnpm isolated, npm hoisted,
+  bun hoisted outside a workspace); the measure alone covers npm linked and bun isolated.
+- layout: the consumer tier's overrides point the foundation at its tarball by `file:`, since
+  npm's `$ref` needs the package as a direct dependency, which the components-alone consumer lacks.
 
 ## Pending edits
 
-(none)
+- coordinator · roadmap.toml: `[goals.experiment.html.spike-html-packages.tasks.hosting]`
+  summary: add the layers as one repository per layer, three scratch repositories each depending
+  on its siblings by tag, installed under npm, pnpm, and bun, against the workspace's per-package
+  tags.

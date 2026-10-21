@@ -48,7 +48,10 @@ const runtime = {
 // skipLibCheck off is the guard: with it on, tsc skips every .d.ts, and these errors with them.
 describe("SDK and formatter declarations", () => {
   test("every file in the SDK is a declaration file", () => {
-    const files = readdirSync(join(root, "layers", "sdk"), { recursive: true, withFileTypes: true })
+    const files = readdirSync(join(root, "packages/sdk/src"), {
+      recursive: true,
+      withFileTypes: true,
+    })
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name);
     assert.ok(files.length > 0);
@@ -61,7 +64,7 @@ describe("SDK and formatter declarations", () => {
   // A source beside format.d.ts (format.ts, format.js, ...) is what an import of format.js would
   // resolve to, past the declaration and the check's type-import rule, so none may stand there.
   test("the foundation's formatters are a declaration file alone", () => {
-    const formats = readdirSync(join(root, "layers", "foundation")).filter((name) =>
+    const formats = readdirSync(join(root, "packages/foundation/src")).filter((name) =>
       name.startsWith("format."),
     );
     assert.deepEqual(formats, ["format.d.ts"]);

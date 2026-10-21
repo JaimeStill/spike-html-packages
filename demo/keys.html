@@ -7,10 +7,10 @@
     <!-- The keys family from dist/: bindings by data-keys and register(), and the help dialog,
          filled by keys-help.js the first time it opens. Its modules run served only: mise run
          demo. -->
-    <link rel="stylesheet" href="../dist/foundation/page.css" />
-    <script type="module" src="../dist/foundation/keys.js"></script>
+    <link rel="stylesheet" href="../packages/spike-html-packages/dist/foundation/page.css" />
+    <script type="module" src="../packages/spike-html-packages/dist/foundation/keys.js"></script>
     <script type="module">
-      import { register } from "../dist/foundation/keys.js";
+      import { register } from "../packages/spike-html-packages/dist/foundation/keys.js";
 
       // say writes what a binding did into the log, newest first.
       const say = (text) => {
