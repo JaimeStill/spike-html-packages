@@ -8,6 +8,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { resolveExport } from "../consumers/release.js";
 
 const root = join(import.meta.dirname, "../..");
 const read = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));
@@ -176,12 +177,16 @@ export const allowed = {
   "packages/sdk/dotted.ts": `import "./.well-known/a.ts";`,
 };
 
+/** The specifiers a case's source names, in import, export, and import(). */
+const specifiers = (source) =>
+  [...source.matchAll(/(?:from |import |import\()"([^"]*)"/g)].map(([, specifier]) => specifier);
+
 /** The files the relative and absolute specifiers in `files` name and `files` doesn't hold, sorted:
  * each resolved by URL as a browser resolves it, an extensionless one to its directory's index.ts. */
 export function targets(files) {
   const found = new Set();
   for (const [path, source] of Object.entries(files)) {
-    for (const [, specifier] of source.matchAll(/(?:from |import |import\()"([^"]*)"/g)) {
+    for (const specifier of specifiers(source)) {
       if (!specifier.startsWith(".") && !specifier.startsWith("/")) continue;
       let target = decodeURI(new URL(specifier, `file:///${path}`).pathname.slice(1));
       const name = target.slice(target.lastIndexOf("/") + 1);
@@ -194,31 +199,16 @@ export function targets(files) {
 }
 
 /** The build files the workspace package names in `files` reach through their packages' exports,
- * sorted: each condition's target of the first export key that matches the subpath, a key with a
- * * matching any run of characters. A null target, or a subpath no key matches, reaches none. */
+ * sorted: each condition's target of the key that wins the subpath by Node's rules. A null target,
+ * or a subpath no key matches, reaches none. */
 export function builds(files) {
   const found = new Set();
-  for (const source of Object.values(files)) {
-    for (const [, specifier] of source.matchAll(/(?:from |import |import\()"([^"]*)"/g)) {
-      for (const [dir, manifest] of Object.entries(manifests)) {
-        if (!dir || !specifier.startsWith(`${manifest.name}/`)) continue;
-        const subpath = `.${specifier.slice(manifest.name.length)}`;
-        for (const [key, value] of Object.entries(manifest.exports)) {
-          const [head, tail] = key.split("*");
-          const match =
-            tail === undefined
-              ? subpath === key && ""
-              : subpath.startsWith(head) &&
-                subpath.endsWith(tail) &&
-                subpath.slice(head.length, subpath.length - tail.length);
-          if (match === false) continue;
-          if (value === null) break;
-          for (const target of typeof value === "string" ? [value] : Object.values(value)) {
-            found.add(join(dir, target.replace("*", match)));
-          }
-          break;
-        }
-      }
+  for (const specifier of Object.values(files).flatMap(specifiers)) {
+    for (const [dir, manifest] of Object.entries(manifests)) {
+      if (!dir || !specifier.startsWith(`${manifest.name}/`)) continue;
+      const subpath = `.${specifier.slice(manifest.name.length)}`;
+      const reached = resolveExport(manifest.exports, subpath)?.targets ?? {};
+      for (const target of Object.values(reached)) found.add(join(dir, target));
     }
   }
   return [...found].sort();
@@ -271,9 +261,9 @@ export function writeTree(dir, files, { manifests: given = manifests, link = tru
   }
   for (const [path, manifest] of Object.entries(manifests)) {
     if (!path) continue;
-    const link = join(dir, "node_modules", manifest.name);
-    mkdirSync(dirname(link), { recursive: true });
-    symlinkSync(relative(dirname(link), join(dir, path)), link);
+    const linked = join(dir, "node_modules", manifest.name);
+    mkdirSync(dirname(linked), { recursive: true });
+    symlinkSync(relative(dirname(linked), join(dir, path)), linked);
   }
   return Object.keys(written);
 }
