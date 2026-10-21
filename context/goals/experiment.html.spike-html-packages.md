@@ -1,13 +1,13 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** layout
-- **Branch:** layout
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
 1. [x] layers
-2. [ ] layout
+2. [x] layout
 3. [ ] hosting
 4. [ ] registries
 5. [ ] consumers
@@ -92,10 +92,6 @@ Out of scope  Any tag, push, or publish; version and tag naming and delivery by
 Door          two-way: nothing leaves the repository. The names become one-way
               only when the registries task publishes to JSR.
 ```
-
-## Progress
-
-slices 5/5 committed · standards ✓ · spec ✓ (1 gap closed) · editor ✓
 
 ## Decisions
 
