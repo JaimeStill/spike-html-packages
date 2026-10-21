@@ -107,6 +107,16 @@ export default defineConfig([
     // no-unresolved fails a specifier that names no file, so no import passes by naming none.
     rules: {
       "import-x/no-unresolved": "error",
+      // Each judges an import against the manifest nearest the importing file, its own package's:
+      // a package name the manifest doesn't declare in dependencies (a devDependency ships
+      // nothing, and includeInternal holds a package's own name, which resolves inside it, to the
+      // same), in every import form (includeTypes), and a relative path that reaches another
+      // package's files.
+      "import-x/no-extraneous-dependencies": [
+        "error",
+        { devDependencies: false, includeInternal: true, includeTypes: true },
+      ],
+      "import-x/no-relative-packages": "error",
       "boundaries/dependencies": [
         "error",
         {

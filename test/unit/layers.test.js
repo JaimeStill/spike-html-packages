@@ -8,41 +8,30 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
-import { allowed, violations, writeTree } from "./layers-tree.js";
+import {
+  allowed,
+  extraneous,
+  relativePackages,
+  table,
+  uncaught,
+  unresolved,
+  violations,
+  writeTree,
+} from "./layers-tree.js";
 
 const root = join(import.meta.dirname, "../..");
 const eslint = join(root, "node_modules", ".bin", "eslint");
-const dependencies = "boundaries/dependencies";
-const unresolved = "import-x/no-unresolved";
+const rules = [table, extraneous, relativePackages, unresolved];
 
-// The stub lit package: its name, a module, and its types, all the resolver reads.
-const lit = {
-  "package.json": JSON.stringify({
-    name: "lit",
-    type: "module",
-    exports: { ".": { types: "./index.d.ts", default: "./index.js" } },
-  }),
-  "index.js": "export const html = () => {};\nexport class LitElement {}",
-  "index.d.ts": [
-    "export declare const html: () => void;",
-    "export declare class LitElement {}",
-    "export interface ReactiveController {}",
-  ].join("\n"),
-};
-
-/** Writes `files` to a scratch tree by `write`, with a stub lit in its node_modules so the
- * resolver finds it, and returns the files ESLint flagged with any of `rules`, after checking that
- * it linted every code file written under packages/ and parsed each. -c takes the repo's config,
+/** Writes `files` to a scratch tree by `write` and returns each file ESLint flagged with any of
+ * `watched`, by its path, to the sorted rules that flagged it, after checking that it linted every
+ * code file written under packages/ outside a build and parsed each. -c takes the repo's config,
  * whose patterns then match from the working directory, the scratch tree, and whose plugins load
  * from the repo's node_modules. */
-function flagged(files, rules, write = writeTree) {
+function flagged(files, watched, write = writeTree) {
   const scratch = mkdtempSync(join(tmpdir(), "layers-"));
   try {
     const written = write(scratch, files);
-    mkdirSync(join(scratch, "node_modules", "lit"), { recursive: true });
-    for (const [name, source] of Object.entries(lit)) {
-      writeFileSync(join(scratch, "node_modules", "lit", name), `${source}\n`);
-    }
     const run = spawnSync(
       eslint,
       ["-c", join(root, "eslint.config.js"), "-f", "json", "packages"],
@@ -54,7 +43,9 @@ function flagged(files, rules, write = writeTree) {
     assert.equal(run.error, undefined, `eslint didn't run: ${run.error}`);
     assert.ok(run.status === 0 || run.status === 1, `eslint exited ${run.status}: ${run.stderr}`);
     const report = JSON.parse(run.stdout);
-    const code = written.filter((path) => path.startsWith("packages/") && /\.(js|ts)$/.test(path));
+    const code = written.filter(
+      (path) => path.startsWith("packages/") && !path.includes("/dist/") && /\.(js|ts)$/.test(path),
+    );
     assert.equal(report.length, code.length);
     const fatal = report.filter((file) => file.messages.some((m) => m.fatal));
     assert.deepEqual(
@@ -62,15 +53,22 @@ function flagged(files, rules, write = writeTree) {
       [],
       "every file parses, so each import is judged",
     );
-    return new Set(
-      report
-        .filter((file) => file.messages.some((m) => rules.includes(m.ruleId)))
-        .map((file) => file.filePath.slice(scratch.length + 1)),
-    );
+    const found = {};
+    for (const file of report) {
+      const by = [...new Set(file.messages.map((m) => m.ruleId))].filter((id) =>
+        watched.includes(id),
+      );
+      if (by.length > 0) found[file.filePath.slice(scratch.length + 1)] = by.sort();
+    }
+    return found;
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
 }
+
+/** `cases`, each path to its source alone. */
+const sources = (cases) =>
+  Object.fromEntries(Object.entries(cases).map(([path, { source }]) => [path, source]));
 
 describe("layer import direction", () => {
   test("the eslint installed is the one package.json pins", () => {
@@ -79,15 +77,37 @@ describe("layer import direction", () => {
     assert.equal(run.stdout.trim(), `v${pin}`);
   });
 
-  test("every forbidden import draws the dependencies rule's diagnostic at its file", () => {
+  // One tree, so each case is judged beside the others, as a package's files are.
+  const files = { ...sources(violations), ...uncaught, ...allowed };
+  const found = flagged(files, rules);
+
+  test("every forbidden import draws exactly the rules its case names", () => {
+    const expected = Object.fromEntries(
+      Object.entries(violations).map(([path, { rules }]) => [path, rules]),
+    );
+    const caught = Object.fromEntries(Object.keys(expected).map((path) => [path, found[path]]));
+    assert.deepEqual(caught, expected);
+  });
+
+  test("a value import of a types-only sibling subpath by name draws no rule", () => {
     assert.deepEqual(
-      [...flagged(violations, [dependencies])].sort(),
-      Object.keys(violations).sort(),
+      Object.keys(uncaught).filter((path) => path in found),
+      [],
     );
   });
 
   test("a tree of allowed imports draws none", () => {
-    assert.deepEqual([...flagged(allowed, [dependencies, unresolved])], []);
+    assert.deepEqual(
+      Object.keys(allowed).filter((path) => path in found),
+      [],
+    );
+  });
+
+  test("no file outside the cases draws a rule", () => {
+    assert.deepEqual(
+      Object.keys(found).filter((path) => !(path in files)),
+      [],
+    );
   });
 });
 
@@ -127,7 +147,7 @@ describe("a .css import is a static CSS module script", () => {
   test("each import() of a .css file, and each static .css import without the css type, draws no-restricted-syntax, and only those", () => {
     const files = { ...refusedCss, ...cssModules };
     assert.deepEqual(
-      [...flagged(files, ["no-restricted-syntax"], writeSheets)].sort(),
+      Object.keys(flagged(files, ["no-restricted-syntax"], writeSheets)).sort(),
       Object.keys(refusedCss).sort(),
     );
   });
@@ -177,12 +197,12 @@ describe("a declaration file is imported for its types alone", () => {
 
   test("each value import of a .d.ts file draws the dependencies rule, and no type import does", () => {
     assert.deepEqual(
-      [...flagged(files, [dependencies], writeDeclarations)].sort(),
+      Object.keys(flagged(files, [table], writeDeclarations)).sort(),
       Object.keys(valueDeclarations).sort(),
     );
   });
 
   test("every import of a .d.ts file resolves", () => {
-    assert.deepEqual([...flagged(files, [unresolved], writeDeclarations)], []);
+    assert.deepEqual(Object.keys(flagged(files, [unresolved], writeDeclarations)), []);
   });
 });
