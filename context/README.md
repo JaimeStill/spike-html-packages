@@ -126,9 +126,9 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 `mise run measure` prints two dated tables. It reads no network and leaves nothing behind.
 
-The first builds the release and a Vite page in a scratch directory, loads the page in the pinned
-chrome-headless-shell, and prints the import extension's facts (evidence 5). The table of
-2026-10-21:
+The first copies the one package's `dist/` (`mise run build`) and builds a Vite page beside it in a
+scratch directory, loads the page in the pinned chrome-headless-shell, and prints the import
+extension's facts (evidence 5). The table of 2026-10-21:
 
 | measure | result |
 | --- | --- |
@@ -146,49 +146,51 @@ The second lints the violation tree (`test/unit/layers-tree.js`), then installs 
 under four layouts, each offline from a copy of the caches `mise run install` warms in
 `.cache/consumers/`: pnpm (isolated), npm hoisted, npm `--install-strategy=linked`, and bun
 `--linker isolated`. Each row is one case, the four-form edges by their side-effect import. A layout
-catches a case when the resolver named for it can't resolve the import there: tsc for a type import,
-node for the rest. The root's devDependencies are stub packages, packed beside the tree. The table
-of 2026-10-21:
+catches a case when a resolver named for it can't resolve the import there: tsc for a type import,
+and for the rest node, running the case, and Vite, in one `vite build` of the layout with every case
+an entry (`test/fixtures/measure/resolve.config.js`). Each cell names the resolvers that fail and
+why, and where node and Vite disagree, which one resolves. The root's devDependencies are stub
+packages, packed beside the tree. The table of 2026-10-21:
 
 | case | import | resolved by | table | manifest rules | pnpm | npm hoisted | npm linked | bun isolated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| foundation/lit.ts | `import { html } from "lit";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| foundation/self.ts | `import { define } from "@jaimestill/spike-html-packages/foundation/dom.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| foundation/forms/lit.ts | `import "lit";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| foundation/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| foundation/components.ts | `import "../components/badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| foundation/sdk-export.ts | `export { Client } from "../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| foundation/forms/components.ts | `import "../../components/badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| foundation/forms/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/sdk.ts | `import { Client } from "../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/sdk-dynamic.ts | `const sdk = await import("../sdk/client.ts");` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/sdk-dir.ts | `import "../sdk";` | node | yes | yes: no-relative-packages | yes: a directory | yes: a directory | yes: a directory | yes: a directory |
-| components/nested/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/forms/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/foundation-climb.ts | `import "../foundation/../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/dot-segment.ts | `import "../foundation/./../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/empty-segment.ts | `import "../foundation//../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| components/forms/sdk-name.ts | `import "@jaimestill/spike-html-packages-sdk/client.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | yes: not exported | yes: not found | yes: not found |
-| components/percent.ts | `import "../foundation/%2e%2e/sdk/client.ts";` | node | yes | no | no | no | no | no |
-| components/absolute.ts | `import "/packages/sdk/client.ts";` | node | yes | no | yes: not found | yes: not found | yes: not found | yes: not found |
-| sdk/components.ts | `import { StatusBadge } from "../components/status-badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/lit.ts | `import { html } from "lit";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| foundation/self.ts | `import { define } from "@jaimestill/spike-html-packages/foundation/dom.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| foundation/forms/lit.ts | `import "lit";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| foundation/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| foundation/components.ts | `import "../components/badge.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/sdk-export.ts | `export { Client } from "../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/forms/components.ts | `import "../../components/badge.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/forms/sdk.ts | `import "../../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk.ts | `import { Client } from "../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk-dynamic.ts | `const sdk = await import("../sdk/client.ts");` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk-dir.ts | `import "../sdk";` | node, Vite | yes | yes: no-relative-packages | yes: node (a directory), Vite (not exported) | yes: node (a directory), Vite (not exported) | yes: node (a directory), Vite (not exported) | yes: node (a directory), Vite (not exported) |
+| components/nested/sdk.ts | `import "../../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/forms/sdk.ts | `import "../../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/foundation-climb.ts | `import "../foundation/../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/dot-segment.ts | `import "../foundation/./../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/empty-segment.ts | `import "../foundation//../sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| components/forms/sdk-name.ts | `import "@jaimestill/spike-html-packages-sdk/client.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | yes: node, Vite (not exported) | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| components/percent.ts | `import "../foundation/%2e%2e/sdk/client.ts";` | node, Vite | yes | no | Vite only (not found); node resolves | Vite only (not found); node resolves | Vite only (not found); node resolves | Vite only (not found); node resolves |
+| components/absolute.ts | `import "/packages/sdk/client.ts";` | node, Vite | yes | no | node only (not found); Vite resolves | node only (not found); Vite resolves | node only (not found); Vite resolves | node only (not found); Vite resolves |
+| sdk/components.ts | `import { StatusBadge } from "../components/status-badge.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
 | sdk/components-type.ts | `import type { StatusBadge } from "../components/status-badge.ts";` | tsc | yes | yes: no-relative-packages | no | no | no | no |
-| sdk/forms/components.ts | `import "../../components/status-badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| sdk/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| sdk/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| sdk/forms/lit.ts | `import "lit";` | node | no | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| sdk/forms/foundation-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node | no | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
-| components/forms/foundation.ts | `import "../../foundation/dom.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
-| components/dotted-sibling.ts | `import "../foundation/x..y/z.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
-| components/unnormalized.ts | `import "./x/../../foundation/dom.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
-| sdk/dotted-sibling.ts | `import "../foundation/.../a.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
-| components/forms/typescript.ts | `import "typescript";` | node | yes | yes: no-extraneous-dependencies | no | no | no | no |
-| sdk/forms/eslint.ts | `import "eslint";` | node | yes | yes: no-extraneous-dependencies | no | no | no | no |
-| components/forms/self-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | no | yes: no-extraneous-dependencies | no | no | no | no |
-| foundation/forms/self-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node | no | yes: no-extraneous-dependencies | no | no | no | no |
-| index.ts | `export * from "./sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
-| components/format-value.ts | `import { formatBytes } from "@jaimestill/spike-html-packages-foundation/format.js";` | node | no | no | yes: not exported | yes: not exported | yes: not exported | yes: not exported |
+| sdk/forms/components.ts | `import "../../components/status-badge.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| sdk/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| sdk/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node, Vite | yes | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| sdk/forms/lit.ts | `import "lit";` | node, Vite | no | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| sdk/forms/foundation-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node, Vite | no | yes: no-extraneous-dependencies | yes: node, Vite (not found) | no | yes: node, Vite (not found) | yes: node, Vite (not found) |
+| components/forms/foundation.ts | `import "../../foundation/dom.ts";` | node, Vite | no | yes: no-relative-packages | no | no | no | no |
+| components/dotted-sibling.ts | `import "../foundation/x..y/z.ts";` | node, Vite | no | yes: no-relative-packages | no | no | no | no |
+| components/unnormalized.ts | `import "./x/../../foundation/dom.ts";` | node, Vite | no | yes: no-relative-packages | no | no | no | no |
+| sdk/dotted-sibling.ts | `import "../foundation/.../a.ts";` | node, Vite | no | yes: no-relative-packages | no | no | no | no |
+| components/forms/typescript.ts | `import "typescript";` | node, Vite | yes | yes: no-extraneous-dependencies | no | no | no | no |
+| sdk/forms/eslint.ts | `import "eslint";` | node, Vite | yes | yes: no-extraneous-dependencies | no | no | no | no |
+| components/forms/self-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node, Vite | no | yes: no-extraneous-dependencies | no | no | no | no |
+| foundation/forms/self-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node, Vite | no | yes: no-extraneous-dependencies | no | no | no | no |
+| index.ts | `export * from "./sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
+| components/format-value.ts | `import { formatBytes } from "@jaimestill/spike-html-packages-foundation/format.js";` | node, Vite | no | no | yes: node, Vite (not exported) | yes: node, Vite (not exported) | yes: node, Vite (not exported) | yes: node, Vite (not exported) |
 
 npm refuses the workspace:* specs (npm error Unsupported URL Type "workspace:": workspace:*), so its copies declare each sibling by its version, 0.0.0.
 

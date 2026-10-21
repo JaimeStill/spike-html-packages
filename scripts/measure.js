@@ -3,7 +3,7 @@
 // a Vite page beside it, and loads the page in the pinned chrome-headless-shell. The layer
 // violations' catchers: it lints test/unit/layers-tree.js's violation tree, then installs the tree
 // as a workspace under each package manager's layout, offline from copies of the caches mise run
-// install warms in .cache/consumers/, and has tsc or node resolve each case's import.
+// install warms in .cache/consumers/, and has tsc, or node and Vite, resolve each case's import.
 
 import { spawnSync } from "node:child_process";
 import {
@@ -45,9 +45,14 @@ const dist = join(scratch, "dist");
 const rows = [];
 const layoutRows = [];
 
-/** Runs a command, returning whether it exited 0 and its stdout and stderr, trimmed. */
-function run(command, args, cwd = root) {
-  const { status, stdout, stderr } = spawnSync(command, args, { cwd, encoding: "utf8" });
+/** Runs a command, with `env` added to the environment, returning whether it exited 0 and its
+ * stdout and stderr, trimmed. */
+function run(command, args, cwd = root, env = {}) {
+  const { status, stdout, stderr } = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
   return { ok: status === 0, output: `${stdout}${stderr}`.trim() };
 }
 
@@ -102,9 +107,10 @@ const cases = {
   ),
   ...Object.fromEntries(Object.entries(uncaught).slice(0, 1)),
 };
-// tsc judges a type import, which has no runtime; node, which runs the sources unbuilt, judges the
-// rest.
-const judge = (source) => (source.startsWith("import type") ? "tsc" : "node");
+// tsc judges a type import, which has no runtime. node, which runs the sources unbuilt, and Vite,
+// which builds them, judge the rest. They disagree on an absolute path, which Vite reads from its
+// root, and on a percent-encoded segment, which node resolves and Vite doesn't.
+const judges = (source) => (source.startsWith("import type") ? ["tsc"] : ["node", "Vite"]);
 // tsc's codes for an import it can't resolve, and node's, each by what it says of the import.
 const tscUnresolved = ["TS2307", "TS2792", "TS2834", "TS2835"];
 const nodeUnresolved = {
@@ -171,10 +177,12 @@ function install({ manager, args }, dir, caches) {
   return run(manager, ["install", flag, dir, ...args(join(caches, manager))], dir);
 }
 
-/** Each case by what `judge` says resolving its import under `dir`: the reason it can't, or "". */
+/** Each case by what each of its judges says resolving its import under `dir`: the reason it can't,
+ * or "". */
 function resolveCases(dir) {
-  const found = {};
-  const typed = Object.keys(cases).filter((path) => judge(cases[path]) === "tsc");
+  const found = Object.fromEntries(Object.keys(cases).map((path) => [path, {}]));
+  const typed = Object.keys(cases).filter((path) => judges(cases[path]).includes("tsc"));
+  const values = Object.keys(cases).filter((path) => !typed.includes(path));
   writeFileSync(
     join(dir, "tsconfig.json"),
     JSON.stringify({ extends: join(root, "tsconfig.json"), include: typed }),
@@ -182,14 +190,47 @@ function resolveCases(dir) {
   const checked = run("tsc", ["-p", dir, "--pretty", "false"], dir).output;
   for (const path of typed) {
     const errors = checked.split("\n").filter((line) => line.startsWith(`${path}(`));
-    found[path] = tscUnresolved.find((code) => errors.some((line) => line.includes(code))) ?? "";
+    found[path].tsc =
+      tscUnresolved.find((code) => errors.some((line) => line.includes(code))) ?? "";
   }
-  for (const path of Object.keys(cases).filter((path) => !typed.includes(path))) {
+  for (const path of values) {
     const ran = run("node", [join(dir, path)], dir);
     const code = ran.ok ? undefined : ran.output.match(/code: '(ERR_\w+)'/)?.[1];
-    found[path] = nodeUnresolved[code] ?? "";
+    found[path].node = nodeUnresolved[code] ?? "";
+  }
+  // One build of the layout, every value case an entry, judged by resolve.config.js.
+  const resolved = join(dir, "vite-resolved.json");
+  const built = run(
+    "vite",
+    ["build", dir, "--config", join(fixture, "resolve.config.js"), "--configLoader", "native"],
+    dir,
+    { MEASURE_CASES: JSON.stringify(values), MEASURE_RESOLVED: resolved },
+  );
+  if (!built.ok || !existsSync(resolved))
+    throw new Error(`vite can't judge ${dir}:\n${built.output}`);
+  const vite = JSON.parse(readFileSync(resolved, "utf8"));
+  for (const path of values) {
+    if (!(path in vite)) throw new Error(`vite didn't judge ${path}`);
+    found[path].Vite = vite[path];
   }
   return found;
+}
+
+/** A layout's cell: which judges can't resolve the case's import, and why, from `judged`, each
+ * judge by its reason or "". */
+function caught(judged) {
+  const by = Object.entries(judged);
+  const failed = by.filter(([, reason]) => reason);
+  const resolves = by.filter(([, reason]) => !reason).map(([name]) => name);
+  if (!failed.length) return "no";
+  if (resolves.length) {
+    const named = failed.map(([name, reason]) => `${name} only (${reason})`).join(", ");
+    return `${named}; ${resolves.join(", ")} resolves`;
+  }
+  const reasons = new Set(failed.map(([, reason]) => reason));
+  return reasons.size === 1
+    ? `yes: ${failed.map(([name]) => name).join(", ")} (${[...reasons][0]})`
+    : `yes: ${failed.map(([name, reason]) => `${name} (${reason})`).join(", ")}`;
 }
 
 /** The layer violations' table: each case's catchers by the lint and by each install layout. Its
@@ -256,10 +297,10 @@ function layoutTable(scratch) {
     const cells = [
       path.replace(/^packages\//, ""),
       `\`${source}\``,
-      judge(source),
+      judges(source).join(", "),
       by.has(table) ? "yes" : "no",
       yes(manifest),
-      ...names.map((name) => yes(results[name][path])),
+      ...names.map((name) => caught(results[name][path])),
     ];
     layoutRows.push(`| ${cells.join(" | ")} |`);
   }
