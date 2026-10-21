@@ -95,7 +95,7 @@ Door          two-way: nothing leaves the repository. The names become one-way
 
 ## Progress
 
-slices 0/5 committed · standards — · spec — · editor —
+slices 1/5 committed · standards — · spec — · editor —
 
 ## Decisions
 
@@ -187,6 +187,11 @@ slices 0/5 committed · standards — · spec — · editor —
   repositories; the hosting task measures it with three scratch repositories by tag.
 - layout: held typescript at 6.0.3: typescript-eslint 8.72.0's peer range (<6.1.0) declines 7.x;
   typescript-go 7.0.2 is the type checker.
+- layout: held eslint-plugin-boundaries at 7.2.0: 7.2.1 (2026-10-21T10:55Z) is younger than
+  pnpm 12's default minimum release age, and taking it would commit a minimumReleaseAgeExclude;
+  retried before the brief, else the next task's currency takes it.
+- layout: chrome-headless-shell 156 no longer caches a failed module fetch, so the help retry
+  test counts a request per import(); keys.ts's retry was already right.
 
 ## Pending edits
 
