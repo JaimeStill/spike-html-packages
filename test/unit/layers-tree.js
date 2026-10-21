@@ -1,9 +1,11 @@
 // The layer direction cases as file trees in the workspace's shape: one of violations, a file per
 // forbidden edge and import form, each with the rules that catch it; one of violations no lint rule
-// catches; and one of allowed imports in the same layout. layers.test.js lints them.
+// catches; and one of allowed imports in the same layout. layers.test.js lints them, and
+// scripts/measure.js lints them and installs them under each package manager.
 // Adapted from spike-html-conventions (a88828a): test/layers-tree.js, cut to this repository's
 // layers and grown by the workspace's cases.
 
+import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
@@ -137,6 +139,10 @@ export const violations = {
   }),
 };
 
+/** `cases`, each path to its source alone. */
+export const sources = (cases) =>
+  Object.fromEntries(Object.entries(cases).map(([path, { source }]) => [path, source]));
+
 // Violations no lint rule catches, each asserted to draw nothing, which the measure reports. A
 // value import of a types-only subpath by package name: the subpath has no runtime, and the name
 // resolves through its types condition to the .d.ts in the sibling's dist/, which the table's
@@ -220,7 +226,7 @@ export function builds(files) {
 
 /** The packages from the registry the cases import, as stubs: lit, a package's runtime
  * dependency, and eslint and typescript, the root's devDependencies, each a module and its types. */
-const externals = Object.fromEntries(
+export const externals = Object.fromEntries(
   ["lit", "eslint", "typescript"].map((name) => [
     name,
     {
@@ -240,21 +246,23 @@ const externals = Object.fromEntries(
   ]),
 );
 
-/** Writes `files` under `dir` as a workspace: the root's and each package's manifest, each of the
- * files' targets and builds as an empty module, and a node_modules/ at the root holding the
- * externals and a link to each workspace package, hoisted as npm lays a workspace out, so every
- * import resolves and the lint, not the install, judges it. Returns every path written outside
- * node_modules/. */
-export function writeTree(dir, files) {
+/** Writes `files` under `dir` as a workspace: the root's and each package's manifest, `given` or
+ * the repository's, and each of the files' targets and builds as an empty module. With `link`, it
+ * also writes a node_modules/ at the root holding the externals and a link to each workspace
+ * package, hoisted as npm lays a workspace out, so every import resolves and the lint, not the
+ * install, judges it; without, a package manager installs the tree. Returns every path written
+ * outside node_modules/. */
+export function writeTree(dir, files, { manifests: given = manifests, link = true } = {}) {
   const written = { ...files };
   for (const target of [...targets(files), ...builds(files)]) written[target] = "export {};";
-  for (const [path, manifest] of Object.entries(manifests)) {
+  for (const [path, manifest] of Object.entries(given)) {
     written[join(path, "package.json")] = JSON.stringify(manifest);
   }
   for (const [path, source] of Object.entries(written)) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), `${source}\n`);
   }
+  if (!link) return Object.keys(written);
   for (const [name, stub] of Object.entries(externals)) {
     for (const [path, source] of Object.entries(stub)) {
       mkdirSync(join(dir, "node_modules", name), { recursive: true });
@@ -268,4 +276,20 @@ export function writeTree(dir, files) {
     symlinkSync(relative(dirname(link), join(dir, path)), link);
   }
   return Object.keys(written);
+}
+
+/** ESLint's JSON report on the tree under `dir`'s packages/. -c takes the repo's config, whose
+ * patterns then match from the working directory, the tree, and whose plugins load from the repo's
+ * node_modules. Throws when ESLint doesn't run or exits other than 0 or 1. */
+export function lint(dir) {
+  const eslint = join(root, "node_modules", ".bin", "eslint");
+  const run = spawnSync(eslint, ["-c", join(root, "eslint.config.js"), "-f", "json", "packages"], {
+    cwd: dir,
+    encoding: "utf8",
+  });
+  if (run.error) throw new Error(`eslint didn't run: ${run.error}`);
+  if (run.status !== 0 && run.status !== 1) {
+    throw new Error(`eslint exited ${run.status}: ${run.stderr}`);
+  }
+  return JSON.parse(run.stdout);
 }

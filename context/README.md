@@ -124,9 +124,11 @@ The spike reads these repositories and never writes to them. Each is a key in th
 
 ## Measures
 
-`mise run measure` builds the release and a Vite page in a scratch directory, loads the page in the
-pinned chrome-headless-shell, and prints the import extension's facts (evidence 5) as a dated
-table. It reads no network and leaves nothing behind. The table of 2026-10-19:
+`mise run measure` prints two dated tables. It reads no network and leaves nothing behind.
+
+The first builds the release and a Vite page in a scratch directory, loads the page in the pinned
+chrome-headless-shell, and prints the import extension's facts (evidence 5). The table of
+2026-10-21:
 
 | measure | result |
 | --- | --- |
@@ -134,11 +136,61 @@ table. It reads no network and leaves nothing behind. The table of 2026-10-19:
 | the emitted .d.ts keep .ts specifiers | yes: foundation/keys.d.ts |
 | typescript-go 7.0.2 checks a consumer of dist/**/*.d.ts | yes |
 | typescript 6.0.3 checks a consumer of dist/**/*.d.ts | yes |
-| node 26.12.0 runs layers/foundation/keys-grammar.ts | yes |
-| node resolves layers/foundation/keys.ts's imports | yes: it stops at evaluation, on document |
-| Vite 8.3.4 builds the page, keys-help in its own chunk | yes: assets/keys-help-9UbzHt4S.js |
-| chrome-headless-shell 155.0.8059.84 renders the built page's three components | yes: 3/3 with adopted sheets |
-| chrome-headless-shell 155.0.8059.84 loads the help chunk, which fills the dialog | yes: assets/keys-help-9UbzHt4S.js fetched; dialog filled |
+| node 26.12.1 runs packages/foundation/src/keys-grammar.ts | yes |
+| node resolves packages/foundation/src/keys.ts's imports | yes: it stops at evaluation, on document |
+| Vite 8.3.5 builds the page, keys-help in its own chunk | yes: assets/keys-help-DIeGkijY.js |
+| chrome-headless-shell 156.0.8078.47 renders the built page's three components | yes: 3/3 with adopted sheets |
+| chrome-headless-shell 156.0.8078.47 loads the help chunk, which fills the dialog | yes: assets/keys-help-DIeGkijY.js fetched; dialog filled |
+
+The second lints the violation tree (`test/unit/layers-tree.js`), then installs it as a workspace
+under four layouts, each offline from a copy of the caches `mise run install` warms in
+`.cache/consumers/`: pnpm (isolated), npm hoisted, npm `--install-strategy=linked`, and bun
+`--linker isolated`. Each row is one case, the four-form edges by their side-effect import. A layout
+catches a case when the resolver named for it can't resolve the import there: tsc for a type import,
+node for the rest. The root's devDependencies are stub packages, packed beside the tree. The table
+of 2026-10-21:
+
+| case | import | resolved by | table | manifest rules | pnpm | npm hoisted | npm linked | bun isolated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| foundation/lit.ts | `import { html } from "lit";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| foundation/self.ts | `import { define } from "@jaimestill/spike-html-packages/foundation/dom.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| foundation/forms/lit.ts | `import "lit";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| foundation/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| foundation/components.ts | `import "../components/badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/sdk-export.ts | `export { Client } from "../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/forms/components.ts | `import "../../components/badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| foundation/forms/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk.ts | `import { Client } from "../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk-dynamic.ts | `const sdk = await import("../sdk/client.ts");` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/sdk-dir.ts | `import "../sdk";` | node | yes | yes: no-relative-packages | yes: a directory | yes: a directory | yes: a directory | yes: a directory |
+| components/nested/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/forms/sdk.ts | `import "../../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/foundation-climb.ts | `import "../foundation/../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/dot-segment.ts | `import "../foundation/./../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/empty-segment.ts | `import "../foundation//../sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| components/forms/sdk-name.ts | `import "@jaimestill/spike-html-packages-sdk/client.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | yes: not exported | yes: not found | yes: not found |
+| components/percent.ts | `import "../foundation/%2e%2e/sdk/client.ts";` | node | yes | no | no | no | no | no |
+| components/absolute.ts | `import "/packages/sdk/client.ts";` | node | yes | no | yes: not found | yes: not found | yes: not found | yes: not found |
+| sdk/components.ts | `import { StatusBadge } from "../components/status-badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| sdk/components-type.ts | `import type { StatusBadge } from "../components/status-badge.ts";` | tsc | yes | yes: no-relative-packages | no | no | no | no |
+| sdk/forms/components.ts | `import "../../components/status-badge.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| sdk/self.ts | `import "@jaimestill/spike-html-packages/components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| sdk/forms/components-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | yes | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| sdk/forms/lit.ts | `import "lit";` | node | no | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| sdk/forms/foundation-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node | no | yes: no-extraneous-dependencies | yes: not found | no | yes: not found | yes: not found |
+| components/forms/foundation.ts | `import "../../foundation/dom.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
+| components/dotted-sibling.ts | `import "../foundation/x..y/z.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
+| components/unnormalized.ts | `import "./x/../../foundation/dom.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
+| sdk/dotted-sibling.ts | `import "../foundation/.../a.ts";` | node | no | yes: no-relative-packages | no | no | no | no |
+| components/forms/typescript.ts | `import "typescript";` | node | yes | yes: no-extraneous-dependencies | no | no | no | no |
+| sdk/forms/eslint.ts | `import "eslint";` | node | yes | yes: no-extraneous-dependencies | no | no | no | no |
+| components/forms/self-name.ts | `import "@jaimestill/spike-html-packages-components/status-badge.js";` | node | no | yes: no-extraneous-dependencies | no | no | no | no |
+| foundation/forms/self-name.ts | `import "@jaimestill/spike-html-packages-foundation/dom.js";` | node | no | yes: no-extraneous-dependencies | no | no | no | no |
+| index.ts | `export * from "./sdk/client.ts";` | node | yes | yes: no-relative-packages | no | no | no | no |
+| components/format-value.ts | `import { formatBytes } from "@jaimestill/spike-html-packages-foundation/format.js";` | node | no | no | yes: not exported | yes: not exported | yes: not exported | yes: not exported |
+
+npm refuses the workspace:* specs (npm error Unsupported URL Type "workspace:": workspace:*), so its copies declare each sibling by its version, 0.0.0.
 
 ## The answer
 

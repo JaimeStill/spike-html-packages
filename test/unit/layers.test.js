@@ -11,7 +11,9 @@ import { describe, test } from "node:test";
 import {
   allowed,
   extraneous,
+  lint,
   relativePackages,
+  sources,
   table,
   uncaught,
   unresolved,
@@ -25,24 +27,12 @@ const rules = [table, extraneous, relativePackages, unresolved];
 
 /** Writes `files` to a scratch tree by `write` and returns each file ESLint flagged with any of
  * `watched`, by its path, to the sorted rules that flagged it, after checking that it linted every
- * code file written under packages/ outside a build and parsed each. -c takes the repo's config,
- * whose patterns then match from the working directory, the scratch tree, and whose plugins load
- * from the repo's node_modules. */
+ * code file written under packages/ outside a build and parsed each. */
 function flagged(files, watched, write = writeTree) {
   const scratch = mkdtempSync(join(tmpdir(), "layers-"));
   try {
     const written = write(scratch, files);
-    const run = spawnSync(
-      eslint,
-      ["-c", join(root, "eslint.config.js"), "-f", "json", "packages"],
-      {
-        cwd: scratch,
-        encoding: "utf8",
-      },
-    );
-    assert.equal(run.error, undefined, `eslint didn't run: ${run.error}`);
-    assert.ok(run.status === 0 || run.status === 1, `eslint exited ${run.status}: ${run.stderr}`);
-    const report = JSON.parse(run.stdout);
+    const report = lint(scratch);
     const code = written.filter(
       (path) => path.startsWith("packages/") && !path.includes("/dist/") && /\.(js|ts)$/.test(path),
     );
@@ -65,10 +55,6 @@ function flagged(files, watched, write = writeTree) {
     rmSync(scratch, { recursive: true, force: true });
   }
 }
-
-/** `cases`, each path to its source alone. */
-const sources = (cases) =>
-  Object.fromEntries(Object.entries(cases).map(([path, { source }]) => [path, source]));
 
 describe("layer import direction", () => {
   test("the eslint installed is the one package.json pins", () => {

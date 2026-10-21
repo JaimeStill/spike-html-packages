@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The one task that reads the network: the mise pins, then node_modules from the lockfile, then the
-# consumer caches the offline installs read. Each step needs the one before it.
+# caches in .cache/consumers/ that the offline installs read: the consumer tier's, and the measure's
+# installs of the violation tree, which copy them. Each step needs the one before it.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)

@@ -102,7 +102,7 @@ description = "Run every check; reads no network; writes the packages' dist/ and
 depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumers"]
 
 [tasks.install]
-description = "Install the pins and node_modules, and warm the consumer caches; reads the network"
+description = "Install the pins and node_modules, and warm the offline installs' caches; reads the network"
 run = "scripts/install.sh"
 
 [tasks.installs]
@@ -116,7 +116,7 @@ depends = ["build"]
 run = "node scripts/demo.js"
 
 [tasks.measure]
-description = "Print the import extension's facts as a dated markdown table; reads no network"
+description = "Print the import extension's facts and the layer violations' catchers as dated tables; reads no network"
 depends = ["preflight browser", "build"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/measure.js"
 
