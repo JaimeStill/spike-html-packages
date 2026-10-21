@@ -93,7 +93,7 @@ depends = ["preflight browser", "build"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.js'"
 
 [tasks."test:consumers"]
-description = "Install the packed one package offline under pnpm, npm, and bun, and check each"
+description = "Install the packed one package, and the three layer packages, offline under pnpm, npm, and bun, and check each"
 depends = ["build"]
 run = "scripts/consumers.sh"
 
@@ -106,7 +106,7 @@ description = "Install the pins and node_modules, and warm the offline installs'
 run = "scripts/install.sh"
 
 [tasks.installs]
-description = "Install the packed one package under each manager and list each install's files"
+description = "Install the packed one package and the three layer packages under each manager and list their files"
 depends = ["build"]
 run = "scripts/consumers.sh list"
 
