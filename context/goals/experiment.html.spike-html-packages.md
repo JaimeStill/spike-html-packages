@@ -95,7 +95,7 @@ Door          two-way: nothing leaves the repository. The names become one-way
 
 ## Progress
 
-slices 4/5 committed · standards — · spec — · editor —
+slices 5/5 committed · standards — · spec — · editor —
 
 ## Decisions
 
