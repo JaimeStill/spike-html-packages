@@ -1,7 +1,7 @@
 // The release builds' integrity: each workspace package's build against its package.json's files
-// and exports, by test/consumers/release.js's releaseProblems, on a fresh build of a scratch copy
-// of the workspace and on scratch copies with one fault each. It builds into a temporary
-// directory, so it needs no dist/.
+// and exports, and its LICENSE against its license, by test/consumers/release.js's releaseProblems,
+// on a fresh build of a scratch copy of the workspace and on scratch copies with one fault each.
+// It builds into a temporary directory, so it needs no dist/.
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -156,6 +156,17 @@ describe("release build", () => {
       one,
       (_, copy) => (copy.exports["./apps/*.js"] = "./dist/apps/*.js"),
       'exports["./apps/*.js"] reaches no built file',
+    ],
+    "a package without its LICENSE": ["components", remove("LICENSE"), "LICENSE is missing"],
+    "a LICENSE that isn't Apache 2.0": [
+      "sdk",
+      (dir) => writeFileSync(join(dir, "LICENSE"), "All rights reserved.\n"),
+      "LICENSE isn't the Apache License 2.0",
+    ],
+    "a package that declares another license": [
+      one,
+      (_, copy) => (copy.license = "MIT"),
+      "package.json declares license MIT, not Apache-2.0",
     ],
     "a build outside files": [
       one,

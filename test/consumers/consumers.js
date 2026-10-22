@@ -1,11 +1,12 @@
 // Writes a consumer's subpaths.json, each subpath of each installed release with its runtime and
 // types targets, for resolve.js, and subpaths.ts, a type import of each typed subpath, for tsc.
-// Fails if an installed file is reachable through no export. Run by scripts/consumers.sh with the
+// Fails if an installed release lacks its LICENSE or its declared license, or if any other installed
+// file but package.json is reachable through no export. Run by scripts/consumers.sh with the
 // consumer, then each installed release: the one package, or the three layer packages.
 
 import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { listFiles, resolveExport, subpathsOf } from "./release.js";
+import { licenseProblems, listFiles, resolveExport, subpathsOf } from "./release.js";
 
 const [consumer, ...releases] = process.argv.slice(2);
 
@@ -14,12 +15,15 @@ const [consumer, ...releases] = process.argv.slice(2);
 const entries = [];
 const installedOf = new Map();
 for (const installed of releases) {
+  const licensing = licenseProblems(installed);
+  if (licensing.length > 0) throw new Error(`${installed}: ${licensing.join("; ")}`);
   const { name, exports } = JSON.parse(readFileSync(join(installed, "package.json"), "utf8"));
   const subpaths = new Map();
   const unreached = [];
   // bun's .bun-tag, its tarball's integrity, is the manager's, not the release's: consumers.sh
-  // holds it to the tarball.
-  const own = (path) => path !== "package.json" && path !== ".bun-tag";
+  // holds it to the tarball. package.json and LICENSE ship beside the exports, not through them.
+  const unexported = new Set(["package.json", "LICENSE", ".bun-tag"]);
+  const own = (path) => !unexported.has(path);
   for (const file of listFiles(installed).filter(own)) {
     const [reached] = subpathsOf(exports, file);
     if (reached === undefined) {

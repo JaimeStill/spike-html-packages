@@ -1,6 +1,7 @@
 // A release's shape: its exports map walked by Node's rules, and a package's build checked against
 // its sources, package.json's files, and exports. A layer package's sources are its src/; the one
-// package's are its siblings' builds, which it must name only by relative specifiers.
+// package's are its siblings' builds, which it must name only by relative specifiers. A release, a
+// package's directory or its installed pack, carries the Apache 2.0 LICENSE its manifest declares.
 // test/unit/release.test.js and consumers.js share it.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -145,9 +146,31 @@ function bareSiblings(root, built) {
     );
 }
 
+/** The license every release declares, and the text its LICENSE opens with. */
+const license = "Apache-2.0";
+const licenseHeading = /^\s*Apache License\s+Version 2\.0, January 2004\s/;
+
+/** What keeps root, a package's directory or its installed pack, from carrying the license its
+ * package.json declares, one line each: the declaration and the LICENSE beside package.json, which
+ * every pack takes whatever files lists. pnpm 12.15.0 packs the workspace root's LICENSE into a
+ * package that has none, so only the package's directory shows its own copy missing. */
+export function licenseProblems(root) {
+  const problems = [];
+  const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  if (manifest.license !== license) {
+    problems.push(`package.json declares license ${manifest.license}, not ${license}`);
+  }
+  const path = join(root, "LICENSE");
+  if (!existsSync(path)) problems.push("LICENSE is missing");
+  else if (!licenseHeading.test(readFileSync(path, "utf8"))) {
+    problems.push("LICENSE isn't the Apache License 2.0");
+  }
+  return problems;
+}
+
 /** What keeps root's dist/ from being the release its package.json declares, one line each. */
 export function releaseProblems(root) {
-  const problems = [];
+  const problems = licenseProblems(root);
   const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const { exports = {}, files = [] } = manifest;
   const built = listFiles(join(root, "dist")).map((path) => `dist/${path}`);

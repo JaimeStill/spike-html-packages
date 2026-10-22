@@ -19,10 +19,10 @@ caches=$root/.cache/consumers
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 
-# The measured facts. components' packed manifest declares the foundation as 0.0.0, pnpm pack's
+# The measured facts. components' packed manifest declares the foundation as 0.1.0, pnpm pack's
 # rewrite of workspace:*. What each manager needs before that spec installs offline with the
 # foundation's tarball beside the components': none, where it dedupes against the consumer's own
-# foundation tarball; overrides, where it looks for 0.0.0 in a registry, its offline error below.
+# foundation tarball; overrides, where it looks for 0.1.0 in a registry, its offline error below.
 declare -A layers_need=([pnpm]=overrides [npm]=none [bun]=overrides)
 # With the components alone the foundation is no dependency of the consumer's to dedupe against.
 declare -A components_need=([pnpm]=overrides [npm]=overrides [bun]=overrides)

@@ -156,7 +156,7 @@ The spike reads these repositories and never writes to them. Each is a key in th
 `mise run test:consumers` packs each package with `pnpm pack`, installs the tarballs offline from
 `.cache/consumers/`, and fails if a manager departs from the facts below, measured 2026-10-22. Each
 manager installs in its default layout: pnpm isolated, npm hoisted, and bun hoisted, its default
-outside a workspace. `pnpm pack` writes the components' `workspace:*` foundation spec as `0.0.0`,
+outside a workspace. `pnpm pack` writes the components' `workspace:*` foundation spec as `0.1.0`,
 which no registry holds, so a manager that looks it up needs an override:
 
 | consumer | pnpm | npm | bun |
@@ -246,7 +246,7 @@ packed beside the tree. The table of 2026-10-22:
 | index.ts | `export * from "./sdk/client.ts";` | node, Vite | yes | yes: no-relative-packages | no | no | no | no |
 | components/format-value.ts | `import { formatBytes } from "@jaimestill/spike-html-packages-foundation/format.js";` | node, Vite | no | no | yes: node, Vite (not exported) | yes: node, Vite (not exported) | yes: node, Vite (not exported) | yes: node, Vite (not exported) |
 
-npm refuses the workspace:* specs (npm error Unsupported URL Type "workspace:": workspace:*), so its copies declare each sibling by its version, 0.0.0.
+npm refuses the workspace:* specs (npm error Unsupported URL Type "workspace:": workspace:*), so its copies declare each sibling by its version, 0.1.0.
 
 ## The answer
 
