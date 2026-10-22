@@ -154,7 +154,7 @@ The spike reads these repositories and never writes to them. Each is a key in th
 ## Consumer installs
 
 `mise run test:consumers` packs each package with `pnpm pack`, installs the tarballs offline from
-`.cache/consumers/`, and fails if a manager departs from the facts below, measured 2026-10-21. Each
+`.cache/consumers/`, and fails if a manager departs from the facts below, measured 2026-10-22. Each
 manager installs in its default layout: pnpm isolated, npm hoisted, and bun hoisted, its default
 outside a workspace. `pnpm pack` writes the components' `workspace:*` foundation spec as `0.0.0`,
 which no registry holds, so a manager that looks it up needs an override:
@@ -168,7 +168,9 @@ which no registry holds, so a manager that looks it up needs an override:
 An override points the foundation at its tarball by a `file:` spec. pnpm 12 reads overrides only
 from `pnpm-workspace.yaml`, and npm and bun from `package.json`. pnpm links only a project's
 declared dependencies into its `node_modules`, so the undeclared import fails there; npm and bun
-hoist the foundation where it resolves. pnpm's store and its metadata cache (`cacheDir`), which
+hoist the foundation where it resolves. bun 1.4.4 adds one file to each package it installs from
+a tarball, `.bun-tag`, holding the tarball's integrity; the tier holds it to the tarball and
+otherwise to the pack's files. pnpm's store and its metadata cache (`cacheDir`), which
 `--offline` reads, both live in `.cache/consumers/pnpm/`.
 
 ## Measures
@@ -177,7 +179,7 @@ hoist the foundation where it resolves. pnpm's store and its metadata cache (`ca
 
 The first copies the one package's `dist/` (`mise run build`) and builds a Vite page beside it in a
 scratch directory, loads the page in the pinned chrome-headless-shell, and prints the import
-extension's facts (evidence 5). The table of 2026-10-21:
+extension's facts (evidence 5). The table of 2026-10-22:
 
 | measure | result |
 | --- | --- |
@@ -202,7 +204,7 @@ resolver named for it can't resolve the import there: tsc for a type import, and
 running the case, and Vite, in one `vite build` of the layout with every case an entry
 (`test/fixtures/measure/resolve.config.js`). Each cell names the resolvers that fail and why, and
 where node and Vite disagree, which one resolves. The root's devDependencies are stub packages,
-packed beside the tree. The table of 2026-10-21:
+packed beside the tree. The table of 2026-10-22:
 
 | case | import | resolved by | table | manifest rules | pnpm | npm hoisted | npm linked | bun isolated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -149,6 +149,25 @@ dev_dependencies() {
   ' "$@"
 }
 
+# Fails unless the installed package is its pack, extracted beside its tarball in the scratch:
+# the same files. bun 1.4.4 adds one, .bun-tag, to each package it installs from a tarball,
+# holding the tarball's integrity; it must name this tarball, and is left out of the comparison.
+matches_pack() {
+  local manager=$1 pack=$2 installed=$3 what=$4 tarball integrity
+  if [[ $manager == bun ]]; then
+    tarball=$(echo "$pack"/*.tgz)
+    integrity=$(node -p '
+      const { createHash } = require("node:crypto");
+      const tarball = require("node:fs").readFileSync(process.argv[1]);
+      "sha512-" + createHash("sha512").update(tarball).digest("base64")
+    ' "$tarball")
+    [[ -f $installed/.bun-tag && $(<"$installed/.bun-tag") == "$integrity" ]] ||
+      fail "$manager's install of $what holds no .bun-tag naming its tarball's integrity"
+  fi
+  diff -r -x .bun-tag "$pack/package" "$installed" >&2 ||
+    fail "$manager's install of $what differs from its pack"
+}
+
 # Packs a package into its own directory in the scratch and extracts it there, into package/;
 # prints the tarball's path.
 pack() {
@@ -183,8 +202,7 @@ for manager in pnpm npm bun; do
   offline "$manager" "$project"
 
   installed=$project/node_modules/$name
-  diff -r "$(dirname "$tarball")/package" "$installed" >&2 ||
-    fail "$manager's install differs from the pack"
+  matches_pack "$manager" "$(dirname "$tarball")" "$installed" "the one package"
   no_dev_dependencies "$manager" "$project" "$one_dev"
   "$runtime" "$fixtures/consumers.js" "$project" "$installed"
   (cd "$project" && "$runtime" resolve.js)
@@ -207,8 +225,7 @@ for manager in pnpm npm bun; do
   releases=()
   for layer in "${layers[@]}"; do
     installed=$project/node_modules/$scope$layer
-    diff -r "$scratch/packs/$layer/package" "$installed" >&2 ||
-      fail "$manager's install of $layer differs from its pack"
+    matches_pack "$manager" "$scratch/packs/$layer" "$installed" "$layer"
     releases+=("$installed")
   done
   components=$(realpath "$project/node_modules/${scope}components")
@@ -236,10 +253,9 @@ for manager in pnpm npm bun; do
   meet "$manager" "$project" "${components_need[$manager]}"
 
   components=$(realpath "$project/node_modules/${scope}components")
-  diff -r "$scratch/packs/components/package" "$components" >&2 ||
-    fail "$manager's install of components differs from its pack"
-  diff -r "$scratch/packs/foundation/package" "$(resolve_from "$components" "$foundation")" >&2 ||
-    fail "$manager's install of the components' foundation differs from its pack"
+  matches_pack "$manager" "$scratch/packs/components" "$components" components
+  matches_pack "$manager" "$scratch/packs/foundation" \
+    "$(resolve_from "$components" "$foundation")" "the components' foundation"
   no_dev_dependencies "$manager" "$project" "$layers_dev"
   resolved=$(cd "$project" && "$runtime" undeclared.js)
   [[ $resolved == "${undeclared[$manager]}" ]] ||

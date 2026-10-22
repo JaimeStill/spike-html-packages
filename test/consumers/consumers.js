@@ -17,7 +17,10 @@ for (const installed of releases) {
   const { name, exports } = JSON.parse(readFileSync(join(installed, "package.json"), "utf8"));
   const subpaths = new Map();
   const unreached = [];
-  for (const file of listFiles(installed).filter((path) => path !== "package.json")) {
+  // bun's .bun-tag, its tarball's integrity, is the manager's, not the release's: consumers.sh
+  // holds it to the tarball.
+  const own = (path) => path !== "package.json" && path !== ".bun-tag";
+  for (const file of listFiles(installed).filter(own)) {
     const [reached] = subpathsOf(exports, file);
     if (reached === undefined) {
       unreached.push(file);
