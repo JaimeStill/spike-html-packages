@@ -8,9 +8,9 @@ repository layout, and the import extension the releases use. Its answer is evid
 standards-lab's experiment.html intake; the spike decides nothing itself.
 
 The layers live in repositories of their own, one per layer, each released by tag:
-JaimeStill/spike-html-packages-foundation and JaimeStill/spike-html-packages-sdk. This repository
-holds the spike's record and this README; the `components` task adds the components repository
-and this repository's consumer check by tag.
+JaimeStill/spike-html-packages-foundation, JaimeStill/spike-html-packages-sdk, and
+JaimeStill/spike-html-packages-components. This repository holds the spike's record and this
+README; the `by-tag` task adds its consumer check by tag.
 
 The spike is the sub-goal `experiment.html.spike-html-packages` in the coordinator's roadmap,
 `standards-lab/context/roadmap.toml`, where its tasks live. Its question is framed in
@@ -58,10 +58,10 @@ Copies, each naming its source repository and commit:
 - spike-html-conventions' `.prettierrc.json` at main a88828a, as written.
 
 The copies live in the layer repositories: the foundation, its tool sheets, and the registry and
-keys family in spike-html-packages-foundation, and the SDK declarations in
-spike-html-packages-sdk. The components wait for the `components` task, which takes them from this
-repository's history at c2b4a19, the last commit that holds `packages/`, naming it as provenance.
-Lit is the one runtime dependency, of the components. Registry trials publish for real under
+keys family in spike-html-packages-foundation, the SDK declarations in spike-html-packages-sdk,
+and the components in spike-html-packages-components, taken from this repository's history at
+c2b4a19, the last commit that holds `packages/`, which they name as provenance. Lit is the one
+runtime dependency, of the components. Registry trials publish for real under
 `@jaimestill` at 0.0.x, to GitHub Packages and to JSR.
 
 ## Capabilities
@@ -86,12 +86,16 @@ The tasks, in the order they run; each cites the evidence it proves.
    and a release workflow that cuts v0.1.0 on its merge to main; `packages/` leaves this
    repository (evidence 2, 3).
 4. `components`: the components as JaimeStill/spike-html-packages-components, copied from this
-   repository's history and built on the foundation's v0.1.0 tag; this repository's consumer check
-   installing the three by tag under npm, pnpm, and bun; and jsDelivr /gh/ and the import-map page
-   over the three tags (evidence 1, 2, 3).
-5. `registries`: GitHub Packages and JSR (evidence 1).
-6. `consumers`: the page and Vite app consumers, and the release flow (evidence 6, 7).
-7. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
+   repository's history at c2b4a19, built on the foundation's v0.1.0 tag, with its own check, CI,
+   and a release workflow that cuts v0.1.0 on its merge to main (evidence 2, 3).
+5. `by-tag`: this repository's consumer check installing the three v0.1.0 tags under npm, pnpm, and
+   bun, as the three together and as the components alone, offline from caches and a lockfile per
+   manager, with each manager's guard in the fixture's config; and jsDelivr /gh/ and the import-map
+   page over the three tags, in headless chrome by a networked task printing a dated table
+   (evidence 1, 3).
+6. `registries`: GitHub Packages and JSR (evidence 1).
+7. `consumers`: the page and Vite app consumers, and the release flow (evidence 6, 7).
+8. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
 
 ## Releases
 
@@ -124,9 +128,13 @@ working context, standards, check, CI, release workflow, and changelog:
   dependencies.
 - JaimeStill/spike-html-packages-sdk: `@jaimestill/spike-html-packages-sdk`, the SDK
   declarations, types only, with no dependencies.
+- JaimeStill/spike-html-packages-components: `@jaimestill/spike-html-packages-components`, the
+  status badge, the entry, and the pagination, Lit with shadow roots, and their sheets. It depends
+  on lit 3.3.3 and on the foundation by its tag,
+  `github:JaimeStill/spike-html-packages-foundation#v0.1.0`.
 
-Both are the goal's repositories in the coordinator's roadmap, located through the coordinator's
-`.claude/marathon.toml`, under `[workspace.paths]`.
+All three are the goal's repositories in the coordinator's roadmap, located through the
+coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
 
 ## Tasks
 
@@ -161,11 +169,13 @@ repository script cuts a release.
 
 A consumer installs a release by its tag, for example
 `github:JaimeStill/spike-html-packages-foundation#v0.1.0`; npm 12 needs `--allow-git=root` for it.
-The release's tarball is the same pack. jsDelivr /gh/ serves the tag's tree; the `components` task
-measures it, with the installs by tag under npm, pnpm, and bun.
+The components' foundation is a nested git dependency, so installing the components needs npm's
+`--allow-git=all` and pnpm's `blockExoticSubdeps: false`; bun needs nothing. The release's tarball
+is the same pack. jsDelivr /gh/ serves the tag's tree; the `by-tag` task measures it, with the
+installs by tag under npm, pnpm, and bun.
 
 The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
-installed offline by `git+file://`; the `components` task measures them again on the layer
+installed offline by `git+file://`; the `by-tag` task measures them again on the layer
 repositories' tags:
 
 - npm 12.2.1's `allow-git` defaults to none, which refuses even a root git dependency; root
@@ -189,8 +199,7 @@ Each layer repository tags a release with one plain `vX.Y.Z`:
 | --- | --- | --- |
 | `v0.1.0` | `JaimeStill/spike-html-packages-foundation` | `@jaimestill/spike-html-packages-foundation` |
 | `v0.1.0` | `JaimeStill/spike-html-packages-sdk` | `@jaimestill/spike-html-packages-sdk` |
-
-The components repository's v0.1.0 belongs to the `components` task.
+| `v0.1.0` | `JaimeStill/spike-html-packages-components` | `@jaimestill/spike-html-packages-components` |
 
 ## Consumer installs
 
