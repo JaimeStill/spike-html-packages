@@ -4,21 +4,46 @@ task.run_auto_install = false
 
 # spike-html-conventions' settled toolchain, at its pins: node runs Prettier, which pnpm installs.
 [tools]
+# A consumer only: the fixtures install the releases under npm, pnpm, and bun.
+bun = "1.4.4"
 node = "26.12.1"
+# Its own pin: node 26.12.1 bundles npm 11.20.0, and the fixtures hold npm 12's git guard.
+npm = "12.2.1"
 pnpm = "12.15.0"
+shellcheck = "0.11.0"
+
+# From spike-html-packages-components (8cb64a8): mise.toml's preflight.
+[tasks.preflight]
+description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing"
+hide = true
+run = "scripts/preflight.sh"
+
+[tasks.lint]
+description = "Run the linters: Prettier and shellcheck"
+depends = ["lint:format", "lint:shell"]
+
+[tasks."lint:format"]
+description = "Check the format with Prettier"
+depends = ["preflight"]
+run = "pnpm exec prettier --check ."
+
+[tasks."lint:shell"]
+description = "Shellcheck the scripts"
+depends = ["preflight"]
+run = "shellcheck scripts/*.sh"
+
+[tasks."test:consumers"]
+description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, and check the install against the layers' tags"
+depends = ["preflight"]
+run = "scripts/consumers.sh"
+
+[tasks.check]
+description = "Run every check; reads no network; writes nothing in the repository outside .cache/"
+depends = ["lint", "test:consumers"]
 
 [tasks.install]
-description = "Install the pins and node_modules from the lockfile; reads the network"
-run = ["mise install", "pnpm install --frozen-lockfile"]
-
-# The layers' packages live in spike-html-packages-foundation and spike-html-packages-sdk now;
-# what is left here is the spike's record, and its check is the format alone.
-[tasks.check]
-description = "Check the format with Prettier; reads no network and writes nothing"
-run = """
-[ -x node_modules/.bin/prettier ] || { echo "check: prettier isn't installed; run mise run install" >&2; exit 1; }
-pnpm exec prettier --check .
-"""
+description = "Install the pins and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
+run = "scripts/install.sh"
 
 [tasks.currency]
 description = "Report every pin behind its latest, exiting nonzero if any"
