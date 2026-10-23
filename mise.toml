@@ -1,4 +1,5 @@
-# Tasks never install a missing tool; mise run install is the one task that reads the network.
+# Tasks never install a missing tool; mise run install, lock, and currency are the tasks that read
+# the network.
 [settings]
 task.run_auto_install = false
 
@@ -44,6 +45,10 @@ depends = ["lint", "test:consumers"]
 [tasks.install]
 description = "Install the pins and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
 run = "scripts/install.sh"
+
+[tasks.lock]
+description = "Resolve each consumer fixture anew under its manager and guard, and rewrite its lockfile; reads the network"
+run = "scripts/lock.sh"
 
 [tasks.currency]
 description = "Report every pin behind its latest, exiting nonzero if any"

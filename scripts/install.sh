@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The one task that reads the network: the mise pins, then node_modules from the lockfile, then the
+# Installs, from the network: the mise pins, then node_modules from the lockfile, then the
 # caches in .cache/consumers/ that the check's offline installs read, filled by each fixture's
 # frozen install from its lockfile, and the layers' tags, fetched into .cache/tags/. Each step
 # needs the one before it. It changes no fixture or lockfile.
