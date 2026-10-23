@@ -168,7 +168,7 @@ Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
 
 ## Progress
 
-slices 4/4 committed (components 4789def, 75a2cb3, 6afeb00; root 95654ff) · standards — · spec — · editor —
+slices 4/4 committed (components 4789def, 75a2cb3, 6afeb00; root 95654ff) · standards done (components dc7c8ea, c7a4070) · spec — · editor —
 
 ## Decisions
 
