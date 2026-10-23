@@ -10,157 +10,160 @@
 2. [x] layout
 3. [x] hosting
 4. [ ] components
-5. [ ] registries
-6. [ ] consumers
-7. [ ] answer
+5. [ ] by-tag
+6. [ ] registries
+7. [ ] consumers
+8. [ ] answer
 
-## Task brief · hosting
+## Task brief · components
 
 ```
-Problem       The layers are proven to layer locally, as workspace packages
-              in one repository. It is unproven that they layer as separate
-              repositories, each released at a version and built on the one
-              below by its tag, the way the Go workspace layers. The built
-              branch only emulated that, with generated repositories, release
-              scripts, and an install harness. This task makes the foundation
-              and the SDK real repositories, each with its own check, CI, and
-              release workflow, and releases each at v0.1.0. The later
-              components task then builds on real tags.
-Behaviors     1. Two public repositories, JaimeStill/spike-html-packages-
-                 foundation and JaimeStill/spike-html-packages-sdk, each hold
-                 the only copy of their layer's sources, with provenance
-                 lines kept. Each package keeps its name
-                 (@jaimestill/spike-html-packages-<layer>), its exports, and
-                 its files, at version 0.1.0 with "license": "Apache-2.0".
-                 Main holds sources only and never dist/.
-              2. Each repository is a complete marathon project modeled on
-                 the Go repositories. It has a CLAUDE.md of navigation
-                 pointers; a working-context README; a STANDARDS.md; a
-                 marathon config of kind code, with check `mise run check`,
-                 currency `mise run currency`, and the Go repositories'
-                 [remote] settings, where merge waits on `gh pr checks` and
-                 ci waits on every push run of the merge commit; a Keep a
-                 Changelog CHANGELOG.md with a dated v0.1.0 section; the
-                 workspace repositories' Apache 2.0 LICENSE, byte for byte;
-                 a README; and a mise.toml.
-              3. Each repository's `mise run check` reads no network once
-                 `mise run install` has run. It runs ESLint, Prettier,
-                 typescript-go, the build into dist/, and the unit tier; the
-                 foundation's check also runs the browser tier. It fails on
-                 any failing tier.
-              4. The lint covers one layer: the repository's own layer table,
-                 the .d.ts rule (a declaration file is imported only by
-                 `import type` or `export type`), the CSS module script rule,
-                 and import-x's no-unresolved, no-extraneous-dependencies,
-                 and no-relative-packages. Its test runs the lint over a
-                 violation tree cut to the layer, and passes only when ESLint
-                 flags exactly these: an import of any undeclared package,
-                 lit or a sibling layer included; a value import of a .d.ts;
-                 and a .css import without { type: 'css' }.
-              5. The tests split by layer. The foundation's unit tier runs
-                 the keys grammar, the registry, the formatter declarations,
-                 and the release integrity test (a pack against its exports,
-                 files, and license). Its browser tier runs the tools and
-                 keys cases on its own dist/ in the pinned
-                 chrome-headless-shell, against v0.7.0's fixtures, with the
-                 pipe driver and the static server. `mise run demo` serves
-                 the tools and keys pages. The SDK's unit tier runs the SDK
-                 declarations and the release integrity test.
-              6. `mise run currency` reports, and exits nonzero on, each mise
-                 tool, package.json pin, and GitHub Actions pin
-                 (actions/checkout, jdx/mise-action,
-                 taiki-e/create-gh-release-action) behind its latest.
+Problem       The foundation and the SDK are released by tag at v0.1.0. The
+              components layer is not: its sources are last held in this
+              repository's history at c2b4a19. Without a components release,
+              it is unproven that a layer builds on the one below it by that
+              layer's tag, as a Go module builds on its pinned require, and a
+              consumer can't install all three layers by tag. This task makes
+              the components a repository of their own, built on the
+              foundation's v0.1.0 tag, and releases them at v0.1.0, so the
+              by-tag task installs and loads all three by tag.
+Repositories  changes: spike-html-packages-components (all of the layer) and
+              spike-html-packages (docs). Read-only: spike-html-packages-
+              foundation and spike-html-packages-sdk (nothing owed).
+Behaviors     1. JaimeStill/spike-html-packages-components, which the plan
+                 session created with init's commit, holds the only copy of
+                 the components layer's sources: the status badge, the entry,
+                 and the pagination, Lit with shadow roots, and their sheets.
+                 They are copied from spike-html-packages c2b4a19, with
+                 provenance lines naming that commit and the spike-html-
+                 conventions lines kept. The package is
+                 @jaimestill/spike-html-packages-components at 0.1.0, with
+                 "license": "Apache-2.0", the exports ./*.js (types and
+                 default) and ./*.css, and files ["dist"]. Its dependencies
+                 are exactly lit 3.3.3 and the foundation as
+                 github:JaimeStill/spike-html-packages-foundation#v0.1.0, and
+                 nothing else. Main holds sources only, never dist/.
+              2. The repository reaches the foundation only through that
+                 dependency, as a consumer does. `mise run install` fetches
+                 the foundation's v0.1.0 tag, and the lockfile records the
+                 tag's commit. The build and the type check read the
+                 foundation's shipped .d.ts and its ./css types subpath.
+                 There is no local link, path alias, source condition, or
+                 project reference.
+              3. It is a complete marathon project in the foundation's form:
+                 a CLAUDE.md of navigation pointers; a working-context
+                 README; a STANDARDS.md; a marathon config of kind code, with
+                 check `mise run check`, currency `mise run currency`, and
+                 the Go repositories' [remote] settings; a Keep a Changelog
+                 CHANGELOG.md with a dated v0.1.0 section; the workspace's
+                 Apache 2.0 LICENSE, byte for byte; a README; and a
+                 mise.toml. The README installs the components by tag under
+                 each manager with the guard each one needs for the nested
+                 git foundation: npm --allow-git=all, pnpm
+                 blockExoticSubdeps false, and none for bun.
+              4. `mise run check` reads no network once `mise run install`
+                 has run. It runs ESLint, Prettier, shellcheck, actionlint,
+                 typescript-go (the sources, and the browser cases' in-page
+                 modules against dist/), the build into dist/, the unit tier,
+                 and the browser tier. It fails on any failing tier.
+              5. The lint covers one layer. Its table lets the components
+                 import themselves, lit, and the foundation by package name.
+                 It carries the .d.ts rule, the CSS module script rule, and
+                 import-x's no-unresolved, no-extraneous-dependencies, and
+                 no-relative-packages. Its test runs the lint over a
+                 violation tree cut to the layer. It passes only when ESLint
+                 flags exactly these: an import of any undeclared package
+                 (the SDK and lit-html included); a relative import that
+                 reaches the installed foundation's files; a value import of
+                 a .d.ts; and a .css import without { type: 'css' }.
+              6. The unit tier runs the release integrity test: a pack
+                 checked against its exports, files, and license, plus a
+                 manifest whose dependencies are exactly lit 3.3.3 and an
+                 exact github: tag of the foundation, never a range (bun
+                 fails every #semver: spec). The browser tier runs c2b4a19's
+                 components cases on its own dist/, in the pinned
+                 chrome-headless-shell, with the pipe driver and the static
+                 server: conventions' 27 probe cases, the restyle case, and
+                 each shadow root adopting the installed foundation's reset
+                 and elements sheets, then its own. `mise run demo` serves
+                 the components page.
+              7. `mise run currency` reports, and exits nonzero on, each of
+                 these behind its latest: mise tools, package.json pins (lit
+                 included), the GitHub Actions pins, and the foundation's
+                 github: tag against the foundation's latest GitHub release.
                  typescript is held to typescript-eslint's peer range.
-              7. CI: a workflow installs the pinned tools with
-                 jdx/mise-action, runs `mise run install`, and runs
-                 `mise run check` on every pull request into main and every
-                 push to main.
-              8. Release: a workflow on push to main, in one job with
-                 contents: write, reads the manifest's version. When the
-                 remote already has tag v<version>, it ends green and changes
-                 nothing. Otherwise it:
-                 a. runs the check;
-                 b. runs pnpm pack;
-                 c. commits the pack's tree (package.json, README.md,
-                    LICENSE, dist/), parented on the pushed commit, on no
-                    branch;
-                 d. tags that commit with an annotated tag
-                    "<repository> v<version>";
-                 e. pushes that tag alone;
-                 f. creates the GitHub release from CHANGELOG.md's section
-                    with taiki-e/create-gh-release-action;
-                 g. attaches the tarball with `gh release upload`.
-                 Git commands for the commit and the tag are inline in the
-                 workflow; no repository script cuts a release. The tag's
-                 tree equals, file for file, the attached tarball's
-                 package/.
-              9. Main has a ruleset as the Go repositories do: a pull request
-                 is required, and deletion and force-push are refused. The
-                 release workflow's tag push is unaffected.
-              10. This repository loses packages/ and everything built on
-                 it. The components layer's sources, browser cases, and demo
-                 page leave too; the components task takes them from this
-                 repository's history, naming the commit as provenance.
-                 `mise run measure` retires, and its two dated tables stay in
-                 the README. The check is Prettier alone, under kind code,
-                 and mise pins node and pnpm only.
-              11. The README restates the evidence, Layout, Tasks, Hosting,
-                 and Tags for one repository per layer. Evidence 3 becomes a
-                 plain vX.Y.Z per repository. STANDARDS.md's Releases states
-                 the release workflow's form. The goal record logs the
-                 re-plan's decisions and marks the built hosting decisions
-                 superseded.
-Test seams    Each layer repository's `mise run check`; and a release as a
-              consumer reaches it: the v0.1.0 tag's tree, and the GitHub
+              8. CI: the foundation's workflow. It runs `mise run install`
+                 and `mise run check` on every pull request into main and
+                 every push to main.
+              9. Release: the foundation's workflow, named for this
+                 repository. On a push to main whose version has no tag, it
+                 runs the check, runs pnpm pack, and commits the pack's tree
+                 (package.json, README.md, LICENSE, and dist/) parented on
+                 the pushed commit, on no branch. It tags that commit with an
+                 annotated tag "spike-html-packages-components v<version>",
+                 pushes that tag alone, creates the GitHub release from
+                 CHANGELOG.md's section, and attaches the tarball. The tag's
+                 tree equals the tarball's package/, file for file, and the
+                 packed manifest keeps both dependencies and carries no
+                 scripts. A version that is already tagged ends green and
+                 changes nothing.
+              10. Main has the Go ruleset: a pull request is required,
+                 deletion and force-push are refused, and the repository
+                 admin role bypasses it. The release workflow's tag push is
+                 unaffected.
+              11. This repository names the components repository wherever
+                 it names the layers: CLAUDE.md's layers line, the README's
+                 Layout, its Tags table (a v0.1.0 row), and What it
+                 packages. The README's Path item 4 and the context README
+                 state this task's scope and by-tag's. STANDARDS.md's
+                 Packages states that a layer names the one below it in
+                 dependencies by its exact tag. The check stays Prettier
+                 alone. The goal record logs the decisions.
+Test seams    The components repository's `mise run check`; and the release
+              as a consumer reaches it: the v0.1.0 tag's tree and the GitHub
               release's tarball.
-Slices        1. Upgrade: carry the upgrade commit (bun 1.4.4, pnpm 12.15.0,
-                 eslint-plugin-boundaries 7.2.1) onto the new branch. Done
-                 when `mise run currency` reports only the held typescript
-                 and `mise run check` passes.
-              2. License and version: carry the license commit (Apache 2.0
-                 at 0.1.0). Demo: `mise run check` passes; every package
-                 holds its LICENSE.
-              3. Foundation repository: its sources, lint, tests, demo
-                 pages, check, currency, CI, release workflow, CHANGELOG,
-                 README, and STANDARDS. Demo: its `mise run check` passes;
-                 pnpm pack lists exactly package.json, README.md, LICENSE,
-                 and dist/; CI is green on its pull request.
-              4. SDK repository: the same scaffolding, for the declarations
-                 alone. Demo: its `mise run check` passes; pnpm pack lists
-                 the same four entries; CI is green on its pull request.
-              5. This repository's shrink: packages/, its builds and tiers,
-                 the components layer, the measure task, and the hosting
-                 scripts leave; the check becomes Prettier alone. Demo:
-                 `mise run check` passes; `mise run currency` is current.
-              6. Docs: the README's sections, STANDARDS.md's Releases, and
-                 each layer repository's README against its check. Demo:
-                 the README read against the two layer repositories.
-Out of scope  The components repository and its release; this repository's
-              consumer check by tag under npm, pnpm, and bun; jsDelivr /gh/
-              and the import-map page; GitHub Packages and JSR; the Vite app
-              and the release flow with pnpm's versioning; a local link:
-              bridge between repositories; installing a layer's pack under
-              npm, pnpm, and bun inside its own repository; reweighing
-              npm/pnpm and ESLint/Biome; a second version; browsers other
-              than chrome-headless-shell.
-Door          one-way: the two public repositories, from the moment they are
-              created; deleting one needs gh's delete_repo scope. Also the
-              foundation and SDK v0.1.0 tags and GitHub releases, once the
-              release workflows push them: never re-cut, since jsDelivr
-              caches an exact tag for good. two-way: everything on the
-              hosting branches until SHIP, including removing packages/
-              from this repository (its history keeps the sources), and the
-              coordinator's edits.
-Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
-              JaimeStill/spike-html-packages-sdk: v0.1.0.
-              Each is cut by its own release workflow on its merge to main.
-              SHIP pushes no tag. SHIP merges the foundation, runs ci (the
-              check and release runs on the merge commit green, the tag and
-              its release with the tarball present), then does the same for
-              the SDK, then merges this repository, which releases nothing.
-              A failed release is fixed forward on hosting-fix: delete the
-              tag on the remote and any partial release, then merge the fix;
-              the run on that merge cuts v0.1.0 again.
+Slices        1. Components repository: the layer and its check. Sources
+                 from c2b4a19 with provenance, the manifest, the install by
+                 the foundation's tag, the build, the types, ESLint,
+                 Prettier, shellcheck, the layer table and its violation-tree
+                 test, the release integrity test, preflight, and currency
+                 (no browser tier yet). Demo: `mise run check` passes,
+                 `pnpm pack` lists exactly the four entries, and the lockfile
+                 names the foundation v0.1.0 tag's commit.
+              2. Components repository: the browser tier and the demo.
+                 c2b4a19's cases, the pipe driver, the static server serving
+                 lit's dependencies, and the components page. Demo:
+                 `mise run check` passes with the browser tier, and
+                 `mise run demo` renders the three components.
+              3. Components repository: CI, release, and docs. ci.yml and
+                 release.yml, actionlint in the check, the ruleset,
+                 CHANGELOG, README, STANDARDS, the context README, and
+                 CLAUDE.md. Demo: `mise run check` passes, and CI is green
+                 on its pull request.
+              4. spike-html-packages: docs, as behavior 11 lists. Demo:
+                 `mise run check` passes, and the README reads true against
+                 the three layer repositories.
+Out of scope  This repository's consumer check by tag under npm, pnpm, and
+              bun, and its lockfiles and guard table; jsDelivr /gh/ and the
+              import-map page with its dated table (all of them by-tag's);
+              CI for this repository; GitHub Packages and JSR; the Vite app
+              and the release flow; changes to the foundation or the SDK; a
+              second version; browsers other than chrome-headless-shell.
+Door          one-way: the components v0.1.0 tag and GitHub release, once
+              the release workflow pushes them. They are never re-cut,
+              since jsDelivr caches an exact tag for good. The repository's
+              creation belongs to the plan session. two-way: everything on
+              the components branches until SHIP, the ruleset, and this
+              repository's docs.
+Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
+              own release workflow on its merge to main. SHIP pushes no tag.
+              SHIP merges the components and runs ci, which waits on the
+              check and release runs of the merge commit and confirms the
+              tag and its release with the tarball. Then it merges this
+              repository, which releases nothing. A failed release is fixed
+              forward on components-fix: delete the tag on the remote and
+              any partial release, then merge the fix, and the run on that
+              merge cuts v0.1.0 again.
 ```
 
 ## Decisions
@@ -413,6 +416,38 @@ Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
   `test/unit/release.js` names 91f144d, the commit that moved the release test to Node's resolver.
 - hosting (re-plan): the components layer's sources are last held at c2b4a19, the provenance the
   `components` task names.
+
+- components: the components repository is set up by a `marathon plan` session after this brief
+  is approved, as hosting's was (#95); this brief is its next brief (round 1, 1).
+- components: the root's consumer check runs in `mise run check`, offline from caches and a
+  committed lockfile per manager filled by `mise run install` (round 1, 2), carried to by-tag.
+- components: consumers by tag are the three together and the components alone (round 1, 3),
+  carried to by-tag.
+- components: the import-map page is proven by a networked task in headless chrome printing a
+  dated table, outside the check; the three map entries are hand-written (round 1, 4), carried
+  to by-tag.
+- components: round 1's answers 2-4 move to a new task `by-tag` between components and
+  registries, since they need the components tag that only SHIP cuts (round 2, 1).
+- components: the components repository copies the foundation's form; its manifest names the
+  foundation by github:...#v0.1.0 and lit exactly 3.3.3; the SDK has no import-map entry; each
+  manager's guard goes in the fixture's own config.
+- components: the browser tier serves lit and its dependencies through the static server's
+  /deps/, as at c2b4a19, since pnpm keeps them out of the top-level node_modules.
+- components: the release integrity test requires both dependencies exact (lit 3.3.3 and an
+  exact github: tag).
+- components: tooling copied from the foundation names foundation 5dd8a58 as provenance; the
+  layer's sources name spike-html-packages c2b4a19.
+- components: currency compares the github: tag against the foundation's latest GitHub release.
+- components: the README's pnpm guard for the components alone is block-exotic-subdeps=false.
+- components: the root check stays Prettier alone in this task.
+- components: the setup plan created the components repository from init's commit adfc3aa: the
+  foundation's four init files, with downward-dependencies added to STANDARDS.md's pointers, and
+  the foundation's main ruleset (25731073) created at setup, so BUILD verifies it (setup round 1,
+  1-3).
+- components: marathon-architecture's "Targets: marathon 0.16" is a minimum version, so it applies
+  under 0.18.0 (setup round 1, 4).
+- components: the coordinator's edits landed at plan apply (standards-lab #97): the goal's repos,
+  [workspace.paths], references.toml, the restated components task, and the new by-tag task.
 
 ## Pending edits
 
