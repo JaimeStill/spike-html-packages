@@ -18,8 +18,6 @@ trap 'rm -rf "$scratch"' EXIT
 # The layers, each its own repository on GitHub, released by the one tag every fixture names.
 owner=JaimeStill
 repository=spike-html-packages-
-scope=@jaimestill/$repository
-foundation=${scope}foundation
 layers=(foundation sdk components)
 tag=v0.1.0
 # The three together, and the components alone, which reach the foundation through their own
@@ -70,48 +68,6 @@ if [[ $mode == warm ]]; then
   exit 0
 fi
 
-# Each layer's tree at its tag, extracted into the scratch, and its tag object's hash.
-declare -A tag_object
-for layer in "${layers[@]}"; do
-  mkdir -p "$scratch/tags/$layer"
-  git --git-dir="$tags/$layer" archive "$tag" | tar -x -C "$scratch/tags/$layer"
-  tag_object[$layer]=$(git --git-dir="$tags/$layer" rev-parse "refs/tags/$tag")
-done
-
-# Fails unless the installed layer is its tag's tree, file for file. bun 1.4.4 adds one file,
-# .bun-tag, to each package it installs from GitHub, naming the repository and the annotated tag
-# object's short hash, not the commit's; it must name this tag, and is left out of the comparison.
-matches_tag() {
-  local manager=$1 layer=$2 installed=$3
-  if [[ $manager == bun ]]; then
-    local expected=$owner-$repository$layer-${tag_object[$layer]:0:7}
-    [[ -f $installed/.bun-tag && $(<"$installed/.bun-tag") == "$expected" ]] ||
-      fail "$manager's install of $layer holds no .bun-tag naming $tag ($expected)"
-  fi
-  diff -r -x .bun-tag "$scratch/tags/$layer" "$installed" >&2 ||
-    fail "$manager's install of $layer differs from its $tag tree"
-}
-
-# The directory node and bun resolve a package name to from a directory: the first node_modules
-# holding it, from the directory up.
-resolve_from() {
-  local dir=$1 package=$2
-  while [[ $dir != / ]]; do
-    if [[ -d $dir/node_modules/$package ]]; then
-      realpath "$dir/node_modules/$package"
-      return
-    fi
-    dir=$(dirname "$dir")
-  done
-  return 1
-}
-
-# Each distinct directory the package is installed in, anywhere below the project's node_modules:
-# pnpm's links into its virtual store resolve to the one directory they name.
-installs_of() {
-  find "$1/node_modules" -path "*/node_modules/$2" -prune -exec realpath {} + | sort -u
-}
-
 for consumer in "${consumers[@]}"; do
   for manager in "${managers[@]}"; do
     if [[ $manager == bun ]]; then runtime=bun; else runtime=node; fi
@@ -129,44 +85,13 @@ for consumer in "${consumers[@]}"; do
     diff -r -x node_modules "$fixture" "$project" >&2 ||
       fail "$manager's install of $consumer changed the fixture"
 
-    # The layers the consumer declares, each its tag's tree.
-    names=$(node -p '
-      Object.keys(require(process.argv[1]).dependencies)
-        .filter((name) => name.startsWith(process.argv[2]))
-        .join("\n")
-    ' "$fixture/package.json" "$scope")
+    # Each layer its tag's tree, one foundation, no devDependency: the comparison live.js's
+    # networked installs share.
+    checked=$("$root/scripts/installed.sh" "$manager" "$project" "$tags")
     releases=()
-    while read -r name; do
-      installed=$(realpath "$project/node_modules/$name")
-      matches_tag "$manager" "${name#"$scope"}" "$installed"
-      releases+=("$installed")
-    done <<<"$names"
-
-    # One foundation, the one the components resolve theirs to.
-    found=$(installs_of "$project" "$foundation")
-    [[ -n $found && $(wc -l <<<"$found") == 1 ]] ||
-      fail "$manager installed other than one foundation:"$'\n'"$found"
-    components=$(realpath "$project/node_modules/${scope}components")
-    [[ $(resolve_from "$components" "$foundation") == "$found" ]] ||
-      fail "$manager's components resolve to a foundation other than $found"
-
-    # A foundation the consumer doesn't declare, reached through the components, is its tag's tree
-    # too.
-    if ! grep -qx "$foundation" <<<"$names"; then
-      matches_tag "$manager" foundation "$found"
-      releases+=("$found")
-    fi
-
-    # No layer's devDependency, wherever a manager might put it.
-    devs=$(node -p '
-      process.argv
-        .slice(1)
-        .flatMap((dir) => Object.keys(require(dir + "/package.json").devDependencies ?? {}))
-        .join("\n")
-    ' "${releases[@]}")
-    while read -r dev; do
-      [[ -z $(installs_of "$project" "$dev") ]] || fail "$manager installed $dev, a devDependency"
-    done <<<"$(sort -u <<<"$devs")"
+    while read -r kind dir; do
+      [[ $kind != release ]] || releases+=("$dir")
+    done <<<"$checked"
 
     "$runtime" "$fixtures/consumers.js" "$project" "${releases[@]}"
     cp "$fixtures/resolve.js" "$project"

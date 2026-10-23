@@ -1,15 +1,16 @@
-// The releases' facts on GitHub and jsDelivr, as one dated markdown table: the networked evidence
-// the check's offline tier can't reach. It fails first, naming each v0.1.0 tag and release asset
-// GitHub doesn't hold, and writes nothing to the repository: every fetch is in a scratch
-// directory it removes. Each measure is a row, yes or no with what it observed; it exits 1 if any
+// The releases' facts on GitHub and jsDelivr, and the managers' installs of them from the network,
+// as one dated markdown table: the networked evidence the check's offline tier can't reach. It
+// fails first, naming each v0.1.0 tag and release asset GitHub doesn't hold, and writes nothing to
+// the repository: every fetch and install is in a scratch directory it removes. Each measure is a row, yes or no with what it observed; it exits 1 if any
 // row is a no.
 //
 //   BROWSER_EXECUTABLE=... node scripts/live.js
 
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { launch } from "../test/live/browser-pipe.js";
 import { serve } from "../test/live/server.js";
 
@@ -23,6 +24,12 @@ const tag = `v${version}`;
 /** The asset each layer's release holds: pnpm pack's tarball name for its package. */
 const asset = (layer) => `${scope.slice(1, -1)}-${repository(layer)}-${version}.tgz`;
 const cdn = "https://cdn.jsdelivr.net";
+/** A layer's release asset by its GitHub download URL, a dependency a manager installs by. */
+const assetURL = (layer) =>
+  `https://github.com/${owner}/${repository(layer)}/releases/download/${tag}/${asset(layer)}`;
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const fixtures = join(root, "test/consumers");
 
 const scratch = mkdtempSync(join(tmpdir(), "live."));
 // git never prompts for credentials: a repository that isn't public fails.
@@ -38,12 +45,28 @@ function run(command, args, { cwd = scratch } = {}) {
   return { ok: status === 0, stdout, output: `${stdout}${stderr}`.trim() };
 }
 
+/** run, without blocking the other rows: an install takes seconds of the network. */
+function started(command, args, { cwd = scratch } = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { cwd, env });
+    let [stdout, stderr] = ["", ""];
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", (error) => resolve({ ok: false, stdout, output: error.message }));
+    child.on("close", (status) =>
+      resolve({ ok: status === 0, stdout, output: `${stdout}${stderr}`.trim() }),
+    );
+  });
+}
+
 const rows = [];
 let failed = false;
 const cell = (text) => text.replaceAll("|", "\\|").replaceAll("\n", " ");
 /** Adds the measure's row, its result yes or no with what it observed; a measure that throws is a
- * no, naming the error. */
+ * no, naming the error. The row takes its place when the measure starts, so measures run side by
+ * side keep their order. */
 async function measured(measure, body) {
+  const at = rows.push(undefined) - 1;
   let holds, observed;
   try {
     [holds, observed] = await body();
@@ -51,7 +74,7 @@ async function measured(measure, body) {
     [holds, observed] = [false, error.message];
   }
   failed ||= !holds;
-  rows.push(`| ${cell(measure)} | ${holds ? "yes" : "no"}: ${cell(observed)} |`);
+  rows[at] = `| ${cell(measure)} | ${holds ? "yes" : "no"}: ${cell(observed)} |`;
 }
 
 /** Each tag or release asset GitHub doesn't hold, named; none when all six are published. */
@@ -74,11 +97,13 @@ function unpublished() {
 }
 
 /** A layer's tree at the tag, each file's path to its bytes, from a depth-1 fetch of the tag into
- * the scratch directory, made once. */
+ * the scratch directory, made once: a bare repository at tags/<layer>, as scripts/installed.sh
+ * reads it. */
+const tags = join(scratch, "tags");
 const trees = new Map();
 function tagTree(layer) {
   if (trees.has(layer)) return trees.get(layer);
-  const git = join(scratch, "git", repository(layer));
+  const git = join(tags, layer);
   const steps = [
     ["init", "--quiet", "--bare", git],
     [
@@ -184,6 +209,137 @@ async function importMapRow(browser, origin) {
   );
 }
 
+// The consumers the installs measure, each by its fixture's package.json: the three together, and
+// the components alone, which reach the foundation through their own dependency on its tag.
+const consumers = ["three", "components"];
+const managers = ["npm", "pnpm", "bun"];
+
+/** Each manager's install with no lockfile, into a cache of its own, run from the project so the
+ * manager reads the guard in the project's own config file. pnpm's metadata cache (cacheDir)
+ * defaults to the home directory: it goes beside the store. */
+const installs = {
+  npm: (cache) => ["install", "--cache", cache, "--no-audit", "--no-fund"],
+  pnpm: (cache) => ["install", "--store-dir", cache, `--config.cache-dir=${cache}`],
+  bun: (cache) => ["install", "--cache-dir", cache],
+};
+
+/** Each manager's guard over the dependencies the releases are installed by: its least setting,
+ * the setting a refusal's error code raises it to, none for any other failure, and the config file
+ * it is written to. npm 12 refuses git dependencies under allow-git and tarball URLs under
+ * allow-remote, each none, root (the consumer's own), or all, both none by default; pnpm 12 refuses
+ * a dependency's git dependency unless blockExoticSubdeps is false; bun 1.4.4 has no guard. */
+const steps = ["none", "root", "all"];
+const npmRaised = { EALLOWGIT: "allow-git", EALLOWREMOTE: "allow-remote" };
+const guards = {
+  npm: {
+    least: { "allow-git": "none", "allow-remote": "none" },
+    raise(setting, code) {
+      const key = npmRaised[code];
+      const next = key && steps[steps.indexOf(setting[key]) + 1];
+      return next ? { ...setting, [key]: next } : null;
+    },
+    write(project, setting) {
+      const lines = Object.entries(setting).map(([key, value]) => `${key}=${value}\n`);
+      writeFileSync(join(project, ".npmrc"), lines.join(""));
+    },
+    name: (setting) =>
+      Object.entries(setting)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(" "),
+  },
+  pnpm: {
+    least: {},
+    raise: (setting, code) =>
+      code === "ERR_PNPM_EXOTIC_SUBDEP" && !("blockExoticSubdeps" in setting)
+        ? { blockExoticSubdeps: false }
+        : null,
+    write(project, setting) {
+      if (!("blockExoticSubdeps" in setting)) return;
+      writeFileSync(join(project, "pnpm-workspace.yaml"), "blockExoticSubdeps: false\n");
+    },
+    name: (setting) => ("blockExoticSubdeps" in setting ? "blockExoticSubdeps: false" : "defaults"),
+  },
+  bun: { least: {}, raise: () => null, write() {}, name: () => "defaults" },
+};
+
+/** The error code a failed install names: npm's `npm error code`, pnpm's ERR_PNPM_ code, or else
+ * bun's first error line, or the output's last line. */
+function errorCode(output) {
+  const code = /^npm error code (\S+)$/m.exec(output) ?? /\b(ERR_PNPM_\w+)/.exec(output);
+  if (code) return code[1];
+  const line = /^error: (.+)$/m.exec(output)?.[1] ?? output.split("\n").at(-1);
+  return line.length > 120 ? `${line.slice(0, 117)}...` : line;
+}
+
+const releases = { tag: "at the tags, with no lockfile", asset: "by their release assets' URLs" };
+
+/** The consumer's fixture package.json: the layers at their tags as committed, or each by its
+ * release asset's URL. */
+function manifest(consumer, manager, by) {
+  const fixture = join(fixtures, consumer, manager, "package.json");
+  const { description, ...json } = JSON.parse(readFileSync(fixture, "utf8"));
+  if (by === "asset") {
+    json.dependencies = Object.fromEntries(
+      layers
+        .filter((layer) => Object.hasOwn(json.dependencies, scope + repository(layer)))
+        .map((layer) => [scope + repository(layer), assetURL(layer)]),
+    );
+  }
+  return `${JSON.stringify(json, null, 2)}\n`;
+}
+
+/** The consumer installed under the manager from the network, in a scratch project with no
+ * lockfile and a fresh scratch cache, its guard tried least first until an install passes; then
+ * the install against the tags by scripts/installed.sh. A row with no passing setting, or an
+ * install that isn't its tags, is a no. */
+function installRow(consumer, manager, by, version) {
+  const guard = guards[manager];
+  const which = consumer === "three" ? "the three" : "the components alone";
+  return measured(`${manager} ${version} installs ${which} ${releases[by]}`, async () => {
+    for (const layer of layers) tagTree(layer);
+    const refused = [];
+    for (let setting = guard.least, n = 0; setting; n++) {
+      const project = join(scratch, "installs", `${consumer}-${manager}-${by}-${n}`);
+      mkdirSync(project, { recursive: true });
+      writeFileSync(join(project, "package.json"), manifest(consumer, manager, by));
+      guard.write(project, setting);
+      const install = await started(manager, installs[manager](`${project}.cache`), {
+        cwd: project,
+      });
+      if (!install.ok) {
+        const code = errorCode(install.output);
+        refused.push(`${guard.name(setting)} fails ${code}`);
+        setting = guard.raise(setting, code);
+        continue;
+      }
+
+      const lesser = refused.length > 0 ? `; ${refused.join(", ")}` : "; no lesser setting";
+      const check = await started(join(root, "scripts/installed.sh"), [
+        ...[manager, project, tags, by],
+      ]);
+      if (!check.ok) {
+        const mismatch = check.output.split("\n").findLast((line) => line.startsWith("installed:"));
+        return [false, `${guard.name(setting)} installs it${lesser}; ${mismatch ?? check.output}`];
+      }
+      const lines = check.stdout.split("\n").map((line) => line.split(" "));
+      const found = lines.filter(([kind]) => kind === "foundation");
+      const theirs = lines.find(([kind]) => kind === "components-foundation")?.[1];
+      const declared = lines.find(
+        ([kind, dir]) => kind === "release" && dir.endsWith("-foundation") && dir !== theirs,
+      );
+      const foundations =
+        found.length === 1
+          ? "one foundation"
+          : `${found.length} foundations${declared ? ": the components resolve theirs to one apart from the consumer's" : ""}`;
+      return [
+        true,
+        `${guard.name(setting)} installs it${lesser}; each layer its ${tag} tree; ${foundations}`,
+      ];
+    }
+    return [false, `no setting installs it: ${refused.join(", ")}`];
+  });
+}
+
 try {
   const absent = unpublished();
   if (absent.length > 0) {
@@ -205,6 +361,18 @@ try {
       await pages.stop();
       await browser.close();
     }
+
+    // Every install side by side: each row's settings in turn, least first.
+    const versions = Object.fromEntries(
+      managers.map((manager) => [manager, run(manager, ["--version"]).output]),
+    );
+    await Promise.all(
+      ["tag", "asset"].flatMap((by) =>
+        consumers.flatMap((consumer) =>
+          managers.map((manager) => installRow(consumer, manager, by, versions[manager])),
+        ),
+      ),
+    );
 
     const date = new Date().toISOString().slice(0, 10);
     console.log(`## Live, ${date}\n\n| measure | result |\n| --- | --- |\n${rows.join("\n")}`);
