@@ -1,15 +1,15 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** components
-- **Branch:** components
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
 1. [x] layers
 2. [x] layout
 3. [x] hosting
-4. [ ] components
+4. [x] components
 5. [ ] by-tag
 6. [ ] registries
 7. [ ] consumers
@@ -165,10 +165,6 @@ Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
               any partial release, then merge the fix, and the run on that
               merge cuts v0.1.0 again.
 ```
-
-## Progress
-
-slices 4/4 committed (components 4789def, 75a2cb3, 6afeb00; root 95654ff) · standards done (components dc7c8ea, c7a4070) · spec done (no gaps) · editor done
 
 ## Decisions
 
