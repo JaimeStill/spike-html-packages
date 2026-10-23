@@ -165,7 +165,7 @@ Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
 
 ## Progress
 
-slices 6/6 committed · standards ✓ · spec — · editor —
+slices 6/6 committed · standards ✓ · spec ✓ · editor —
 
 ## Decisions
 
