@@ -1,14 +1,14 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** hosting
-- **Branch:** hosting
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
 1. [x] layers
 2. [x] layout
-3. [ ] hosting
+3. [x] hosting
 4. [ ] components
 5. [ ] registries
 6. [ ] consumers
@@ -162,10 +162,6 @@ Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
               tag on the remote and any partial release, then merge the fix;
               the run on that merge cuts v0.1.0 again.
 ```
-
-## Progress
-
-slices 6/6 committed · standards ✓ · spec ✓ · editor ✓
 
 ## Decisions
 
