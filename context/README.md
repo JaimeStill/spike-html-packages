@@ -9,8 +9,8 @@ standards-lab's experiment.html intake; the spike decides nothing itself.
 
 The layers live in repositories of their own, one per layer, each released by tag:
 JaimeStill/spike-html-packages-foundation, JaimeStill/spike-html-packages-sdk, and
-JaimeStill/spike-html-packages-components. This repository holds the spike's record and this
-README; the `by-tag` task adds this repository's consumer check by tag.
+JaimeStill/spike-html-packages-components. This repository holds the spike's record, this README,
+and the consumer check that installs the three layers by their tags.
 
 The spike is the sub-goal `experiment.html.spike-html-packages` in the coordinator's roadmap,
 `standards-lab/context/roadmap.toml`, where its tasks live. Its question is framed in
@@ -88,10 +88,13 @@ The tasks, in the order they run; each cites the evidence it proves.
 4. `components`: the components as JaimeStill/spike-html-packages-components, copied from this
    repository's history at c2b4a19, built on the foundation's v0.1.0 tag, with its own check, CI,
    and a release workflow that cuts v0.1.0 on its merge to main (evidence 2, 3).
-5. `by-tag`: this repository's consumer check installing the three v0.1.0 tags under npm, pnpm, and
-   bun, as the three together and as the components alone, offline from caches and a lockfile per
-   manager, with each manager's guard in the fixture's config; and jsDelivr /gh/ and the import-map
-   page over the three tags, in headless chrome by a networked task printing a dated table
+5. `by-tag`: this repository's consumer check, `mise run check`'s `test:consumers` tier, installing
+   the three v0.1.0 tags under npm, pnpm, and bun, as the three together and as the components
+   alone, offline from the caches `mise run install` fills and a lockfile per manager that
+   `mise run lock` writes, with each manager's guard in the fixture's config; `mise run currency`
+   over the fixtures' tags; and `mise run live`, a networked task printing a dated table of the
+   tags and release assets on GitHub, jsDelivr /gh/ and the import-map page over the three tags in
+   chrome-headless-shell, and each manager's installs at the tags and by the release assets' URLs
    (evidence 1, 3).
 6. `registries`: GitHub Packages and JSR (evidence 1).
 7. `consumers`: the page and Vite app consumers, and the release flow (evidence 6, 7).
@@ -116,8 +119,17 @@ This repository is the spike's record and its docs:
 
 - `context/`: this README and the goal record, `goals/experiment.html.spike-html-packages.md`.
 - `STANDARDS.md` and `CLAUDE.md`: the standards and the navigation pointers.
-- `mise.toml`, `package.json`, and `.prettierrc.json`: the pins and the Prettier check.
-- `scripts/currency.sh`: the currency report.
+- `mise.toml`, `package.json`, and `.prettierrc.json`: the pins, the tasks, and Prettier's config.
+- `scripts/`: the tasks' scripts: `install.sh`, `lock.sh`, `consumers.sh` (the consumer tier, and
+  the cache warm `install.sh` runs), `installed.sh` (the comparison against the tags that
+  `consumers.sh` and `live.js` share), `preflight.sh`, `currency.sh`, and `live.js`.
+- `test/consumers/`: the six consumer fixtures, `<consumer>/<manager>/`, the three together
+  (`three/`) and the components alone (`components/`) under npm, pnpm, and bun, each with its
+  manager's guard and its committed lockfile; and `consumers.js`, `exports.js`, and `resolve.js`,
+  which resolve each install's exported subpaths.
+- `test/live/`: the live task's import-map page, its loopback server, and its browser pipe.
+- `.cache/`, ignored: the managers' caches, `consumers/`, and the layers' tag fetches, `tags/`,
+  which `mise run install` fills and the check reads.
 
 The layers live in their own repositories, each a marathon project of its own with its own
 working context, standards, check, CI, release workflow, and changelog:
@@ -138,10 +150,22 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
 
 ## Tasks
 
-- `mise run install`: the mise pins and node_modules, from the lockfile; the one task that reads
-  the network.
-- `mise run check`: Prettier over the JSON files; reads no network and writes nothing.
-- `mise run currency`: every mise tool and package.json pin behind its latest.
+- `mise run install`: the mise pins and node_modules, from the lockfile, then each fixture's frozen
+  install from its lockfile, which fills `.cache/consumers/`, and the three tags, fetched into
+  `.cache/tags/`; reads the network and changes no fixture.
+- `mise run lock`: each fixture resolved anew under its manager and guard, in a scratch copy, its
+  lockfile copied back over the committed one; reads the network, and with the tags unchanged
+  leaves every lockfile as it is.
+- `mise run check`: `lint:format`, Prettier over the code, JSON, and CSS; `lint:shell`,
+  shellcheck 0.11.0 over the scripts; and `test:consumers`, each fixture installed offline and
+  frozen from its lockfile and checked against the tags, then npm's guard proven by each
+  consumer's install failing under it lowered. It reads no network and writes nothing in the
+  repository outside `.cache/`; a preflight names `mise run install` when a cache or tag fetch
+  is missing.
+- `mise run currency`: every mise tool, package.json pin, and fixture's layer tag behind its
+  latest.
+- `mise run live`: the dated table that Live records, from the network, in the pinned
+  chrome-headless-shell; it writes nothing in the repository and exits 1 if any row is a no.
 
 ## Hosting
 
@@ -171,21 +195,26 @@ A consumer installs a release by its tag, for example
 `github:JaimeStill/spike-html-packages-foundation#v0.1.0`, and the release's tarball is the same
 pack. jsDelivr /gh/ serves the tag's tree. The components name their foundation by its tag, a git
 dependency below the consumer's top level, so the components' README installs them with npm's
-`--allow-git=all`, pnpm's `blockExoticSubdeps: false`, and no guard under bun. The `by-tag` task
-measures jsDelivr /gh/ and the installs by tag under npm, pnpm, and bun.
+`--allow-git=all`, pnpm's `blockExoticSubdeps: false`, and no guard under bun. Consumer installs
+holds the guards the `by-tag` task's fixtures need, and Live, 2026-10-23 its measures of jsDelivr
+/gh/ and of the installs at the tags and by the release assets' URLs.
 
 The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
-installed offline by `git+file://`; the `by-tag` task measures them again on the layer
-repositories' tags:
+installed offline by `git+file://`, and again by the `by-tag` task on the layer repositories'
+tags, which added to the first and corrected the second and fourth:
 
 - npm 12.2.1's `allow-git` defaults to none, which refuses even a root git dependency; root
-  suffices except where a nested git foundation is fetched, which needs all.
-- pnpm 12.15.0 installs a root git dependency by default and refuses a nested one
-  (`ERR_PNPM_EXOTIC_SUBDEP`) unless `blockExoticSubdeps` is false.
+  suffices except where a nested git foundation is fetched, which needs all. It applies even to
+  `npm ci --offline`, which refuses with `EALLOWGIT` before it reads the cache.
+- pnpm 12.15.0 refuses a dependency's git dependency (`ERR_PNPM_EXOTIC_SUBDEP`) by default unless
+  `blockExoticSubdeps` is false: the components alone, and the three together too, though the
+  consumer declares the foundation itself by the same tag. A frozen install from a lockfile skips
+  that check.
 - bun 1.4.4's overrides never reach a nested `github:` spec, and bun fails every `#semver:` git
   spec, so a layer names the one below by its exact tag.
-- bun 1.4.4 writes `.bun-tag` into each package it installs: a tarball's integrity, or a git
-  release's commit hash.
+- bun 1.4.4 writes `.bun-tag` into each package it installs: from GitHub, the repository and the
+  annotated tag object's short hash, not the commit's; from a release asset, the tarball's sha512
+  integrity.
 - npm prepares a git dependency whose manifest has a build script, installing its devDependencies
   before it packs it, so a release manifest carries no scripts.
 - pnpm 12.15.0 packs the workspace root's `LICENSE` into a package that has none, so a pack can't
@@ -203,6 +232,38 @@ Each layer repository tags a release with one plain `vX.Y.Z`:
 
 ## Consumer installs
 
+`mise run check`'s `test:consumers` tier installs the six fixtures in `test/consumers/`: the three
+layers together and the components alone, each under npm, pnpm, and bun, by the layers'
+`github:...#v0.1.0` specs. Each installs offline and frozen from its committed lockfile and the
+caches in `.cache/consumers/`, in a scratch copy, and leaves the fixture unchanged. Every copy of
+each layer installed is its tag's tree, file for file, against the tags fetched into
+`.cache/tags/`; there is one foundation, the one the components resolve theirs to, and no layer's
+devDependency; and every exported subpath resolves to its target under node, or bun for bun's
+fixtures, where the keys grammar imports and runs. Each fixture holds its manager's guard in its
+own config file, `.npmrc` or `pnpm-workspace.yaml`:
+
+| consumer | npm | pnpm | bun |
+| --- | --- | --- | --- |
+| the three together | `allow-git=root` | `blockExoticSubdeps: false` | none |
+| the components alone | `allow-git=all` | `blockExoticSubdeps: false` | none |
+
+npm's guard is proven both ways: each npm fixture's install fails under its guard lowered one step,
+`allow-git=none` for the three and `allow-git=root` for the components, with `EALLOWGIT`. A frozen
+pnpm install skips the check its guard lowers, so the offline tier can't prove pnpm's; the live
+task's installs with no lockfile do.
+
+Each lockfile records the tags by a hash, not by the tag's name:
+
+- npm's `package-lock.json`: a `git+ssh://git@github.com/<owner>/<repository>.git#<commit>` URL at
+  the tag's commit.
+- pnpm's `pnpm-lock.yaml`: a codeload tarball,
+  `https://codeload.github.com/<owner>/<repository>/tar.gz/<commit>`, at the tag's commit, with its
+  sha512 integrity.
+- bun's `bun.lock`: `github:<owner>/<repository>#<hash>`, the annotated tag object's short hash,
+  not the commit's: the foundation's 8d83a25, whose commit is 29d16c0. The `.bun-tag` bun writes
+  into each package names the same; for a release-asset install, it is the tarball's sha512
+  integrity.
+
 The layers and layout tasks' consumer tier packed each workspace package with `pnpm pack` and
 installed the tarballs offline under pnpm (isolated), npm (hoisted), and bun (hoisted). The tier
 and its fixtures retired with `packages/` and remain in history at c2b4a19; its facts of
@@ -219,6 +280,43 @@ spec pointing at the foundation's tarball:
 pnpm 12 reads overrides only from `pnpm-workspace.yaml`, and npm and bun from `package.json`.
 pnpm links only a project's declared dependencies into its `node_modules`, so the undeclared import
 failed there; npm and bun hoisted the foundation where it resolved.
+
+## Live, 2026-10-23
+
+`mise run live` printed the table below: the releases on GitHub and jsDelivr, the import-map page
+in the pinned chrome-headless-shell, and each manager installing each consumer from the network in
+a scratch project with no lockfile and a fresh cache, at the tags and by the release assets'
+download URLs. Each install row names the least guard that installs it, tried least first, each
+lesser setting's error, and the installed trees.
+
+| measure | result |
+| --- | --- |
+| GitHub holds the three v0.1.0 tags and their release assets | yes: jaimestill-spike-html-packages-foundation-0.1.0.tgz, jaimestill-spike-html-packages-sdk-0.1.0.tgz, jaimestill-spike-html-packages-components-0.1.0.tgz |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-foundation@v0.1.0/ as the tag's tree | yes: 28/28 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-sdk@v0.1.0/ as the tag's tree | yes: 7/7 files byte-equal (status 200); .js no files; .css no files; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-components@v0.1.0/ as the tag's tree | yes: 12/12 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
+| chrome-headless-shell 156.0.8078.47 renders the import-map page from jsDelivr | yes: sl-status-badge 3 sheets, sl-entry-lit-shadow 3 sheets, sl-pagination-lit-shadow 3 sheets; the foundation's reset and elements sheets the same objects in every root; loaded from the loopback page, https://cdn.jsdelivr.net |
+| npm 12.2.1 installs the three at the tags, with no lockfile | yes: allow-git=root allow-remote=none installs it; allow-git=none allow-remote=none fails EALLOWGIT; each layer its v0.1.0 tree; one foundation |
+| pnpm 12.15.0 installs the three at the tags, with no lockfile | yes: blockExoticSubdeps: false installs it; defaults fails ERR_PNPM_EXOTIC_SUBDEP; each layer its v0.1.0 tree; one foundation |
+| bun 1.4.4 installs the three at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its v0.1.0 tree; one foundation |
+| npm 12.2.1 installs the components alone at the tags, with no lockfile | yes: allow-git=all allow-remote=none installs it; allow-git=none allow-remote=none fails EALLOWGIT, allow-git=root allow-remote=none fails EALLOWGIT; each layer its v0.1.0 tree; one foundation |
+| pnpm 12.15.0 installs the components alone at the tags, with no lockfile | yes: blockExoticSubdeps: false installs it; defaults fails ERR_PNPM_EXOTIC_SUBDEP; each layer its v0.1.0 tree; one foundation |
+| bun 1.4.4 installs the components alone at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its v0.1.0 tree; one foundation |
+| npm 12.2.1 installs the three by their release assets' URLs | yes: allow-git=all allow-remote=root installs it; allow-git=none allow-remote=none fails EALLOWREMOTE, allow-git=none allow-remote=root fails EALLOWGIT, allow-git=root allow-remote=root fails EALLOWGIT; each layer its v0.1.0 tree; 2 foundations: the components resolve theirs to one apart from the consumer's |
+| pnpm 12.15.0 installs the three by their release assets' URLs | yes: blockExoticSubdeps: false installs it; defaults fails ERR_PNPM_EXOTIC_SUBDEP; each layer its v0.1.0 tree; 2 foundations: the components resolve theirs to one apart from the consumer's |
+| bun 1.4.4 installs the three by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its v0.1.0 tree; 2 foundations: the components resolve theirs to one apart from the consumer's |
+| npm 12.2.1 installs the components alone by their release assets' URLs | yes: allow-git=all allow-remote=root installs it; allow-git=none allow-remote=none fails EALLOWREMOTE, allow-git=none allow-remote=root fails EALLOWGIT, allow-git=root allow-remote=root fails EALLOWGIT; each layer its v0.1.0 tree; one foundation |
+| pnpm 12.15.0 installs the components alone by their release assets' URLs | yes: blockExoticSubdeps: false installs it; defaults fails ERR_PNPM_EXOTIC_SUBDEP; each layer its v0.1.0 tree; one foundation |
+| bun 1.4.4 installs the components alone by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its v0.1.0 tree; one foundation |
+
+Two of its findings, measured here and weighed by the `answer` task:
+
+- By the release assets' URLs, npm needs `allow-remote=root` beside `allow-git=all`: it refuses
+  first with `EALLOWREMOTE`, then with `EALLOWGIT`, since the components' tarball still declares
+  the foundation by its `github:` tag. pnpm and bun need the same guard as at the tags.
+- Installing the three by the assets' URLs gives two foundations under every manager: the
+  consumer's asset copy, and the components' own `github:` copy. Installing them by the tags gives
+  one.
 
 ## Measures
 
