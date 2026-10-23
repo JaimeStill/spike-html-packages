@@ -7,8 +7,9 @@ managed with the marathon workflow; start from `context/README.md`.
 
 This repository holds the spike's record and docs; the layers live in repositories of their own.
 
-- **Layers:** JaimeStill/spike-html-packages-foundation and JaimeStill/spike-html-packages-sdk,
-  checked out beside this one in `~/experiments/`, each a marathon project released by tag.
+- **Layers:** JaimeStill/spike-html-packages-foundation, JaimeStill/spike-html-packages-sdk, and
+  JaimeStill/spike-html-packages-components, checked out beside this one in `~/experiments/`, each
+  a marathon project released by tag.
 - **Standards:** `STANDARDS.md`, with pointers into the architecture repository.
 - **Check:** `mise run check`: Prettier alone.
 - **Currency:** `mise run currency`: every mise tool and package.json pin behind its latest.

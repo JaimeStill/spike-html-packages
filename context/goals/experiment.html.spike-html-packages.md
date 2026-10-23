@@ -9,7 +9,7 @@
 1. [x] layers
 2. [x] layout
 3. [x] hosting
-4. [ ] components
+4. [x] components
 5. [ ] by-tag
 6. [ ] registries
 7. [ ] consumers
@@ -448,6 +448,45 @@ Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
   under 0.18.0 (setup round 1, 4).
 - components: the coordinator's edits landed at plan apply (standards-lab #97): the goal's repos,
   [workspace.paths], references.toml, the restated components task, and the new by-tag task.
+- components: the release test requires lit and the foundation as exact pins in form (an exact
+  x.y.z, an exact `#vX.Y.Z` github: tag), not the literal 3.3.3, so a currency bump doesn't edit
+  the test.
+- components: a "packed manifest carries no scripts" test guards behavior 9's rule.
+- components: the lint doesn't catch a value import of the foundation's types-only subpath (such
+  as `format.js`) by package name, as layout's declaration-policy decision records for siblings;
+  node and Vite catch it.
+- components: the violation tree also requires the combined `@jaimestill/spike-html-packages`,
+  typescript (a devDependency), and the layer's own name to be flagged as undeclared.
+- components: pnpm needs no setting for a top-level github: dependency; the lockfile records the
+  foundation as a codeload tarball at 29d16c0.
+- components: the README's pnpm guard is `--config.block-exotic-subdeps=false` on `pnpm add`, with
+  `blockExoticSubdeps: false` in pnpm-workspace.yaml as the lasting form, measured with pnpm 12.15.0
+  on a pack of this build.
+- components: CI needs no guard or token to fetch the public github: foundation.
+- components: the static server's /deps/ is a table of package directories by name (lit,
+  lit-html, lit-element, and @lit/reactive-element from lit's pnpm store directory; the foundation
+  from node_modules); any other path under it is a 404, and `..` can't leave a package.
+- components: the pages' import maps map the foundation's prefix to /deps/<foundation>/dist/; the
+  restyle and adoption cases import the foundation's sheets by package name, so they get the same
+  sheet objects the shadow roots adopt.
+- components: demo/documents.js is copied from c2b4a19 too, because the probe and the demo import
+  it.
+- components: `mise run types` splits into types:sources and types:browser, which runs
+  `tsc -p test/browser` after the build.
+- components: STANDARDS.md's judgement calls are the foundation's, adapted: the layer reaches the
+  foundation only through its tag dependency, and the handwritten-.d.ts and literal-import() calls
+  are dropped.
+- components: a copied file changed from its source names it with "Adapted from", an unchanged one
+  with "From" (standards review).
+- components: the root's context/README.md Hosting names each manager's guard for installing the
+  components, and by-tag's Path entry cites evidence 1 and 3.
+- components: slice 3's demo, "CI green on its pull request", is shown at SHIP, since nothing is
+  published before the session brief is accepted.
+- components: the offline check needs the loopback up: `unshare -rn` alone fails the browser tier
+  on 127.0.0.1, and `ip link set lo up` inside the namespace makes it pass.
+- components: the guards each manager needs for the components' nested github: foundation (npm
+  allow-git=all, pnpm block-exotic-subdeps=false, bun none) were measured on the real foundation
+  tag at the plan's round 1, 2026-10-23, in scratch; by-tag measures them again on all three tags.
 
 ## Pending edits
 
