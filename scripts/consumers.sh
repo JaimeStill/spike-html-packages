@@ -27,8 +27,12 @@ managers=(npm pnpm bun)
 declare -A lockfile=([npm]=package-lock.json [pnpm]=pnpm-lock.yaml [bun]=bun.lock)
 # Each consumer's npm guard lowered one step below its committed .npmrc: three's root to none, which
 # refuses even the consumer's own git dependencies, and the components' all to root, which refuses
-# theirs, the foundation's tag.
+# theirs, the foundation's tag: the package each refusal must name.
 declare -A lowered=([three]=none [components]=root)
+declare -A refused=(
+  [three]="@jaimestill/$repository"
+  [components]="@jaimestill/${repository}foundation@"
+)
 
 fail() {
   echo "consumers: $*" >&2
@@ -104,7 +108,8 @@ done
 # npm's guard, proven both ways: the install that passes under each committed .npmrc fails under
 # the guard lowered, in a scratch copy, refusing a git dependency. npm ci --offline enforces
 # allow-git before it reads the cache, so the refusal is EALLOWGIT, and any other failure, such as
-# ENOTCACHED, proves nothing.
+# ENOTCACHED, proves nothing; nor does a refusal of a package other than the one the lowered guard
+# refuses.
 for consumer in "${consumers[@]}"; do
   project=$scratch/$consumer-npm-lowered
   cp -r "$fixtures/$consumer/npm" "$project"
@@ -115,6 +120,11 @@ for consumer in "${consumers[@]}"; do
   if ! grep -q "^npm error code EALLOWGIT$" "$project.log"; then
     cat "$project.log" >&2
     fail "npm's install of $consumer under allow-git=${lowered[$consumer]} failed other than EALLOWGIT"
+  fi
+  if ! grep -q "^npm error Refusing to fetch \"${refused[$consumer]}" "$project.log"; then
+    cat "$project.log" >&2
+    fail "npm's install of $consumer under allow-git=${lowered[$consumer]} refused other than" \
+      "${refused[$consumer]}"
   fi
   echo "consumers: npm refused $consumer under allow-git=${lowered[$consumer]} (EALLOWGIT)," \
     "and installed it under the committed $(grep -v '^#' "$fixtures/$consumer/npm/.npmrc")"
