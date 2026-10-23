@@ -5,12 +5,16 @@ layers are packaged and released by tag: tag naming, release builds beside the s
 package or several, the hosting, and the import extension the releases use. The repository is
 managed with the marathon workflow; start from `context/README.md`.
 
+This repository holds the spike's record and docs; the layers live in repositories of their own.
+
+- **Layers:** JaimeStill/spike-html-packages-foundation and JaimeStill/spike-html-packages-sdk,
+  checked out beside this one in `~/experiments/`, each a marathon project released by tag.
 - **Standards:** `STANDARDS.md`, with pointers into the architecture repository.
-- **Check:** `mise run check`: lint, types, build, and the unit, browser, and consumer tiers.
+- **Check:** `mise run check`: Prettier alone.
 - **Currency:** `mise run currency`: every mise tool and package.json pin behind its latest.
 - **Goals:** this spike's tasks live in the coordinator's roadmap,
   `standards-lab/context/roadmap.toml`, under `experiment.html.spike-html-packages`. Its goal
   record is `context/goals/experiment.html.spike-html-packages.md`.
-- **Dependencies:** lit 3.3.3 at runtime; the lint tooling in devDependencies; tools pinned in mise.
+- **Dependencies:** none at runtime; Prettier in devDependencies; node and pnpm pinned in mise.
 - **References:** the repositories this spike reads are keys in the coordinator's
   `references.toml` and `references.local.toml`. The spike reads them and never writes to them.
