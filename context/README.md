@@ -10,7 +10,7 @@ standards-lab's experiment.html intake; the spike decides nothing itself.
 The layers live in repositories of their own, one per layer, each released by tag:
 JaimeStill/spike-html-packages-foundation, JaimeStill/spike-html-packages-sdk, and
 JaimeStill/spike-html-packages-components. This repository holds the spike's record and this
-README; the `by-tag` task adds its consumer check by tag.
+README; the `by-tag` task adds this repository's consumer check by tag.
 
 The spike is the sub-goal `experiment.html.spike-html-packages` in the coordinator's roadmap,
 `standards-lab/context/roadmap.toml`, where its tasks live. Its question is framed in
@@ -168,11 +168,11 @@ its changelog section, is what releases. The git commands are inline in the work
 repository script cuts a release.
 
 A consumer installs a release by its tag, for example
-`github:JaimeStill/spike-html-packages-foundation#v0.1.0`; npm 12 needs `--allow-git=root` for it.
-The components' foundation is a nested git dependency, so installing the components needs npm's
-`--allow-git=all` and pnpm's `blockExoticSubdeps: false`; bun needs nothing. The release's tarball
-is the same pack. jsDelivr /gh/ serves the tag's tree; the `by-tag` task measures it, with the
-installs by tag under npm, pnpm, and bun.
+`github:JaimeStill/spike-html-packages-foundation#v0.1.0`, and the release's tarball is the same
+pack. jsDelivr /gh/ serves the tag's tree. The components name their foundation by its tag, a git
+dependency below the consumer's top level, so the components' README installs them with npm's
+`--allow-git=all`, pnpm's `blockExoticSubdeps: false`, and no guard under bun. The `by-tag` task
+measures jsDelivr /gh/ and the installs by tag under npm, pnpm, and bun.
 
 The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
 installed offline by `git+file://`; the `by-tag` task measures them again on the layer
