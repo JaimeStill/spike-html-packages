@@ -181,7 +181,7 @@ Door          two-way: everything. No tag is pushed and nothing is
 
 ## Progress
 
-slices 0/6 committed · standards — · spec — · editor —
+slices 1/6 committed (4a71e4a) · standards — · spec — · editor —
 
 ## Decisions
 
