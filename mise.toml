@@ -2,123 +2,23 @@
 [settings]
 task.run_auto_install = false
 
-# spike-html-conventions' settled toolchain, at its pins.
+# spike-html-conventions' settled toolchain, at its pins: node runs Prettier, which pnpm installs.
 [tools]
-# A consumer only: the fixtures install the releases under npm, pnpm, and bun.
-bun = "1.4.4"
 node = "26.12.1"
-# Its own pin: node 26.12.1 bundles npm 11, from before npm 12 refused git dependencies.
-npm = "12.2.1"
 pnpm = "12.15.0"
-shellcheck = "0.11.0"
-"github:microsoft/typescript-go" = { version = "7.0.2", version_prefix = "typescript/v", bin_path = "package/lib" }
-"npm:vite" = "8.3.5"
-
-# The browser tier's browser. Chrome for Testing publishes no checksums: take the sha256 and size
-# from the download by hand at each bump.
-[tools."http:chrome-headless-shell"]
-version = "156.0.8078.47"
-version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
-version_json_path = ".channels.Stable.version"
-
-[tools."http:chrome-headless-shell".platforms]
-linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:0d5acc62c3e213f8c87d3c298d66ffcf9a236d12ea4b9f85318bf85dbc279daa", size = "125799226" }
-
-[tasks.preflight]
-description = "Fail naming mise run install when a tool the tasks need is missing"
-hide = true
-run = "scripts/preflight.sh"
-
-[tasks.lint]
-description = "Run the three linters: ESLint, Prettier, and shellcheck"
-depends = ["lint:eslint", "lint:format", "lint:shell"]
-
-[tasks."lint:eslint"]
-description = "Lint with ESLint, the layer direction included"
-depends = ["preflight"]
-run = "pnpm exec eslint ."
-
-[tasks."lint:format"]
-description = "Check the format with Prettier"
-depends = ["preflight"]
-run = "pnpm exec prettier --check ."
-
-[tasks."lint:shell"]
-description = "Shellcheck the scripts"
-run = "shellcheck scripts/*.sh"
-
-[tasks.types]
-description = "Type-check the layer packages, the demo, and the browser cases with tsc"
-depends = ["types:foundation", "types:components", "types:sdk", "types:demo", "types:browser"]
-
-[tasks."types:foundation"]
-description = "Type-check the foundation package with tsc"
-depends = ["preflight"]
-run = "tsc --noEmit -p packages/foundation"
-
-# The components read the foundation's build through their declared dependency.
-[tasks."types:components"]
-description = "Type-check the components package against the foundation's build with tsc"
-depends = ["build"]
-run = "tsc --noEmit -p packages/components"
-
-[tasks."types:sdk"]
-description = "Type-check the SDK package with tsc"
-depends = ["preflight"]
-run = "tsc --noEmit -p packages/sdk"
-
-[tasks."types:demo"]
-description = "Type-check the demo's modules with tsc"
-depends = ["preflight"]
-run = "tsc --noEmit -p ."
-
-[tasks."types:browser"]
-description = "Type-check the browser cases' in-page modules against the one package's build"
-depends = ["build"]
-run = "tsc --noEmit -p test/browser"
-
-[tasks.build]
-description = "Build each package into its dist/ in dependency order, the one package last"
-depends = ["preflight"]
-run = "scripts/build.sh"
-
-[tasks."test:unit"]
-description = "Run the unit tier on the sources and on releases it builds itself"
-depends = ["preflight"]
-run = "node --test 'test/unit/*.test.js'"
-
-[tasks."test:browser"]
-description = "Run the browser tier on the one package's build in the pinned chrome-headless-shell"
-depends = ["preflight browser", "build"]
-run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node --test 'test/browser/*.test.js'"
-
-[tasks."test:consumers"]
-description = "Install the packed one package, and the three layer packages, offline under pnpm, npm, and bun, and check each"
-depends = ["build"]
-run = "scripts/consumers.sh"
-
-[tasks.check]
-description = "Run every check; reads no network; writes the packages' dist/ and .cache/"
-depends = ["lint", "types", "build", "test:unit", "test:browser", "test:consumers"]
 
 [tasks.install]
-description = "Install the pins and node_modules, and warm the offline installs' caches; reads the network"
-run = "scripts/install.sh"
+description = "Install the pins and node_modules from the lockfile; reads the network"
+run = ["mise install", "pnpm install --frozen-lockfile"]
 
-[tasks.installs]
-description = "Install the packed one package and the three layer packages under each manager and list their files"
-depends = ["build"]
-run = "scripts/consumers.sh list"
-
-[tasks.demo]
-description = "Serve the demo pages, on the one package's build, on the loopback address"
-depends = ["build"]
-run = "node scripts/demo.js"
-
-[tasks.measure]
-description = "Print the import extension's facts and the layer violations' catchers as dated tables; reads no network"
-depends = ["preflight browser", "build"]
-run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/measure.js"
+# The layers' packages live in spike-html-packages-foundation and spike-html-packages-sdk now;
+# what is left here is the spike's record, and its check is the format alone.
+[tasks.check]
+description = "Check the format with Prettier; reads no network and writes nothing"
+run = """
+[ -x node_modules/.bin/prettier ] || { echo "check: prettier isn't installed; run mise run install" >&2; exit 1; }
+pnpm exec prettier --check .
+"""
 
 [tasks.currency]
 description = "Report every pin behind its latest, exiting nonzero if any"

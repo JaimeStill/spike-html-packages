@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-# Prints `<where>: <item> <pin> -> <latest>` for each mise tool and package.json dependency behind
-# its latest, the root's and each workspace package's, and exits 1 if any; prints nothing when all
-# are current. A sibling's workspace: range is no pin. Reads the network.
+# Prints `<where>: <item> <pin> -> <latest>` for each mise tool and package.json devDependency
+# behind its latest, and exits 1 if any; prints nothing when all are current. Reads the network.
 # Adapted from spike-html-conventions (a88828a): scripts/currency.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Errors only: mise warns on every run that npm's GitHub release has no assets.
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --local --json)
 trailing=$(node -p '
   Object.entries(JSON.parse(process.argv[1]))
@@ -15,30 +13,14 @@ trailing=$(node -p '
 ' "$outdated")
 
 pins=$(node -p '
-  const { readdirSync } = require("node:fs");
-  const packages = readdirSync("packages").map((name) => "packages/" + name + "/package.json");
-  const manifests = ["package.json", ...packages];
-  manifests
-    .flatMap((path) => {
-      const { dependencies, devDependencies } = require("./" + path);
-      return Object.entries({ ...dependencies, ...devDependencies })
-        .filter(([, pin]) => !pin.startsWith("workspace:"))
-        .map(([name, pin]) => [path, name, pin].join(" "));
-    })
+  Object.entries(require("./package.json").devDependencies)
+    .map(([name, pin]) => name + " " + pin)
     .join("\n")
 ')
-typescript_eslint=$(node -p 'require("./package.json").devDependencies["typescript-eslint"]')
-while read -r manifest package pin; do
+while read -r package pin; do
   latest=$(pnpm view "$package" version)
-  # typescript is held to the newest version typescript-eslint's peer range accepts.
-  if [[ $package == typescript ]]; then
-    range=$(pnpm view "typescript-eslint@$typescript_eslint" peerDependencies.typescript)
-    accepted=$(pnpm view "typescript@$range" version --json)
-    latest=$(node -p '[].concat(JSON.parse(process.argv[1])).join("\n")' "$accepted" |
-      sort -V | tail -n 1)
-  fi
   if [[ $pin != "$latest" ]]; then
-    trailing+=$'\n'"$manifest: $package $pin -> $latest"
+    trailing+=$'\n'"package.json: $package $pin -> $latest"
   fi
 done <<<"$pins"
 
