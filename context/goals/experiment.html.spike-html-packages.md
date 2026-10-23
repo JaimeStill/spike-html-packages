@@ -1,97 +1,171 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
-- **Task:** none
-- **Branch:** none
+- **State:** building
+- **Task:** hosting
+- **Branch:** hosting
 
 ## Tasks
 
 1. [x] layers
 2. [x] layout
 3. [ ] hosting
-4. [ ] registries
-5. [ ] consumers
-6. [ ] answer
+4. [ ] components
+5. [ ] registries
+6. [ ] consumers
+7. [ ] answer
 
-## Task brief · layout
+## Task brief · hosting
 
 ```
-Problem       The layers ship as one package, and the layer direction is held
-              by the lint table alone. The hosting task's per-package tags, the
-              registries' scoped publishes, and the answer task's reweigh of
-              npm against pnpm and of ESLint against Biome all need the several-
-              package layout to exist, with a measure of what declared
-              dependencies enforce at install against what the lint catches
-              alone.
-Behaviors     1. A pnpm workspace of three packages:
-                 @jaimestill/spike-html-packages-foundation (no dependencies),
-                 -components (lit 3.3.3 and foundation, workspace:*), and -sdk
-                 (no dependencies), each with exports and files naming exactly
-                 its build. The root is private, declares no runtime
-                 dependency, and holds only the lint and type devDependencies.
-              2. Each package builds its .js and .d.ts with its .css and
-                 handwritten .d.ts beside them, in dependency order; a sibling
-                 resolves another only through its declared dependency and that
-                 package's built output, as a consumer resolves it. No source
-                 condition, no project references, no paths aliases.
-              3. Foundation owns the ambient "*.css" declaration as its ./css
-                 types subpath.
-              4. @jaimestill/spike-html-packages is a fourth workspace member
-                 put together from the three builds, with today's subpaths and
-                 lit as its only dependency; its build rewrites every bare
-                 sibling specifier to a relative one in .js and .d.ts. Every
-                 package passes the release integrity test, and the one
-                 package's test fails on any bare sibling specifier left.
-              5. The lint keeps the boundaries table, matched by package, and
-                 adds import-x's no-extraneous-dependencies and
-                 no-relative-packages.
-              6. The violation cases keep today's edges in four forms and add
-                 the workspace's: an undeclared sibling, an undeclared external
-                 (foundation→lit, sdk→lit), a relative path into a sibling, an
-                 import of a root devDependency, and a self-import by name.
-              7. `mise run measure` prints a dated table, one row per case,
-                 naming what catches it: the boundaries table, the manifest
-                 rules, and the install layout under pnpm, npm hoisted, npm
-                 linked, and bun isolated (tsc, node, or Vite can't resolve
-                 it). The npm copy records npm's lack of workspace:. No
-                 network, nothing left behind.
-              8. The consumer tier installs the one package as today, and the
-                 three packages' local tarballs, offline under pnpm, npm, and
-                 bun; it records how each manager meets components' packed
-                 foundation spec, and whether a consumer's undeclared import of
-                 foundation, reached only through components, resolves.
-              9. The browser tier and the demo load the one package's build.
-              10. The README's Layout and Measures and STANDARDS.md state the
-                 layout's facts and its packaging conventions; the README's
-                 evidence 2 and 3 name one repository per layer, which the
-                 hosting task measures.
-Test seams    The packed releases, one package and three, as a consumer
-              installs and imports them; and the violation trees, as the lint
-              and each install layout judge them.
-Slices        1. Upgrade: typescript-eslint 8.71.2 -> 8.72.0; done when
-                 `mise run currency` exits 0 and `mise run check` passes.
-              2. Workspace: three packages and the private root, sources moved
-                 one directory per package, sibling imports by package name,
-                 the dependency-ordered build, and the one package assembled
-                 with its rewrite and renamed. Existing tiers pass. Demo:
-                 `mise run check`; the one package's install file list matches
-                 today's apart from its name.
-              3. Lint: the manifest rules beside the table, and the workspace
-                 violation cases. Demo: the unit tier flags exactly the
-                 violating files.
-              4. Measure: the violation trees under the four install layouts,
-                 the dated table, the README. Demo: `mise run measure`.
-              5. Consumers: the three-tarball installs under pnpm, npm, bun.
-                 Demo: `mise run installs` with both layouts' file lists.
-Out of scope  Any tag, push, or publish; version and tag naming and delivery by
-              git tag, tarball URL, or import map (hosting); one repository per
-              layer (hosting); the registries; the Vite app and unbundled page
-              consumers and the release flow (consumers); reweighing npm/pnpm
-              and ESLint+Prettier/Biome (answer); a fourth layer package;
-              Biome's noUndeclaredDependencies.
-Door          two-way: nothing leaves the repository. The names become one-way
-              only when the registries task publishes to JSR.
+Problem       The layers are proven to layer locally, as workspace packages
+              in one repository. It is unproven that they layer as separate
+              repositories, each released at a version and built on the one
+              below by its tag, the way the Go workspace layers. The built
+              branch only emulated that, with generated repositories, release
+              scripts, and an install harness. This task makes the foundation
+              and the SDK real repositories, each with its own check, CI, and
+              release workflow, and releases each at v0.1.0. The later
+              components task then builds on real tags.
+Behaviors     1. Two public repositories, JaimeStill/spike-html-packages-
+                 foundation and JaimeStill/spike-html-packages-sdk, each hold
+                 the only copy of their layer's sources, with provenance
+                 lines kept. Each package keeps its name
+                 (@jaimestill/spike-html-packages-<layer>), its exports, and
+                 its files, at version 0.1.0 with "license": "Apache-2.0".
+                 Main holds sources only and never dist/.
+              2. Each repository is a complete marathon project modeled on
+                 the Go repositories. It has a CLAUDE.md of navigation
+                 pointers; a working-context README; a STANDARDS.md; a
+                 marathon config of kind code, with check `mise run check`,
+                 currency `mise run currency`, and the Go repositories'
+                 [remote] settings, where merge waits on `gh pr checks` and
+                 ci waits on every push run of the merge commit; a Keep a
+                 Changelog CHANGELOG.md with a dated v0.1.0 section; the
+                 workspace repositories' Apache 2.0 LICENSE, byte for byte;
+                 a README; and a mise.toml.
+              3. Each repository's `mise run check` reads no network once
+                 `mise run install` has run. It runs ESLint, Prettier,
+                 typescript-go, the build into dist/, and the unit tier; the
+                 foundation's check also runs the browser tier. It fails on
+                 any failing tier.
+              4. The lint covers one layer: the repository's own layer table,
+                 the .d.ts rule (a declaration file is imported only by
+                 `import type` or `export type`), the CSS module script rule,
+                 and import-x's no-unresolved, no-extraneous-dependencies,
+                 and no-relative-packages. Its test runs the lint over a
+                 violation tree cut to the layer, and passes only when ESLint
+                 flags exactly these: an import of any undeclared package,
+                 lit or a sibling layer included; a value import of a .d.ts;
+                 and a .css import without { type: 'css' }.
+              5. The tests split by layer. The foundation's unit tier runs
+                 the keys grammar, the registry, the formatter declarations,
+                 and the release integrity test (a pack against its exports,
+                 files, and license). Its browser tier runs the tools and
+                 keys cases on its own dist/ in the pinned
+                 chrome-headless-shell, against v0.7.0's fixtures, with the
+                 pipe driver and the static server. `mise run demo` serves
+                 the tools and keys pages. The SDK's unit tier runs the SDK
+                 declarations and the release integrity test.
+              6. `mise run currency` reports, and exits nonzero on, each mise
+                 tool, package.json pin, and GitHub Actions pin
+                 (actions/checkout, jdx/mise-action,
+                 taiki-e/create-gh-release-action) behind its latest.
+                 typescript is held to typescript-eslint's peer range.
+              7. CI: a workflow installs the pinned tools with
+                 jdx/mise-action, runs `mise run install`, and runs
+                 `mise run check` on every pull request into main and every
+                 push to main.
+              8. Release: a workflow on push to main, in one job with
+                 contents: write, reads the manifest's version. When the
+                 remote already has tag v<version>, it ends green and changes
+                 nothing. Otherwise it:
+                 a. runs the check;
+                 b. runs pnpm pack;
+                 c. commits the pack's tree (package.json, README.md,
+                    LICENSE, dist/), parented on the pushed commit, on no
+                    branch;
+                 d. tags that commit with an annotated tag
+                    "<repository> v<version>";
+                 e. pushes that tag alone;
+                 f. creates the GitHub release from CHANGELOG.md's section
+                    with taiki-e/create-gh-release-action;
+                 g. attaches the tarball with `gh release upload`.
+                 Git commands for the commit and the tag are inline in the
+                 workflow; no repository script cuts a release. The tag's
+                 tree equals, file for file, the attached tarball's
+                 package/.
+              9. Main has a ruleset as the Go repositories do: a pull request
+                 is required, and deletion and force-push are refused. The
+                 release workflow's tag push is unaffected.
+              10. This repository loses packages/ and everything built on
+                 it. The components layer's sources, browser cases, and demo
+                 page leave too; the components task takes them from this
+                 repository's history, naming the commit as provenance.
+                 `mise run measure` retires, and its two dated tables stay in
+                 the README. The check is Prettier alone, under kind code,
+                 and mise pins node and pnpm only.
+              11. The README restates the evidence, Layout, Tasks, Hosting,
+                 and Tags for one repository per layer. Evidence 3 becomes a
+                 plain vX.Y.Z per repository. STANDARDS.md's Releases states
+                 the release workflow's form. The goal record logs the
+                 re-plan's decisions and marks the built hosting decisions
+                 superseded.
+Test seams    Each layer repository's `mise run check`; and a release as a
+              consumer reaches it: the v0.1.0 tag's tree, and the GitHub
+              release's tarball.
+Slices        1. Upgrade: carry the upgrade commit (bun 1.4.4, pnpm 12.15.0,
+                 eslint-plugin-boundaries 7.2.1) onto the new branch. Done
+                 when `mise run currency` reports only the held typescript
+                 and `mise run check` passes.
+              2. License and version: carry the license commit (Apache 2.0
+                 at 0.1.0). Demo: `mise run check` passes; every package
+                 holds its LICENSE.
+              3. Foundation repository: its sources, lint, tests, demo
+                 pages, check, currency, CI, release workflow, CHANGELOG,
+                 README, and STANDARDS. Demo: its `mise run check` passes;
+                 pnpm pack lists exactly package.json, README.md, LICENSE,
+                 and dist/; CI is green on its pull request.
+              4. SDK repository: the same scaffolding, for the declarations
+                 alone. Demo: its `mise run check` passes; pnpm pack lists
+                 the same four entries; CI is green on its pull request.
+              5. This repository's shrink: packages/, its builds and tiers,
+                 the components layer, the measure task, and the hosting
+                 scripts leave; the check becomes Prettier alone. Demo:
+                 `mise run check` passes; `mise run currency` is current.
+              6. Docs: the README's sections, STANDARDS.md's Releases, and
+                 each layer repository's README against its check. Demo:
+                 the README read against the two layer repositories.
+Out of scope  The components repository and its release; this repository's
+              consumer check by tag under npm, pnpm, and bun; jsDelivr /gh/
+              and the import-map page; GitHub Packages and JSR; the Vite app
+              and the release flow with pnpm's versioning; a local link:
+              bridge between repositories; installing a layer's pack under
+              npm, pnpm, and bun inside its own repository; reweighing
+              npm/pnpm and ESLint/Biome; a second version; browsers other
+              than chrome-headless-shell.
+Door          one-way: the two public repositories, from the moment they are
+              created; deleting one needs gh's delete_repo scope. Also the
+              foundation and SDK v0.1.0 tags and GitHub releases, once the
+              release workflows push them: never re-cut, since jsDelivr
+              caches an exact tag for good. two-way: everything on the
+              hosting branches until SHIP, including removing packages/
+              from this repository (its history keeps the sources), and the
+              coordinator's edits.
+Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
+              JaimeStill/spike-html-packages-sdk: v0.1.0.
+              Each is cut by its own release workflow on its merge to main.
+              SHIP pushes no tag. SHIP merges the foundation, runs ci (the
+              check and release runs on the merge commit green, the tag and
+              its release with the tarball present), then does the same for
+              the SDK, then merges this repository, which releases nothing.
+              A failed release is fixed forward on hosting-fix: delete the
+              tag on the remote and any partial release, then merge the fix;
+              the run on that merge cuts v0.1.0 again.
 ```
+
+## Progress
+
+slices 2/6 committed · standards — · spec — · editor —
 
 ## Decisions
 
@@ -195,7 +269,8 @@ Door          two-way: nothing leaves the repository. The names become one-way
 - layout: foundation's exports map `./css.js` to null, so the ambient `*.css` declaration is a
   types subpath only and `./*.js` gives it no runtime subpath.
 - layout: the one package declares its siblings as devDependencies, so a consumer installs none;
-  `pnpm pack` writes them as 0.0.0 devDependencies, which a registry publish would carry.
+  `pnpm pack` writes them at their version (0.0.0 at the time), which a registry publish would
+  carry.
 - layout: the lint's declaration policy applies to `!(dist/**)*.d.ts`, so a value import of a
   types-only sibling subpath by package name passes the lint; node and Vite catch it ("not
   exported"), as the measure records.
@@ -208,9 +283,116 @@ Door          two-way: nothing leaves the repository. The names become one-way
 - layout: the consumer tier's overrides point the foundation at its tarball by `file:`, since
   npm's `$ref` needs the package as a direct dependency, which the components-alone consumer lacks.
 
+- hosting: superseded by the hosting re-plan: a release build lives on a release commit whose tree
+  is the package's pack, parented on the merge commit; dist/ stays ignored on main, and SHIP pushes
+  tags cut by the release script rather than tagging the merge commit.
+- hosting: superseded by the hosting re-plan: v0.1.0 releases the one package,
+  `@jaimestill/spike-html-packages`.
+- hosting: superseded by the hosting re-plan: each layer is tagged in both forms, `<layer>/v0.1.0`
+  and `@jaimestill/spike-html-packages-<layer>@0.1.0`, on the same release commit.
+- hosting: the release version is 0.1.0; the registries keep their own 0.0.x.
+- hosting: superseded by the hosting re-plan: one repository per layer is three public GitHub
+  repositories, JaimeStill/spike-html-packages-foundation, -components, and -sdk.
+- hosting: superseded by the hosting re-plan: live deliveries are proven by a networked mise task
+  that prints a dated table; the check gains an offline git+file:// tier over the same release
+  commits.
+- hosting: carried to the components task: the import map maps lit to jsDelivr /npm/lit@3.3.3/+esm,
+  as one entry.
+- hosting: superseded by the hosting re-plan: the components' release names its foundation by
+  github:JaimeStill/spike-html-packages#foundation/v0.1.0, not a release-asset URL or 0.1.0 with
+  consumer overrides.
+- hosting: superseded by the hosting re-plan: each of this repository's seven tags gets a GitHub
+  release with its pack as the asset; the per-layer repositories get none.
+- hosting: superseded by the hosting re-plan: each per-layer repository holds its layer's sources,
+  manifest, standalone build config, and LICENSE on main, with v0.1.0 a release commit built from
+  them.
+- hosting: the per-layer components name their foundation by the exact tag #v0.1.0, since bun fails
+  every #semver: git spec.
+- hosting: superseded by the hosting re-plan: the import-map page loads the layers from the
+  per-layer repositories @v0.1.0, with no encoding needed.
+- hosting: superseded by the hosting re-plan: SHIP pushes the tags and creates the repositories
+  after acceptance; the live table lands in a follow-up pull request before registries.
+- hosting: the license is Apache 2.0, a byte copy of the ~/architecture repositories' LICENSE (not
+  MIT, per the architect), at the root, in each package, and in each per-layer repository, with
+  "license": "Apache-2.0" in the four packages' and the per-layer repositories' manifests (the
+  private root has none), and no NOTICE.
+- hosting: the eslint-plugin-boundaries hold at 7.2.0 is lifted; 7.2.1 cleared pnpm's minimum
+  release age on 2026-10-22 and brings handlebars 4.7.10.
+- hosting: bun 1.4.4 writes `.bun-tag` into each package it installs, holding a tarball's integrity
+  or a git release's commit hash; the consumer and releases tiers assert it and leave it out of the
+  file comparison.
+- hosting: `licenseProblems` also requires the manifest's "Apache-2.0" and the LICENSE's Apache
+  heading, not only the file's presence.
+- hosting: pnpm 12.15.0 packs the root LICENSE into a package that has none, so a pack can't show a
+  package's missing copy; the unit tier checks each package's directory instead.
+- hosting: npm 12's `allow-git` defaults to none; root suffices except where the nested git
+  foundation is fetched (the components alone), which needs all.
+- hosting: bun 1.4.4's overrides never reach a nested `github:` spec, so the releases tier asserts
+  the components unreachable offline under bun and installs the foundation and the SDK alone.
+- hosting: superseded by the hosting re-plan: `scripts/release.sh` rebuilds `dist/` before packing,
+  so a release comes from the committed sources.
+- hosting: superseded by the hosting re-plan: the releases tier clones the working tree, uncommitted
+  files included, and runs git with `GIT_CONFIG_GLOBAL=/dev/null` and a fixed identity.
+- hosting: superseded by the hosting re-plan: the per-layer repositories build with typescript
+  6.0.3, the root's pin, under pnpm.
+- hosting: superseded by the hosting re-plan: the per-layer repositories carry no lockfile: a
+  consumer never reads a dependency's lockfile, and generating one reads the registry.
+- hosting: the per-layer release manifests carry no scripts, since npm prepares a git dependency
+  that has a build script, installing its devDependencies first.
+- hosting: superseded by the hosting re-plan: the per-layer repositories' commits and tags are dated
+  at the workspace HEAD's commit date, so the same commit gives the same repositories.
+- hosting: README.md ships in each per-layer repository's pack.
+- hosting: superseded by the hosting re-plan: the offline import-map check serves a Vite bundle of
+  the installed lit 3.3.3 at /npm/lit@3.3.3/+esm, in place of jsDelivr's build.
+- hosting: superseded by the hosting re-plan: `scripts/live.js` tries each manager's guard settings
+  least first, and first checks that all 17 remote items (the ten tags and the seven release assets)
+  are published.
+- hosting: superseded by the hosting re-plan: release assets keep `pnpm pack`'s names,
+  jaimestill-spike-html-packages[-<layer>]-0.1.0.tgz.
+
+- hosting (re-plan): the architect redirected the built brief at BRIEF: build what the spike proves
+  the way it would be adopted, with real repositories released by version, as the Go workspace
+  layers, not generated copies and release scripts.
+- hosting (re-plan): the layers' sources move out of packages/ into repositories of their own; this
+  repository keeps the record, the README, and later a consumer check (round 1, 1).
+- hosting (re-plan): the layer repositories are this goal's repos, located through [workspace.paths]
+  and catalogued in references.toml, not spike sub-goals (round 1, 2).
+- hosting (re-plan): each layer repository's release workflow, on push to main, cuts the version
+  that has no tag yet: the check, pnpm pack, a pack-tree commit on the merge commit, an annotated
+  tag, and a GitHub release with CHANGELOG.md's notes and the tarball; main stays source-only and
+  SHIP doesn't tag (round 2, replacing round 1, 3, and folding in round 1, 6's workflow).
+- hosting (re-plan): hosting splits in two: this task releases foundation and sdk v0.1.0, and the
+  `components` task builds the components and this repository's consumer on those tags, with no
+  local bridge (round 1, 4).
+- hosting (re-plan): each layer repository's CI runs `mise run check` on pull requests into main and
+  pushes to it (round 1, 5).
+- hosting (re-plan): each layer repository keeps a Keep a Changelog CHANGELOG.md, the source of its
+  releases' notes (round 1, 6).
+- hosting (re-plan): restarted from origin/main on a new `hosting` branch carrying the upgrade and
+  license commits; the built branch stays local as `hosting-built` and is deleted after SHIP (round
+  1, 7).
+- hosting (re-plan): jsDelivr /gh/ and the import-map page belong to the `components` task (round 3,
+  1).
+- hosting (re-plan): a layer repository's lint keeps eslint-plugin-boundaries cut to its own layer,
+  with the .d.ts rule and import-x's manifest rules (round 3, 2).
+- hosting (re-plan): `mise run measure` retires; its tables of 2026-10-22 stay in the README (round
+  3, 3).
+- hosting (re-plan): this repository's check is Prettier alone under kind code until the
+  `components` task adds its consumer tier (round 3, 4).
+- hosting (re-plan): the release workflow uses inline git for the pack commit and tag,
+  taiki-e/create-gh-release-action for the notes, and `gh release upload` for the tarball; no
+  maintained action cuts a commit only a tag reaches (round 3, 5).
+- hosting (re-plan): the layer repositories take the Go repositories' [remote] settings as written
+  (round 3, 6).
+- hosting (re-plan): each layer repository's main has the Go ruleset (pull request required, no
+  deletion, no force push), with the repository admin role as its bypass, as the Go repositories
+  bypass organization admins (round 3, 7).
+- hosting (re-plan): the components layer's sources leave this repository with packages/; the
+  `components` task copies them from this repository's history, naming the commit.
+- hosting (re-plan): the coordinator's edits landed at plan apply (standards-lab #95): the goal's
+  repos, [workspace.paths], references.toml, the restated hosting task, and the new `components`
+  task.
+
 ## Pending edits
 
-- coordinator · roadmap.toml: `[goals.experiment.html.spike-html-packages.tasks.hosting]`
-  summary: add the layers as one repository per layer, three scratch repositories each depending
-  on its siblings by tag, installed under npm, pnpm, and bun, against the workspace's per-package
-  tags.
+(none)
