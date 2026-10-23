@@ -165,7 +165,7 @@ Release       JaimeStill/spike-html-packages-foundation: v0.1.0.
 
 ## Progress
 
-slices 6/6 committed · standards ✓ · spec ✓ · editor —
+slices 6/6 committed · standards ✓ · spec ✓ · editor ✓
 
 ## Decisions
 
@@ -319,16 +319,17 @@ slices 6/6 committed · standards ✓ · spec ✓ · editor —
 - hosting: the eslint-plugin-boundaries hold at 7.2.0 is lifted; 7.2.1 cleared pnpm's minimum
   release age on 2026-10-22 and brings handlebars 4.7.10.
 - hosting: bun 1.4.4 writes `.bun-tag` into each package it installs, holding a tarball's integrity
-  or a git release's commit hash; the consumer and releases tiers assert it and leave it out of the
-  file comparison.
-- hosting: `licenseProblems` also requires the manifest's "Apache-2.0" and the LICENSE's Apache
-  heading, not only the file's presence.
+  or a git release's commit hash; the monorepo's consumer and releases tiers asserted it and left it
+  out of the file comparison.
+- hosting: `licenseProblems`, now in each layer repository's `test/unit/release.js`, also requires
+  the manifest's "Apache-2.0" and the LICENSE's Apache heading, not only the file's presence.
 - hosting: pnpm 12.15.0 packs the root LICENSE into a package that has none, so a pack can't show a
-  package's missing copy; the unit tier checks each package's directory instead.
+  package's missing copy; the monorepo's unit tier checked each package's directory instead.
 - hosting: npm 12's `allow-git` defaults to none; root suffices except where the nested git
   foundation is fetched (the components alone), which needs all.
-- hosting: bun 1.4.4's overrides never reach a nested `github:` spec, so the releases tier asserts
-  the components unreachable offline under bun and installs the foundation and the SDK alone.
+- hosting: bun 1.4.4's overrides never reach a nested `github:` spec, so the monorepo's releases
+  tier asserted the components unreachable offline under bun and installed the foundation and the
+  SDK alone.
 - hosting: superseded by the hosting re-plan: `scripts/release.sh` rebuilds `dist/` before packing,
   so a release comes from the committed sources.
 - hosting: superseded by the hosting re-plan: the releases tier clones the working tree, uncommitted
@@ -385,13 +386,37 @@ slices 6/6 committed · standards ✓ · spec ✓ · editor —
 - hosting (re-plan): the layer repositories take the Go repositories' [remote] settings as written
   (round 3, 6).
 - hosting (re-plan): each layer repository's main has the Go ruleset (pull request required, no
-  deletion, no force push), with the repository admin role as its bypass, as the Go repositories
-  bypass organization admins (round 3, 7).
+  deletion, no force push), with the repository admin role as its bypass, since a personal account
+  has no organization admin, which the Go repositories bypass (round 3, 7).
 - hosting (re-plan): the components layer's sources leave this repository with packages/; the
   `components` task copies them from this repository's history, naming the commit.
 - hosting (re-plan): the coordinator's edits landed at plan apply (standards-lab #95): the goal's
   repos, [workspace.paths], references.toml, the restated hosting task, and the new `components`
   task.
+- hosting (re-plan): pnpm 12.15.0 refuses a nested git dependency (`ERR_PNPM_EXOTIC_SUBDEP`) unless
+  `blockExoticSubdeps` is false, measured on 2026-10-22 on `hosting-built`, which is deleted after
+  SHIP.
+- hosting (re-plan): the SDK's lint has no CSS module script rule, since the SDK holds declarations
+  only and no stylesheet; a departure from behavior 4, decided without the architect.
+- hosting (re-plan): actionlint and shellcheck run in each layer repository's check, since a pull
+  request's CI never runs release.yml and the check is its only gate before SHIP.
+- hosting (re-plan): Prettier ignores Markdown in all three repositories, a convention kept from
+  spike-html-conventions, so this repository's check covers little beyond its JSON files.
+- hosting (re-plan): release.yml runs the check itself and tags on a push to main, where the Go
+  repositories' release runs on a tag push, because the tag's commit must carry dist/.
+- hosting (re-plan): the release test resolves the exports with Node's own resolver
+  (`import.meta.resolve`), not a copy of its algorithm.
+- hosting (re-plan): the SDK's build copies src/ whole into dist/, since every source is a
+  handwritten .d.ts.
+- hosting (re-plan): jdx/mise-action is at v5.2.2 in the layer repositories; the Go repositories
+  still pin v5.1.2, and taking it is theirs.
+- hosting (re-plan): each layer repository's unit tier depends on build, because the release test
+  packs dist/.
+- hosting (re-plan): provenance lines in the layer repositories name spike-html-packages 7fb31a8;
+  the SDK's tooling copied from the foundation names foundation 867b4fd, and its
+  `test/unit/release.js` names 91f144d, the commit that moved the release test to Node's resolver.
+- hosting (re-plan): the components layer's sources are last held at c2b4a19, the provenance the
+  `components` task names.
 
 ## Pending edits
 

@@ -19,7 +19,6 @@ The architecture pages that apply, in the architecture repository:
 - A release commit holds only the pack (`package.json`, `README.md`, `LICENSE`, and `dist/`),
   parented on the merge commit and on no branch; main stays source-only.
 - A release is never changed or re-cut.
-- Copied files name their source repository and commit.
 
 ## Packages
 
@@ -37,7 +36,8 @@ The layer repositories' code, which each one's `STANDARDS.md` restates for its l
 
 - Code meets the bar of spike-html-conventions' `layers/` code at a88828a: a 2–4 line header, a
   one-line doc comment per export, and comments only for a non-obvious why.
-- A provenance line reads `From|Adapted from <repo> (<commit>): <path>`.
+- A copied file names its source repository and commit in a provenance line, which reads
+  `From|Adapted from <repo> (<commit>): <path>`.
 - Sources use `.ts` relative specifiers, which tsc rewrites; handwritten `.d.ts` keep `.js`.
 - A lazy load uses a literal `import()`.
 - A browser tier tests its repository's `dist/`, and no server transforms what it serves.

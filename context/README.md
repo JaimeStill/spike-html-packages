@@ -95,9 +95,8 @@ The tasks, in the order they run; each cites the evidence it proves.
 
 ## Releases
 
-Each layer repository releases at 0.y.z by its own release workflow; this repository releases
-nothing. The foundation's and the SDK's v0.1.0 are cut by their workflows on their merges to main.
-A release is never changed or re-cut; Tags names each one.
+Each layer repository releases at 0.y.z by its own `release.yml`, which Hosting describes; this
+repository releases nothing. A release is never changed or re-cut, and Tags lists each one.
 
 ## References
 
@@ -165,9 +164,9 @@ A consumer installs a release by its tag, for example
 The release's tarball is the same pack. jsDelivr /gh/ serves the tag's tree; the `components` task
 measures it, with the installs by tag under npm, pnpm, and bun.
 
-The facts below were measured on 2026-10-22 on the earlier monorepo releases, cut by the built
-hosting branch's release script and installed offline by `git+file://` in its releases tier; the
-`components` task measures them again on the layer repositories' tags:
+The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
+installed offline by `git+file://`; the `components` task measures them again on the layer
+repositories' tags:
 
 - npm 12.2.1's `allow-git` defaults to none, which refuses even a root git dependency; root
   suffices except where a nested git foundation is fetched, which needs all.
@@ -184,13 +183,14 @@ hosting branch's release script and installed offline by `git+file://` in its re
 
 ## Tags
 
+Each layer repository tags a release with one plain `vX.Y.Z`:
+
 | tag | repository | releases |
 | --- | --- | --- |
 | `v0.1.0` | `JaimeStill/spike-html-packages-foundation` | `@jaimestill/spike-html-packages-foundation` |
 | `v0.1.0` | `JaimeStill/spike-html-packages-sdk` | `@jaimestill/spike-html-packages-sdk` |
 
-One plain `vX.Y.Z` per repository, annotated `<repository> vX.Y.Z` and cut by the repository's
-`release.yml` on its merge to main. The components repository's v0.1.0 is the `components` task's.
+The components repository's v0.1.0 belongs to the `components` task.
 
 ## Consumer installs
 
@@ -213,9 +213,9 @@ failed there; npm and bun hoisted the foundation where it resolved.
 
 ## Measures
 
-`mise run measure` printed two dated tables, and its tables of 2026-10-22 stay as the record
-(round 3, question 3 of the hosting re-plan). The task and the fixtures that produced them retired
-with `packages/` and remain in history at c2b4a19; the paths below are that commit's.
+`mise run measure` printed the two tables below, of 2026-10-22, which stay as the record. The task
+and its fixtures retired with `packages/` and remain in history at c2b4a19; the paths below are
+that commit's.
 
 The first copied the one package's `dist/` and built a Vite page beside it in a scratch directory,
 loaded the page in the pinned chrome-headless-shell, and printed the import extension's facts
