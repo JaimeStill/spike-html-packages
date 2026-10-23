@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** by-tag
-- **Branch:** by-tag
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
@@ -10,7 +10,7 @@
 2. [x] layout
 3. [x] hosting
 4. [x] components
-5. [ ] by-tag
+5. [x] by-tag
 6. [ ] registries
 7. [ ] consumers
 8. [ ] answer
@@ -178,10 +178,6 @@ Door          two-way: everything. No tag is pushed and nothing is
               The coordinator's restated by-tag entry lands as a pending
               edit, applied by the session.
 ```
-
-## Progress
-
-slices 6/6 committed (4a71e4a, 38250ae, 4afa9ae, e2b8799, 7153c5b, 7b1799b) · standards done (379b81a, e7ab519) · spec done (gap: pending edit, closed by the editor; 4588df9 isolates user config) · editor done
 
 ## Decisions
 
