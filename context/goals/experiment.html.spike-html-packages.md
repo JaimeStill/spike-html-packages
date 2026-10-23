@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
-- **Task:** none
-- **Branch:** none
+- **State:** handoff
+- **Task:** by-tag
+- **Branch:** by-tag
 
 ## Tasks
 
@@ -178,6 +178,12 @@ Door          two-way: everything. No tag is pushed and nothing is
               The coordinator's restated by-tag entry lands as a pending
               edit, applied by the session.
 ```
+
+## Handoff
+
+merge: pull request #5 (by-tag) is published and awaits its merge, which the session's
+permission mode refused. Merge it, then return State to idle, Task and Branch to none, and
+drop this section.
 
 ## Decisions
 
