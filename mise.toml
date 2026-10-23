@@ -1,5 +1,5 @@
-# Tasks never install a missing tool; mise run install, lock, and currency are the tasks that read
-# the network.
+# Tasks never install a missing tool; mise run install, lock, currency, and live are the tasks that
+# read the network.
 [settings]
 task.run_auto_install = false
 
@@ -13,9 +13,19 @@ npm = "12.2.1"
 pnpm = "12.15.0"
 shellcheck = "0.11.0"
 
+# The live task's browser, at spike-html-packages-components' (8cb64a8) pin. Chrome for Testing
+# publishes no checksums: take the sha256 and size from the download by hand at each bump.
+[tools."http:chrome-headless-shell"]
+version = "156.0.8078.47"
+version_list_url = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions.json"
+version_json_path = ".channels.Stable.version"
+
+[tools."http:chrome-headless-shell".platforms]
+linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:0d5acc62c3e213f8c87d3c298d66ffcf9a236d12ea4b9f85318bf85dbc279daa", size = "125799226" }
+
 # From spike-html-packages-components (8cb64a8): mise.toml's preflight.
 [tasks.preflight]
-description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing"
+description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the live task's browser"
 hide = true
 run = "scripts/preflight.sh"
 
@@ -54,3 +64,8 @@ run = "scripts/lock.sh"
 description = "Report every pin behind its latest, exiting nonzero if any"
 run = "scripts/currency.sh"
 quiet = true
+
+[tasks.live]
+description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them; reads the network, writes nothing in the repository"
+depends = ["preflight live"]
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.js"
