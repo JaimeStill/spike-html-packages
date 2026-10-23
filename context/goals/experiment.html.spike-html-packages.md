@@ -181,7 +181,7 @@ Door          two-way: everything. No tag is pushed and nothing is
 
 ## Progress
 
-slices 6/6 committed (4a71e4a, 38250ae, 4afa9ae, e2b8799, 7153c5b, 7b1799b) · standards done (379b81a, e7ab519) · spec — · editor —
+slices 6/6 committed (4a71e4a, 38250ae, 4afa9ae, e2b8799, 7153c5b, 7b1799b) · standards done (379b81a, e7ab519) · spec done (gap: pending edit, closed by the editor; 4588df9 isolates user config) · editor done
 
 ## Decisions
 
@@ -504,17 +504,58 @@ slices 6/6 committed (4a71e4a, 38250ae, 4afa9ae, e2b8799, 7153c5b, 7b1799b) · s
 - components: the guards each manager needs for the components' nested github: foundation (npm
   allow-git=all, pnpm block-exotic-subdeps=false, bun none) were measured on the real foundation
   tag at the plan's round 1, 2026-10-23, in scratch; by-tag measures them again on all three tags.
-- by-tag: the consumers' lockfiles are committed per fixture; `mise run install` installs frozen from them, and a separate networked `mise run lock` re-locks (round 1, 1).
-- by-tag: npm's guard is allow-git=root for the three together and allow-git=all for the components alone, both proven offline (round 1, 2).
-- by-tag: pnpm's blockExoticSubdeps, which a frozen offline install skips, is proven at resolution in the networked task, guards tried least first (round 1, 3).
-- by-tag: the offline check compares each install against its tag's tree, from a depth-1 fetch kept in the cache directory (round 1, 4).
+- by-tag: the consumers' lockfiles are committed per fixture; `mise run install` installs frozen
+  from them, and a separate networked `mise run lock` re-locks (round 1, 1).
+- by-tag: npm's guard is allow-git=root for the three together and allow-git=all for the
+  components alone, both proven offline (round 1, 2).
+- by-tag: pnpm's blockExoticSubdeps, which a frozen offline install skips, is proven at resolution
+  in the networked task, guards tried least first (round 1, 3).
+- by-tag: the offline check compares each install against its tag's tree, from a depth-1 fetch
+  kept in the cache directory (round 1, 4).
 - by-tag: no type-check of the installs; file and resolution checks only (round 1, 5).
 - by-tag: shellcheck 0.11.0 joins the root's check as lint:shell; no ESLint (round 1, 6).
-- by-tag: `mise run currency` also reports each fixture's github: tag behind its layer's latest GitHub release (round 1, 7).
-- by-tag: the networked task's dated table is recorded in a dated section of context/README.md (round 1, 8).
-- by-tag: the browser driver and static server are copied from spike-html-packages-components 8cb64a8 with provenance; the import-map page and networked script are written new, and no provenance names the reflog-only 1605161, which gets no ref (round 1, 9).
-- by-tag: the networked task adds release-asset tarball-URL installs; by-tag's roadmap entry is restated as a pending edit (round 1, 10).
+- by-tag: `mise run currency` also reports each fixture's github: tag behind its layer's latest
+  GitHub release (round 1, 7).
+- by-tag: the networked task's dated table is recorded in a dated section of context/README.md
+  (round 1, 8).
+- by-tag: the browser driver and static server are copied from spike-html-packages-components
+  8cb64a8 with provenance; the import-map page and networked script are written new, and no
+  provenance names the reflog-only 1605161, which gets no ref (round 1, 9).
+- by-tag: the networked task adds release-asset tarball-URL installs; by-tag's roadmap entry is
+  restated as a pending edit (round 1, 10).
+- by-tag: npm's guard for a tarball URL is the pair allow-git and allow-remote, tried least first:
+  npm 12 refuses tarball URLs under allow-remote=none (EALLOWREMOTE).
+- by-tag: installing the three by release-asset URL gives two foundations under every manager (the
+  consumer's asset copy and the components' own github: copy); row d reports the count, while the
+  by-tag rows still require one foundation.
+- by-tag: bun's .bun-tag holds the tarball's sha512 integrity for an asset install, and the
+  annotated tag object's short hash for a GitHub install, which the check requires to name the tag.
+- by-tag: scripts/installed.sh is the one comparison against the tags, shared by the check and
+  `mise run live`.
+- by-tag: the check resolves an undeclared foundation through the components, since pnpm keeps it
+  out of the top-level node_modules.
+- by-tag: every install runs through scripts/unconfigured.sh, which empties the user's npm, pnpm,
+  and bun config and unsets npm_config_*, pnpm_config_*, and BUN_CONFIG_*, because those settings
+  flipped guard results in trials.
+- by-tag: left the user's git config read: isolating it is outside the brief.
+- by-tag: left the import-map page's lit 3.3.3 unreported by currency: the right check is the
+  page's lit equal to the components' lit at the tag, a consumers-task concern.
+- by-tag: the driver and server live in test/live/, and the server drops /deps/, since the page's
+  import map names no installed package.
+- by-tag: the root package.json gains "type": "module".
+- by-tag: the npm EALLOWGIT proof also requires npm's "Refusing to fetch" line to name the expected
+  package (standards review).
 
 ## Pending edits
 
-(none)
+- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.by-tag]`'s
+  summary as:
+
+  ```
+  This repository's consumer check installing the three v0.1.0 tags under npm, pnpm, and bun, as
+  the three together and as the components alone, offline in `mise run check` from caches and a
+  lockfile per manager that `mise run install` fills, with each manager's guard in the fixture's
+  config; and a networked task that prints a dated table of jsDelivr /gh/ and the import-map page
+  over the three tags, in headless chrome, and of each manager's installs with no lockfile, at the
+  tags and by the release assets' tarball URLs. Evidence 1, 3.
+  ```

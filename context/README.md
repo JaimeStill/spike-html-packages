@@ -122,7 +122,8 @@ This repository is the spike's record and its docs:
 - `mise.toml`, `package.json`, and `.prettierrc.json`: the pins, the tasks, and Prettier's config.
 - `scripts/`: the tasks' scripts: `install.sh`, `lock.sh`, `consumers.sh` (the consumer tier, and
   the cache warm `install.sh` runs), `installed.sh` (the comparison against the tags that
-  `consumers.sh` and `live.js` share), `preflight.sh`, `currency.sh`, and `live.js`.
+  `consumers.sh` and `live.js` share), `unconfigured.sh` (runs a manager with none of the user's
+  config), `preflight.sh`, `currency.sh`, and `live.js`.
 - `test/consumers/`: the six consumer fixtures, `<consumer>/<manager>/`, the three together
   (`three/`) and the components alone (`components/`) under npm, pnpm, and bun, each with its
   manager's guard and its committed lockfile; and `consumers.js`, `exports.js`, and `resolve.js`,
@@ -196,12 +197,11 @@ A consumer installs a release by its tag, for example
 pack. jsDelivr /gh/ serves the tag's tree. The components name their foundation by its tag, a git
 dependency below the consumer's top level, so the components' README installs them with npm's
 `--allow-git=all`, pnpm's `blockExoticSubdeps: false`, and no guard under bun. Consumer installs
-holds the guards the `by-tag` task's fixtures need, and Live, 2026-10-23 its measures of jsDelivr
-/gh/ and of the installs at the tags and by the release assets' URLs.
+lists the guards this repository's fixtures need, and "Live, 2026-10-23" records the measures of
+jsDelivr /gh/ and of the installs at the tags and by the release assets' URLs.
 
 The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
-installed offline by `git+file://`, and again by the `by-tag` task on the layer repositories'
-tags, which added to the first and corrected the second and fourth:
+installed offline by `git+file://`, and again on the layer repositories' tags:
 
 - npm 12.2.1's `allow-git` defaults to none, which refuses even a root git dependency; root
   suffices except where a nested git foundation is fetched, which needs all. It applies even to
@@ -251,6 +251,12 @@ npm's guard is proven both ways: each npm fixture's install fails under its guar
 `allow-git=none` for the three and `allow-git=root` for the components, with `EALLOWGIT`. A frozen
 pnpm install skips the check its guard lowers, so the offline tier can't prove pnpm's; the live
 task's installs with no lockfile do.
+
+Every install the check, `mise run lock`, and `mise run live` make runs through
+`scripts/unconfigured.sh`, which points npm, pnpm, and bun at empty user and global config files
+and unsets the `npm_config_*`, `pnpm_config_*`, and `BUN_CONFIG_*` variables, so a user's own
+setting can't change a guard's result. The fixture's own config still applies; the wrapper
+leaves git's config alone.
 
 Each lockfile records the tags by a hash, not by the tag's name:
 
@@ -309,7 +315,7 @@ lesser setting's error, and the installed trees.
 | pnpm 12.15.0 installs the components alone by their release assets' URLs | yes: blockExoticSubdeps: false installs it; defaults fails ERR_PNPM_EXOTIC_SUBDEP; each layer its v0.1.0 tree; one foundation |
 | bun 1.4.4 installs the components alone by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its v0.1.0 tree; one foundation |
 
-Two of its findings, measured here and weighed by the `answer` task:
+The `answer` task is planned to weigh two of the table's findings:
 
 - By the release assets' URLs, npm needs `allow-remote=root` beside `allow-git=all`: it refuses
   first with `EALLOWREMOTE`, then with `EALLOWGIT`, since the components' tarball still declares
