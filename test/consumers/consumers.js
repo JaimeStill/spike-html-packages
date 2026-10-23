@@ -14,7 +14,7 @@ import { listFiles, resolveExport, subpathsOf } from "./exports.js";
 const [consumer, ...releases] = process.argv.slice(2);
 
 // package.json, LICENSE, and README.md ship beside the exports, not through them; bun's .bun-tag
-// is the manager's, not the release's, and consumers.sh holds it to the tag.
+// is the manager's, not the release's, and scripts/installed.sh holds it to the tag.
 const unexported = new Set(["package.json", "LICENSE", "README.md", ".bun-tag"]);
 
 const manifest = (dir) => JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));

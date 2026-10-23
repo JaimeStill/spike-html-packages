@@ -3,8 +3,8 @@
 # consumer fixture's github: layer tag behind its latest, and exits 1 if any; prints nothing when
 # all are current. Reads the network.
 # Adapted from spike-html-conventions (a88828a): scripts/currency.sh.
-# Adapted from spike-html-packages-components 8cb64a8: scripts/currency.sh, its github: tag against
-# the layer repository's latest release, for each fixture's tags.
+# Adapted from spike-html-packages-components (8cb64a8): scripts/currency.sh, its github: tag
+# against the layer repository's latest release, for each fixture's tags.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

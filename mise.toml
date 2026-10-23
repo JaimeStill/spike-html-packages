@@ -23,7 +23,8 @@ version_json_path = ".channels.Stable.version"
 [tools."http:chrome-headless-shell".platforms]
 linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{ version }}/linux64/chrome-headless-shell-linux64.zip", checksum = "sha256:0d5acc62c3e213f8c87d3c298d66ffcf9a236d12ea4b9f85318bf85dbc279daa", size = "125799226" }
 
-# From spike-html-packages-components (8cb64a8): mise.toml's preflight.
+# Adapted from spike-html-packages-components (8cb64a8): mise.toml's preflight, its description
+# naming the caches, the tag fetches, and the live task's browser.
 [tasks.preflight]
 description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the live task's browser"
 hide = true

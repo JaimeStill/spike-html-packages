@@ -1,8 +1,8 @@
 // The live task's static server: the repository root over plain http on the loopback address,
 // every file sent as it is on disk, for the import-map page, which loads everything else from
 // jsDelivr.
-// Adapted from spike-html-packages-components 8cb64a8: test/browser/support/server.js, without its
-// /deps/: the page's import map names no installed package.
+// Adapted from spike-html-packages-components (8cb64a8): test/browser/support/server.js, without
+// its /deps/: the page's import map names no installed package.
 
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";

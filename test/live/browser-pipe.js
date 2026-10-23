@@ -1,7 +1,7 @@
 // The live task's driver: chrome-headless-shell over the DevTools Protocol on a pipe, with no
 // package between, the browser resolving the loopback address and the hosts it is allowed alone.
-// Adapted from spike-html-packages-components 8cb64a8: test/browser/support/browser-pipe.js, with
-// the host allowlist.
+// Adapted from spike-html-packages-components (8cb64a8): test/browser/support/browser-pipe.js,
+// with the host allowlist.
 
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";

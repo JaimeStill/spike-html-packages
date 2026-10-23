@@ -19,6 +19,7 @@ This repository holds the spike's record and docs; the layers live in repositori
 - **Goals:** this spike's tasks live in the coordinator's roadmap,
   `standards-lab/context/roadmap.toml`, under `experiment.html.spike-html-packages`. Its goal
   record is `context/goals/experiment.html.spike-html-packages.md`.
-- **Dependencies:** none at runtime; Prettier in devDependencies; node and pnpm pinned in mise.
+- **Dependencies:** none at runtime; Prettier in devDependencies; node, npm, pnpm, bun,
+  shellcheck, and the live task's chrome-headless-shell pinned in mise.
 - **References:** the repositories this spike reads are keys in the coordinator's
   `references.toml` and `references.local.toml`. The spike reads them and never writes to them.

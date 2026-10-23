@@ -1,8 +1,8 @@
 // The releases' facts on GitHub and jsDelivr, and the managers' installs of them from the network,
 // as one dated markdown table: the networked evidence the check's offline tier can't reach. It
 // fails first, naming each v0.1.0 tag and release asset GitHub doesn't hold, and writes nothing to
-// the repository: every fetch and install is in a scratch directory it removes. Each measure is a row, yes or no with what it observed; it exits 1 if any
-// row is a no.
+// the repository: every fetch and install is in a scratch directory it removes. Each measure is a
+// row, yes or no with what it observed; it exits 1 if any row is a no.
 //
 //   BROWSER_EXECUTABLE=... node scripts/live.js
 
