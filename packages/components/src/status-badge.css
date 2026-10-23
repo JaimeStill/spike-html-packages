@@ -1,9 +1,0 @@
-/* adapted from spike-html-conventions a88828a: layers/components/status-badge.css, adopted after
- * the foundation's reset and elements sheets here */
-
-/* The badge's host, an inline box; Lit adopts this sheet into its shadow root after the
- * foundation's reset and elements sheets, unlayered and so above both. */
-
-:host {
-  display: inline-block;
-}

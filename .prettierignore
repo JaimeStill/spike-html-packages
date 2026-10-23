@@ -8,9 +8,6 @@
 !*.ts
 !*.json
 !*.css
-# spike-html-design v0.7.0's own sheets, copied unchanged below a provenance line as the browser
-# tier's reference: they keep upstream's formatting, which is Biome's, not this repository's.
-test/fixtures/v0.7.0/
 # marathon working files.
 .claude/plans/
 .claude/briefs/
