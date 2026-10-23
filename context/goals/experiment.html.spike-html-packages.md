@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
-- **Task:** none
-- **Branch:** none
+- **State:** building
+- **Task:** by-tag
+- **Branch:** by-tag
 
 ## Tasks
 
@@ -15,156 +15,173 @@
 7. [ ] consumers
 8. [ ] answer
 
-## Task brief · components
+## Task brief · by-tag
 
 ```
-Problem       The foundation and the SDK are released by tag at v0.1.0. The
-              components layer is not: its sources are last held in this
-              repository's history at c2b4a19. Without a components release,
-              it is unproven that a layer builds on the one below it by that
-              layer's tag, as a Go module builds on its pinned require, and a
-              consumer can't install all three layers by tag. This task makes
-              the components a repository of their own, built on the
-              foundation's v0.1.0 tag, and releases them at v0.1.0, so the
-              by-tag task installs and loads all three by tag.
-Repositories  changes: spike-html-packages-components (all of the layer) and
-              spike-html-packages (docs). Read-only: spike-html-packages-
-              foundation and spike-html-packages-sdk (nothing owed).
-Behaviors     1. JaimeStill/spike-html-packages-components, which the plan
-                 session created with init's commit, holds the only copy of
-                 the components layer's sources: the status badge, the entry,
-                 and the pagination, Lit with shadow roots, and their sheets.
-                 They are copied from spike-html-packages c2b4a19, with
-                 provenance lines naming that commit and the spike-html-
-                 conventions lines kept. The package is
-                 @jaimestill/spike-html-packages-components at 0.1.0, with
-                 "license": "Apache-2.0", the exports ./*.js (types and
-                 default) and ./*.css, and files ["dist"]. Its dependencies
-                 are exactly lit 3.3.3 and the foundation as
-                 github:JaimeStill/spike-html-packages-foundation#v0.1.0, and
-                 nothing else. Main holds sources only, never dist/.
-              2. The repository reaches the foundation only through that
-                 dependency, as a consumer does. `mise run install` fetches
-                 the foundation's v0.1.0 tag, and the lockfile records the
-                 tag's commit. The build and the type check read the
-                 foundation's shipped .d.ts and its ./css types subpath.
-                 There is no local link, path alias, source condition, or
-                 project reference.
-              3. It is a complete marathon project in the foundation's form:
-                 a CLAUDE.md of navigation pointers; a working-context
-                 README; a STANDARDS.md; a marathon config of kind code, with
-                 check `mise run check`, currency `mise run currency`, and
-                 the Go repositories' [remote] settings; a Keep a Changelog
-                 CHANGELOG.md with a dated v0.1.0 section; the workspace's
-                 Apache 2.0 LICENSE, byte for byte; a README; and a
-                 mise.toml. The README installs the components by tag under
-                 each manager with the guard each one needs for the nested
-                 git foundation: npm --allow-git=all, pnpm
-                 blockExoticSubdeps false, and none for bun.
+Problem       The three layers are released by tag at v0.1.0, but no consumer
+              installs them by tag yet. The guards each manager needs were
+              measured on the foundation tag and the monorepo's releases, not
+              on all three tags, and jsDelivr /gh/ and the import-map page
+              haven't been proven against the layer repositories. Until they
+              are, evidence 1 (hosting) and 3 (tag naming) rest on retired
+              fixtures. This task adds this repository's consumer check by
+              tag, offline in its check, and a networked task that prints the
+              live facts as a dated table.
+Repositories  changes: spike-html-packages (its check, its tasks, and its
+              docs). Read-only: spike-html-packages-foundation, -sdk, and
+              -components at their v0.1.0 tags and main (nothing owed).
+Behaviors     1. Six consumer fixtures, one per manager (npm, pnpm, bun) for
+                 each consumer: the three together, and the components alone.
+                 Each manifest is private and names each layer by its exact
+                 tag, github:JaimeStill/spike-html-packages-<layer>#v0.1.0.
+                 The three-together fixture names all three layers; the
+                 components-alone fixture names only the components. Each
+                 fixture holds its manager's committed lockfile and its guard
+                 in the manager's own config: npm allow-git=root for the
+                 three together and allow-git=all for the components alone,
+                 pnpm blockExoticSubdeps false for both, and nothing for bun.
+              2. `mise run install` is still the one task that reads the
+                 network. It installs the mise pins and the root's
+                 node_modules from the lockfile. It runs each fixture's
+                 install frozen from its lockfile, which fills one cache per
+                 manager in the repository's gitignored cache directory. It
+                 also keeps a depth-1 fetch of each layer's v0.1.0 tag there.
+                 It changes no fixture or lockfile.
+              3. `mise run lock` is a networked task, and the only one that
+                 writes the fixtures' lockfiles. It resolves each fixture
+                 anew under its manager and guard. Run while the tags are
+                 unchanged, it leaves every lockfile as it is.
               4. `mise run check` reads no network once `mise run install`
-                 has run. It runs ESLint, Prettier, shellcheck, actionlint,
-                 typescript-go (the sources, and the browser cases' in-page
-                 modules against dist/), the build into dist/, the unit tier,
-                 and the browser tier. It fails on any failing tier.
-              5. The lint covers one layer. Its table lets the components
-                 import themselves, lit, and the foundation by package name.
-                 It carries the .d.ts rule, the CSS module script rule, and
-                 import-x's no-unresolved, no-extraneous-dependencies, and
-                 no-relative-packages. Its test runs the lint over a
-                 violation tree cut to the layer. It passes only when ESLint
-                 flags exactly these: an import of any undeclared package
-                 (the SDK and lit-html included); a relative import that
-                 reaches the installed foundation's files; a value import of
-                 a .d.ts; and a .css import without { type: 'css' }.
-              6. The unit tier runs the release integrity test: a pack
-                 checked against its exports, files, and license, plus a
-                 manifest whose dependencies are exactly lit 3.3.3 and an
-                 exact github: tag of the foundation, never a range (bun
-                 fails every #semver: spec). The browser tier runs c2b4a19's
-                 components cases on its own dist/, in the pinned
-                 chrome-headless-shell, with the pipe driver and the static
-                 server: conventions' 27 probe cases, the restyle case, and
-                 each shadow root adopting the installed foundation's reset
-                 and elements sheets, then its own. `mise run demo` serves
-                 the components page.
+                 has run, and writes nothing in the repository outside its
+                 cache directory. It runs Prettier, shellcheck 0.11.0 over
+                 the scripts, and the consumer tier, and fails on any failing
+                 tier. When a cache or a tag fetch is missing, it fails and
+                 names `mise run install`. It passes in a network namespace
+                 that has only the loopback up.
+              5. The consumer tier installs each fixture offline, from its
+                 lockfile and its manager's cache, in a scratch copy outside
+                 the repository, and fails unless all of these hold:
+                 - The lockfile is unchanged after the install.
+                 - Each installed layer package equals its tag's tree, file
+                   for file, compared against the kept fetch of the tag.
+                   bun's .bun-tag is left out of the comparison, and it must
+                   name that tag.
+                 - In the three together, exactly one foundation is
+                   installed, and the components resolve to it. In the
+                   components alone, the components' foundation is the
+                   foundation tag's tree.
+                 - No layer's devDependency is installed.
+                 - The runtime resolves every export subpath of each
+                   installed layer to the file its exports name: node for the
+                   npm and pnpm installs, bun for the bun installs. A
+                   types-only subpath resolves to nothing. The foundation's
+                   keys grammar runs, imported by package name.
+              6. The consumer tier proves npm's guards offline. With its
+                 config at allow-git=none, the three-together install fails
+                 with EALLOWGIT. With allow-git=root, the components-alone
+                 install fails with EALLOWGIT. With its committed config,
+                 each install passes.
               7. `mise run currency` reports, and exits nonzero on, each of
-                 these behind its latest: mise tools, package.json pins (lit
-                 included), the GitHub Actions pins, and the foundation's
-                 github: tag against the foundation's latest GitHub release.
-                 typescript is held to typescript-eslint's peer range.
-              8. CI: the foundation's workflow. It runs `mise run install`
-                 and `mise run check` on every pull request into main and
-                 every push to main.
-              9. Release: the foundation's workflow, named for this
-                 repository. On a push to main whose version has no tag, it
-                 runs the check, runs pnpm pack, and commits the pack's tree
-                 (package.json, README.md, LICENSE, and dist/) parented on
-                 the pushed commit, on no branch. It tags that commit with an
-                 annotated tag "spike-html-packages-components v<version>",
-                 pushes that tag alone, creates the GitHub release from
-                 CHANGELOG.md's section, and attaches the tarball. The tag's
-                 tree equals the tarball's package/, file for file, and the
-                 packed manifest keeps both dependencies and carries no
-                 scripts. A version that is already tagged ends green and
-                 changes nothing.
-              10. Main has the Go ruleset: a pull request is required,
-                 deletion and force-push are refused, and the repository
-                 admin role bypasses it. The release workflow's tag push is
-                 unaffected.
-              11. This repository names the components repository wherever
-                 it names the layers: CLAUDE.md's layers line, the README's
-                 Layout, its Tags table (a v0.1.0 row), and What it
-                 packages. The README's Path item 4 and the context README
-                 state this task's scope and by-tag's. STANDARDS.md's
-                 Packages states that a layer names the one below it in
-                 dependencies by its exact tag. The check stays Prettier
-                 alone. The goal record logs the decisions.
-Test seams    The components repository's `mise run check`; and the release
-              as a consumer reaches it: the v0.1.0 tag's tree and the GitHub
-              release's tarball.
-Slices        1. Components repository: the layer and its check. Sources
-                 from c2b4a19 with provenance, the manifest, the install by
-                 the foundation's tag, the build, the types, ESLint,
-                 Prettier, shellcheck, the layer table and its violation-tree
-                 test, the release integrity test, preflight, and currency
-                 (no browser tier yet). Demo: `mise run check` passes,
-                 `pnpm pack` lists exactly the four entries, and the lockfile
-                 names the foundation v0.1.0 tag's commit.
-              2. Components repository: the browser tier and the demo.
-                 c2b4a19's cases, the pipe driver, the static server serving
-                 lit's dependencies, and the components page. Demo:
-                 `mise run check` passes with the browser tier, and
-                 `mise run demo` renders the three components.
-              3. Components repository: CI, release, and docs. ci.yml and
-                 release.yml, actionlint in the check, the ruleset,
-                 CHANGELOG, README, STANDARDS, the context README, and
-                 CLAUDE.md. Demo: `mise run check` passes, and CI is green
-                 on its pull request.
-              4. spike-html-packages: docs, as behavior 11 lists. Demo:
-                 `mise run check` passes, and the README reads true against
-                 the three layer repositories.
-Out of scope  This repository's consumer check by tag under npm, pnpm, and
-              bun, and its lockfiles and guard table; jsDelivr /gh/ and the
-              import-map page with its dated table (all of them by-tag's);
-              CI for this repository; GitHub Packages and JSR; the Vite app
-              and the release flow; changes to the foundation or the SDK; a
-              second version; browsers other than chrome-headless-shell.
-Door          one-way: the components v0.1.0 tag and GitHub release, once
-              the release workflow pushes them. They are never re-cut,
-              since jsDelivr caches an exact tag for good. The repository's
-              creation belongs to the plan session. two-way: everything on
-              the components branches until SHIP, the ruleset, and this
-              repository's docs.
-Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
-              own release workflow on its merge to main. SHIP pushes no tag.
-              SHIP merges the components and runs ci, which waits on the
-              check and release runs of the merge commit and confirms the
-              tag and its release with the tarball. Then it merges this
-              repository, which releases nothing. A failed release is fixed
-              forward on components-fix: delete the tag on the remote and
-              any partial release, then merge the fix, and the run on that
-              merge cuts v0.1.0 again.
+                 these behind its latest: every mise tool (bun, npm,
+                 shellcheck, and chrome-headless-shell among them), every
+                 package.json pin, and each fixture's github: tag against
+                 its layer repository's latest GitHub release.
+              8. A networked mise task, outside the check, runs in the pinned
+                 chrome-headless-shell 156.0.8078.47. Before it measures
+                 anything, it checks that the three v0.1.0 tags and their
+                 three release assets are published, and fails naming any
+                 that is missing. It writes nothing to the repository: every
+                 install, cache, and fetch it makes is in a scratch directory
+                 it removes. It prints one markdown table, headed with its
+                 run date, with these rows:
+                 a. jsDelivr /gh/ at @v0.1.0, one row per repository: each
+                    file in the tag's tree is fetched and compared byte for
+                    byte, with the .js and .css content types, cache-control,
+                    x-jsd-version, and x-jsd-version-type.
+                 b. The import-map page, loaded from jsDelivr. Its
+                    hand-written map has three entries: lit to
+                    /npm/lit@3.3.3/+esm, and the foundation's and the
+                    components' package prefixes to each tag's dist/ on
+                    /gh/. There is no SDK entry. The page renders the three
+                    components, each shadow root adopting three sheets, with
+                    the foundation's reset and elements sheets the same
+                    objects in every root. The row names the origins the page
+                    loaded from.
+                 c. Installs with no lockfile: each consumer under each
+                    manager, trying each guard setting least first (npm none,
+                    root, all; pnpm its defaults, then blockExoticSubdeps
+                    false; bun its defaults). Each row names the least
+                    setting that passes and the error each lesser setting
+                    failed with, and checks the installed trees against the
+                    tags.
+                 d. Installs by release-asset tarball URL: the three assets
+                    together, and the components' asset alone, under each
+                    manager, with the guard settings tried least first. Each
+                    install equals its tag's tree.
+                 The browser resolves only the loopback address and
+                 cdn.jsdelivr.net.
+              9. The browser driver (DevTools Protocol over a pipe, with no
+                 package) and the static server are copied from
+                 spike-html-packages-components 8cb64a8, each with a
+                 provenance line. The driver gains a host allowlist, empty by
+                 default. The import-map page and the networked script are
+                 new. No provenance line names the deleted hosting-built
+                 branch.
+              10. Docs. The context README records the networked task's table
+                 in a new section headed with its date. The Hosting section
+                 is corrected: pnpm 12.15.0 refuses the three together by
+                 default too (ERR_PNPM_EXOTIC_SUBDEP), not only the
+                 components alone. A frozen install skips that check, and
+                 npm's allow-git applies even to npm ci --offline. The README
+                 gains each consumer's guard table and each lockfile's record
+                 of the tags: npm a git+ssh commit, pnpm a codeload tarball
+                 at the commit, bun the annotated tag object's hash. The
+                 Tasks, Layout, and Path item 5 sections, the CLAUDE.md check
+                 line, and the marathon config's comment name the new check
+                 and tasks. The goal record logs the decisions, and its
+                 pending edits restate by-tag's roadmap entry with the
+                 tarball-URL installs. The code meets STANDARDS.md's Code.
+Test seams    This repository's `mise run check` (its consumer tier); and
+              the networked task's dated table.
+Slices        1. The three together, offline. The three fixtures with their
+                 lockfiles and guards, `mise run install` filling the caches
+                 and the tag fetches, the consumer tier's tree, foundation,
+                 devDependency, and resolution checks, shellcheck, and the
+                 preflight. Demo: `mise run check` passes in a network
+                 namespace, and a lockfile edited by hand fails it.
+              2. The components alone, and npm's guards. The three
+                 components-alone fixtures and the EALLOWGIT proofs. Demo:
+                 `mise run check` passes offline, and lowering either npm
+                 guard fails it with EALLOWGIT.
+              3. Re-lock and currency. `mise run lock`, and the tags in
+                 `mise run currency`. Demo: `mise run lock` leaves every
+                 lockfile unchanged, and `mise run currency` exits 0.
+              4. The networked task, from jsDelivr: the driver and the
+                 server copied with provenance and the host allowlist, the
+                 publish check, the /gh/ rows, and the import-map page. Demo:
+                 the task prints a dated table with the jsDelivr and page
+                 rows.
+              5. The networked task's installs: the no-lockfile installs
+                 with the guard settings tried least first, and the
+                 tarball-URL installs. Demo: the full dated table prints.
+              6. Docs, as behavior 10 lists. Demo: `mise run check` passes,
+                 and the README reads true against the table and the three
+                 layer repositories.
+Out of scope  Any change to a layer repository (eslint-plugin-boundaries
+              7.3.0 is theirs); a new version of any layer; #semver: ranges;
+              type-checking the installs; ESLint at the root; CI for this
+              repository; GitHub Packages and JSR; the page and Vite
+              consumers and the release flow; npm linked and bun isolated
+              layouts; browsers other than chrome-headless-shell.
+Door          two-way: everything. No tag is pushed and nothing is
+              published. The networked task only reads GitHub and jsDelivr.
+              The coordinator's restated by-tag entry lands as a pending
+              edit, applied by the session.
 ```
+
+## Progress
+
+slices 0/6 committed · standards — · spec — · editor —
 
 ## Decisions
 
@@ -487,6 +504,16 @@ Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
 - components: the guards each manager needs for the components' nested github: foundation (npm
   allow-git=all, pnpm block-exotic-subdeps=false, bun none) were measured on the real foundation
   tag at the plan's round 1, 2026-10-23, in scratch; by-tag measures them again on all three tags.
+- by-tag: the consumers' lockfiles are committed per fixture; `mise run install` installs frozen from them, and a separate networked `mise run lock` re-locks (round 1, 1).
+- by-tag: npm's guard is allow-git=root for the three together and allow-git=all for the components alone, both proven offline (round 1, 2).
+- by-tag: pnpm's blockExoticSubdeps, which a frozen offline install skips, is proven at resolution in the networked task, guards tried least first (round 1, 3).
+- by-tag: the offline check compares each install against its tag's tree, from a depth-1 fetch kept in the cache directory (round 1, 4).
+- by-tag: no type-check of the installs; file and resolution checks only (round 1, 5).
+- by-tag: shellcheck 0.11.0 joins the root's check as lint:shell; no ESLint (round 1, 6).
+- by-tag: `mise run currency` also reports each fixture's github: tag behind its layer's latest GitHub release (round 1, 7).
+- by-tag: the networked task's dated table is recorded in a dated section of context/README.md (round 1, 8).
+- by-tag: the browser driver and static server are copied from spike-html-packages-components 8cb64a8 with provenance; the import-map page and networked script are written new, and no provenance names the reflog-only 1605161, which gets no ref (round 1, 9).
+- by-tag: the networked task adds release-asset tarball-URL installs; by-tag's roadmap entry is restated as a pending edit (round 1, 10).
 
 ## Pending edits
 
