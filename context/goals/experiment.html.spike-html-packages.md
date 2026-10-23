@@ -166,6 +166,10 @@ Release       JaimeStill/spike-html-packages-components: v0.1.0, cut by its
               merge cuts v0.1.0 again.
 ```
 
+## Progress
+
+slices 1/4 committed (components 4789def) · standards — · spec — · editor —
+
 ## Decisions
 
 - setup: the evidence is the eight items in `context/README.md`, "The evidence".
