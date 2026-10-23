@@ -215,8 +215,10 @@ const consumers = ["three", "components"];
 const managers = ["npm", "pnpm", "bun"];
 
 /** Each manager's install with no lockfile, into a cache of its own, run from the project so the
- * manager reads the guard in the project's own config file. pnpm's metadata cache (cacheDir)
- * defaults to the home directory: it goes beside the store. */
+ * manager reads the guard in the project's own config file, and through scripts/unconfigured.sh so
+ * it reads none of the user's own: a row's "defaults" are the manager's. pnpm's metadata cache
+ * (cacheDir) defaults to the home directory: it goes beside the store. */
+const unconfigured = join(root, "scripts/unconfigured.sh");
 const installs = {
   npm: (cache) => ["install", "--cache", cache, "--no-audit", "--no-fund"],
   pnpm: (cache) => ["install", "--store-dir", cache, `--config.cache-dir=${cache}`],
@@ -303,9 +305,8 @@ function installRow(consumer, manager, by, version) {
       mkdirSync(project, { recursive: true });
       writeFileSync(join(project, "package.json"), manifest(consumer, manager, by));
       guard.write(project, setting);
-      const install = await started(manager, installs[manager](`${project}.cache`), {
-        cwd: project,
-      });
+      const args = [manager, ...installs[manager](`${project}.cache`)];
+      const install = await started(unconfigured, args, { cwd: project });
       if (!install.ok) {
         const code = errorCode(install.output);
         refused.push(`${guard.name(setting)} fails ${code}`);

@@ -40,19 +40,21 @@ fail() {
 }
 
 # Installs the project frozen from its lockfile, from the repo-local caches, run from the project
-# so each manager reads the guard in the fixture's own config file. pnpm's metadata cache
+# so each manager reads the guard in the fixture's own config file, and none of the user's own
+# (scripts/unconfigured.sh). pnpm's metadata cache
 # (cacheDir), which --offline resolves from, defaults to the home directory: it goes in
 # .cache/consumers/pnpm/, beside the store.
 install() {
   local manager=$1 project=$2
   shift 2
+  local unconfigured=$root/scripts/unconfigured.sh
   case $manager in
-    npm) (cd "$project" && npm ci --cache "$caches/npm" --no-audit --no-fund "$@") ;;
+    npm) (cd "$project" && "$unconfigured" npm ci --cache "$caches/npm" --no-audit --no-fund "$@") ;;
     pnpm)
-      (cd "$project" && pnpm install --frozen-lockfile --store-dir "$caches/pnpm" \
+      (cd "$project" && "$unconfigured" pnpm install --frozen-lockfile --store-dir "$caches/pnpm" \
         --config.cache-dir="$caches/pnpm" "$@")
       ;;
-    bun) (cd "$project" && bun install --frozen-lockfile --cache-dir "$caches/bun" "$@") ;;
+    bun) (cd "$project" && "$unconfigured" bun install --frozen-lockfile --cache-dir "$caches/bun" "$@") ;;
   esac
 }
 
