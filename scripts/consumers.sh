@@ -2,7 +2,8 @@
 # Installs each consumer fixture in test/consumers/<consumer>/<manager>/ under its manager, offline
 # and frozen from its committed lockfile and the manager's cache in .cache/consumers/, in a scratch
 # copy outside the repository, and checks the install against the layers' tags, fetched into
-# .cache/tags/. `warm` instead fills the caches and fetches the tags from the network.
+# .cache/tags/, then proves npm's guard by each consumer's install failing under it lowered. `warm`
+# instead fills the caches and fetches the tags from the network.
 # Adapted from spike-html-packages (c2b4a19): scripts/consumers.sh, from packed tarballs to tags.
 set -euo pipefail
 
@@ -21,9 +22,15 @@ scope=@jaimestill/$repository
 foundation=${scope}foundation
 layers=(foundation sdk components)
 tag=v0.1.0
-consumers=(three)
+# The three together, and the components alone, which reach the foundation through their own
+# dependency on its tag.
+consumers=(three components)
 managers=(npm pnpm bun)
 declare -A lockfile=([npm]=package-lock.json [pnpm]=pnpm-lock.yaml [bun]=bun.lock)
+# Each consumer's npm guard lowered one step below its committed .npmrc: three's root to none, which
+# refuses even the consumer's own git dependencies, and the components' all to root, which refuses
+# theirs, the foundation's tag.
+declare -A lowered=([three]=none [components]=root)
 
 fail() {
   echo "consumers: $*" >&2
@@ -113,6 +120,8 @@ for consumer in "${consumers[@]}"; do
     cp -r "$fixture" "$project"
     if ! install "$manager" "$project" --offline >"$project.log" 2>&1; then
       cat "$project.log" >&2
+      ! grep -q "^npm error code EALLOWGIT$" "$project.log" ||
+        fail "npm's guard in $consumer's .npmrc refuses a git dependency it installs"
       fail "$manager can't install $consumer offline from ${lockfile[$manager]}; mise run install fills its cache"
     fi
 
@@ -141,6 +150,13 @@ for consumer in "${consumers[@]}"; do
     [[ $(resolve_from "$components" "$foundation") == "$found" ]] ||
       fail "$manager's components resolve to a foundation other than $found"
 
+    # A foundation the consumer doesn't declare, reached through the components, is its tag's tree
+    # too.
+    if ! grep -qx "$foundation" <<<"$names"; then
+      matches_tag "$manager" foundation "$found"
+      releases+=("$found")
+    fi
+
     # No layer's devDependency, wherever a manager might put it.
     devs=$(node -p '
       process.argv
@@ -158,4 +174,23 @@ for consumer in "${consumers[@]}"; do
     echo "consumers: $manager installed $consumer offline from ${lockfile[$manager]}, each layer" \
       "its $tag tree, one foundation, no devDependency; it resolves under $runtime"
   done
+done
+
+# npm's guard, proven both ways: the install that passes under each committed .npmrc fails under
+# the guard lowered, in a scratch copy, refusing a git dependency. npm ci --offline enforces
+# allow-git before it reads the cache, so the refusal is EALLOWGIT, and any other failure, such as
+# ENOTCACHED, proves nothing.
+for consumer in "${consumers[@]}"; do
+  project=$scratch/$consumer-npm-lowered
+  cp -r "$fixtures/$consumer/npm" "$project"
+  echo "allow-git=${lowered[$consumer]}" >"$project/.npmrc"
+  if install npm "$project" --offline >"$project.log" 2>&1; then
+    fail "npm installed $consumer under allow-git=${lowered[$consumer]}"
+  fi
+  if ! grep -q "^npm error code EALLOWGIT$" "$project.log"; then
+    cat "$project.log" >&2
+    fail "npm's install of $consumer under allow-git=${lowered[$consumer]} failed other than EALLOWGIT"
+  fi
+  echo "consumers: npm refused $consumer under allow-git=${lowered[$consumer]} (EALLOWGIT)," \
+    "and installed it under the committed $(grep -v '^#' "$fixtures/$consumer/npm/.npmrc")"
 done
