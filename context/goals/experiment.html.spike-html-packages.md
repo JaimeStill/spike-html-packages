@@ -1,6 +1,6 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** building
+- **State:** brief ready
 - **Task:** components
 - **Branch:** components
 
