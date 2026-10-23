@@ -1,0 +1,10 @@
+{
+  "name": "consumer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A test fixture, never released: scripts/consumers.sh installs it under pnpm, offline from its lockfile, with the components alone at their tag.",
+  "type": "module",
+  "dependencies": {
+    "@jaimestill/spike-html-packages-components": "github:JaimeStill/spike-html-packages-components#v0.1.0"
+  }
+}

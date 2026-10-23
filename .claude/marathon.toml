@@ -1,7 +1,10 @@
-# Project kind: this repository holds the spike's record and docs, checked by `mise run check`
-# (Prettier alone); the layers live in spike-html-packages-foundation and spike-html-packages-sdk.
+# Project kind: this repository holds the spike's record, docs, and consumer check, checked by
+# `mise run check` (Prettier, shellcheck, and the consumer fixtures installed offline by tag); the
+# layers live in spike-html-packages-foundation, spike-html-packages-sdk, and
+# spike-html-packages-components.
 # Its goals live in the coordinator's roadmap (standards-lab/context/roadmap.toml).
-# `mise run currency` reports every mise tool and package.json pin behind its latest. No gate.
+# `mise run currency` reports every mise tool, package.json pin, and fixture tag behind its latest.
+# No gate.
 [project]
 kind = "code"
 check = "mise run check"

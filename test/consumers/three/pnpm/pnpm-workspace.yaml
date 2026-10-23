@@ -1,0 +1,2 @@
+# pnpm 12 blocks a dependency's git dependency, the components' foundation tag, unless unblocked.
+blockExoticSubdeps: false

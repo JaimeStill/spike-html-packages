@@ -1,0 +1,86 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@jaimestill/spike-html-packages-components':
+        specifier: github:JaimeStill/spike-html-packages-components#v0.1.0
+        version: https://codeload.github.com/JaimeStill/spike-html-packages-components/tar.gz/ecf02ead4575a9244ca21eeae33c802804ccd848
+      '@jaimestill/spike-html-packages-foundation':
+        specifier: github:JaimeStill/spike-html-packages-foundation#v0.1.0
+        version: https://codeload.github.com/JaimeStill/spike-html-packages-foundation/tar.gz/29d16c03e752d11fe683e01a85d4470bb336e970
+      '@jaimestill/spike-html-packages-sdk':
+        specifier: github:JaimeStill/spike-html-packages-sdk#v0.1.0
+        version: https://codeload.github.com/JaimeStill/spike-html-packages-sdk/tar.gz/10b2783a2e7f98ba5b4f9a21f55398ecdb869735
+
+packages:
+
+  '@jaimestill/spike-html-packages-components@https://codeload.github.com/JaimeStill/spike-html-packages-components/tar.gz/ecf02ead4575a9244ca21eeae33c802804ccd848':
+    resolution: {gitHosted: true, integrity: sha512-UzGAPzeb5ykanJwIb+SNuZsAGg5extKDDwRlOOOv1D3REV/OBdqqfD72NQZT3uwK0npmFdXgCyJQLUVERszc9A==, tarball: https://codeload.github.com/JaimeStill/spike-html-packages-components/tar.gz/ecf02ead4575a9244ca21eeae33c802804ccd848}
+    version: 0.1.0
+
+  '@jaimestill/spike-html-packages-foundation@https://codeload.github.com/JaimeStill/spike-html-packages-foundation/tar.gz/29d16c03e752d11fe683e01a85d4470bb336e970':
+    resolution: {gitHosted: true, integrity: sha512-4086xPET7vi9UEPvI5yJRGQc//+4euoLabmVLsLXpkJ9pTJ1ul1Ht0ouH+eckpS0BzAlMmawBpRA6R/XgrX9Tw==, tarball: https://codeload.github.com/JaimeStill/spike-html-packages-foundation/tar.gz/29d16c03e752d11fe683e01a85d4470bb336e970}
+    version: 0.1.0
+
+  '@jaimestill/spike-html-packages-sdk@https://codeload.github.com/JaimeStill/spike-html-packages-sdk/tar.gz/10b2783a2e7f98ba5b4f9a21f55398ecdb869735':
+    resolution: {gitHosted: true, integrity: sha512-SsLX+KXAzCAb2aTajiFmPesdrgGWhBj/cV6iW1HM4mz7INac/nNvMfiH7cHJQ+2lhaN30Y/HNCjofIiPao38Wg==, tarball: https://codeload.github.com/JaimeStill/spike-html-packages-sdk/tar.gz/10b2783a2e7f98ba5b4f9a21f55398ecdb869735}
+    version: 0.1.0
+
+  '@lit-labs/ssr-dom-shim@1.6.0':
+    resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
+
+  '@lit/reactive-element@2.1.2':
+    resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
+
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  lit-element@4.2.2:
+    resolution: {integrity: sha512-aFKhNToWxoyhkNDmWZwEva2SlQia+jfG0fjIWV//YeTaWrVnOxD89dPKfigCUspXFmjzOEUQpOkejH5Ly6sG0w==}
+
+  lit-html@3.3.3:
+    resolution: {integrity: sha512-el8M6jK2o3RXBnrSHX3ZKrsN8zEV63pSExTO1wYJz7QndGYZ8353e2a5PPX+qHe2aGayfnchQmkAojaWAREOIA==}
+
+  lit@3.3.3:
+    resolution: {integrity: sha512-fycuvZg/hkpozL00lm1pEJH5nN/lr9ZXd6mJI2HSN4+Bzc+LDNdEApJ6HFbPkdFNHLvOplIIuJvxkS4XUxqirw==}
+
+snapshots:
+
+  '@jaimestill/spike-html-packages-components@https://codeload.github.com/JaimeStill/spike-html-packages-components/tar.gz/ecf02ead4575a9244ca21eeae33c802804ccd848':
+    dependencies:
+      '@jaimestill/spike-html-packages-foundation': https://codeload.github.com/JaimeStill/spike-html-packages-foundation/tar.gz/29d16c03e752d11fe683e01a85d4470bb336e970
+      lit: 3.3.3
+
+  '@jaimestill/spike-html-packages-foundation@https://codeload.github.com/JaimeStill/spike-html-packages-foundation/tar.gz/29d16c03e752d11fe683e01a85d4470bb336e970': {}
+
+  '@jaimestill/spike-html-packages-sdk@https://codeload.github.com/JaimeStill/spike-html-packages-sdk/tar.gz/10b2783a2e7f98ba5b4f9a21f55398ecdb869735': {}
+
+  '@lit-labs/ssr-dom-shim@1.6.0': {}
+
+  '@lit/reactive-element@2.1.2':
+    dependencies:
+      '@lit-labs/ssr-dom-shim': 1.6.0
+
+  '@types/trusted-types@2.0.7': {}
+
+  lit-element@4.2.2:
+    dependencies:
+      '@lit-labs/ssr-dom-shim': 1.6.0
+      '@lit/reactive-element': 2.1.2
+      lit-html: 3.3.3
+
+  lit-html@3.3.3:
+    dependencies:
+      '@types/trusted-types': 2.0.7
+
+  lit@3.3.3:
+    dependencies:
+      '@lit/reactive-element': 2.1.2
+      lit-element: 4.2.2
+      lit-html: 3.3.3
