@@ -60,23 +60,13 @@ function must(command, args, options) {
   return result.stdout.trim();
 }
 
-/** A YAML file as JSON: mikefarah's yq or the jq wrapper of the same name, whichever is installed.
- * (After scripts/release-flow.js.) */
-function yaml(file) {
-  for (const args of [
-    ["-o=json", ".", file],
-    [".", file],
-  ]) {
-    const parsed = run("yq", args);
-    if (parsed.status === 0) return JSON.parse(parsed.stdout);
-  }
-  throw new Error(`yq can't read ${file}`);
-}
+/** A YAML file as JSON, read by the pinned yq. */
+const yaml = (file) => JSON.parse(must(yq, ["-o=json", ".", file]));
 
 const lines = (file) => readFileSync(file, "utf8").trimEnd().split("\n").length;
 
 // The pinned tools, by path, set before the layers: the clones' own mise.toml never runs.
-let biome, pnpm;
+let biome, pnpm, yq;
 
 // The plugins, each with the message its diagnostics carry, which tells them apart in Biome's
 // report, where each is category "plugin". Each message is the layer's ESLint message for the case.
@@ -522,6 +512,7 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 try {
   biome = must("mise", ["which", "biome"], { cwd: process.cwd() });
   pnpm = must("mise", ["which", "pnpm"], { cwd: process.cwd() });
+  yq = must("mise", ["which", "yq"], { cwd: process.cwd() });
   const biomeVersion = must(biome, ["--version"]).replace(/^Version:\s*/, "");
   const biomePackages = biomeInstall(biomeVersion);
   for (const repository of repositories) {

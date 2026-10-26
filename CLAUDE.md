@@ -31,6 +31,6 @@ This repository holds the spike's record and docs; the layers live in repositori
   record is `context/goals/experiment.html.spike-html-packages.md`.
 - **Dependencies:** none at runtime; Prettier in devDependencies; Vite in each Vite fixture's
   devDependencies; node, npm, pnpm, bun, shellcheck, chrome-headless-shell (for the check and the
-  live task), the release-flow task's parse-changelog, and the biome task's Biome pinned in mise.
+  live task), the release-flow task's parse-changelog, and the biome task's Biome, and those two tasks' yq pinned in mise.
 - **References:** the repositories this spike reads are keys in the coordinator's
   `references.toml` and `references.local.toml`. The spike reads them and never writes to them.

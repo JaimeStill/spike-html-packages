@@ -15,6 +15,8 @@ shellcheck = "0.11.0"
 # The biome task's second linter and formatter, set beside each layer's ESLint and Prettier; the
 # measure alone runs it.
 biome = "2.6.3"
+# The release-flow and biome tasks' YAML reader, for release.yml and pnpm-lock.yaml.
+yq = "4.54.1"
 # The release-flow task's stand-in for taiki-e/create-gh-release-action v1.11.0, at the
 # parse-changelog that action downloads and runs.
 "github:taiki-e/parse-changelog" = "0.6.16"
