@@ -5,14 +5,14 @@
     "": {
       "name": "consumer",
       "dependencies": {
-        "@jaimestill/spike-html-packages-components": "github:JaimeStill/spike-html-packages-components#v0.1.0",
+        "@jaimestill/spike-html-packages-components": "github:JaimeStill/spike-html-packages-components#v0.2.0",
         "@jaimestill/spike-html-packages-foundation": "github:JaimeStill/spike-html-packages-foundation#v0.1.0",
         "@jaimestill/spike-html-packages-sdk": "github:JaimeStill/spike-html-packages-sdk#v0.1.0",
       },
     },
   },
   "packages": {
-    "@jaimestill/spike-html-packages-components": ["@jaimestill/spike-html-packages-components@github:JaimeStill/spike-html-packages-components#2b81035", { "dependencies": { "@jaimestill/spike-html-packages-foundation": "github:JaimeStill/spike-html-packages-foundation#v0.1.0", "lit": "3.3.3" } }, "JaimeStill-spike-html-packages-components-2b81035", "sha512-uAChCHLhQ+YuCZ/z2ZOfgAtF0oi0kIXYMyPHIw/YpvYPuvF6+nN2/fexed/v/3DMwXN+ESx4W7Z/RdCRS+tP0Q=="],
+    "@jaimestill/spike-html-packages-components": ["@jaimestill/spike-html-packages-components@github:JaimeStill/spike-html-packages-components#d4cf77f", { "dependencies": { "lit": "3.3.3" }, "peerDependencies": { "@jaimestill/spike-html-packages-foundation": "^0.1.0" } }, "JaimeStill-spike-html-packages-components-d4cf77f", "sha512-SAY+Fned6rzNFk2kE3806WxcwEkiV1e/GKPxu5TrUnhUGsIMJ6yVFe3E06lNbTgnZg5IBxtr8CivktbiY9cEwg=="],
 
     "@jaimestill/spike-html-packages-foundation": ["@jaimestill/spike-html-packages-foundation@github:JaimeStill/spike-html-packages-foundation#8d83a25", {}, "JaimeStill-spike-html-packages-foundation-8d83a25", "sha512-dFCiKc6jUa6zWIlMj32xEYtq8sv0NsLZ0mqv+uAWfhDKi/U9HMGtyKQS/Hq3tleNrk2UaIwgE/ZRvw2W7/sVbg=="],
 

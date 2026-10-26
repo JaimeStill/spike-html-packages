@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Prints `<where>: <item> <pin> -> <latest>` for each mise tool, package.json dependency, and
-# consumer fixture's github: layer tag behind its latest, and exits 1 if any; prints nothing when
-# all are current. Reads the network.
+# Prints `<where>: <item> <pin> -> <latest>` for each mise tool, package.json dependency,
+# consumer fixture's github: layer tag, and Vite fixture's devDependency pin, Vite's, behind its
+# latest, and exits 1 if any; prints nothing when all are current. A pin held at what another tool
+# runs prints `<item> <pin> held: <why>` instead, and alone exits 0. Reads the network.
 # Adapted from spike-html-conventions (a88828a): scripts/currency.sh.
 # Adapted from spike-html-packages-components (8cb64a8): scripts/currency.sh, its github: tag
 # against the layer repository's latest release, for each fixture's tags.
@@ -11,11 +12,23 @@ cd "$(dirname "$0")/.."
 # Every tool in mise.toml, an http: tool's version list among them. Errors only: mise warns on
 # every run that a GitHub release has no assets.
 outdated=$(MISE_LOG_LEVEL=error mise outdated --bump --local --json)
-trailing=$(node -p '
+# The mise tools held at a pin, each with why: the release-flow task's parse-changelog is the one
+# release.yml's create-gh-release-action runs.
+held='{"github:taiki-e/parse-changelog": "create-gh-release-action v1.11.0 runs 0.6.16"}'
+node -p '
+  const held = JSON.parse(process.argv[2]);
   Object.entries(JSON.parse(process.argv[1]))
+    .filter(([tool]) => Object.hasOwn(held, tool))
+    .map(([tool, { requested }]) => tool.split("/").pop() + " " + requested + " held: " + held[tool])
+    .join("\n")
+' "$outdated" "$held" | sed '/^$/d'
+trailing=$(node -p '
+  const held = JSON.parse(process.argv[2]);
+  Object.entries(JSON.parse(process.argv[1]))
+    .filter(([tool]) => !Object.hasOwn(held, tool))
     .map(([tool, { requested, bump }]) => "mise.toml: " + [tool, requested, "->", bump].join(" "))
     .join("\n")
-' "$outdated")
+' "$outdated" "$held")
 
 pins=$(node -p '
   const { dependencies, devDependencies } = require("./package.json");
@@ -33,7 +46,7 @@ done <<<"$pins"
 # Each fixture's github: dependencies, each pinned to its layer repository's release tag, which the
 # registry doesn't hold: the tag against that repository's latest release, asked once a repository.
 declare -A latest_release
-for manifest in test/consumers/*/*/package.json; do
+for manifest in test/consumers/*/*/package.json test/consumers/vite/*/*/package.json; do
   specs=$(node -p '
     Object.values(require("./" + process.argv[1]).dependencies)
       .filter((pin) => pin.startsWith("github:"))
@@ -50,6 +63,26 @@ for manifest in test/consumers/*/*/package.json; do
       trailing+=$'\n'"$(dirname "$manifest"): ${repo#*/} $pinned -> ${latest_release[$repo]}"
     fi
   done <<<"$specs"
+done
+
+# Each fixture's devDependencies, Vite in each Vite fixture's, each an exact pin: against the
+# registry's latest, asked once a package.
+declare -A latest_version
+for manifest in test/consumers/vite/*/*/package.json; do
+  pins=$(node -p '
+    Object.entries(require("./" + process.argv[1]).devDependencies ?? {})
+      .map(([name, pin]) => name + " " + pin)
+      .join("\n")
+  ' "$manifest")
+  while read -r package pin; do
+    [[ -n $package ]] || continue
+    if [[ -z ${latest_version[$package]:-} ]]; then
+      latest_version[$package]=$(pnpm view "$package" version)
+    fi
+    if [[ $pin != "${latest_version[$package]}" ]]; then
+      trailing+=$'\n'"$(dirname "$manifest"): $package $pin -> ${latest_version[$package]}"
+    fi
+  done <<<"$pins"
 done
 
 if [[ -n ${trailing//$'\n'/} ]]; then

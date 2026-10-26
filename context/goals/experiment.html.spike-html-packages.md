@@ -12,139 +12,197 @@
 4. [x] components
 5. [x] by-tag
 6. [x] registries
-7. [ ] consumers
+7. [x] consumers
 8. [ ] answer
 
-## Task brief · registries
+## Task brief · consumers
 
 ```
-Problem       Evidence 1 has no registry yet. The three layers are released
-              by tag at v0.1.0, but no consumer has installed them from a
-              registry, so the spike can't yet say what a registry carries of
-              the .css or what a consumer pays to install. GitHub Packages is
-              the registry left: JSR's publishers all run Deno, whose runtime
-              development ends (deno.com/blog/cloudflare, 2026-10-09). This
-              task publishes the three layers to GitHub Packages for real at
-              0.0.1 and measures the installs in the networked task's dated
-              table. It records JSR from the dated dry runs of PLAN round 1.
-Repositories  changes: spike-html-packages (its tasks, its live table, and its
-              docs). Read-only: spike-html-packages-foundation, -sdk, and
-              -components at their v0.1.0 tags (eslint-plugin-boundaries
-              7.3.0 is theirs).
-Behaviors     1. `mise run publish` is a networked task, run by hand and
-                 outside the check. It publishes each layer to GitHub
-                 Packages as @jaimestill/spike-html-packages-<layer> at
-                 0.0.1, in the order foundation, sdk, components. Each publish
-                 is a scratch copy of the layer's v0.1.0 tree. The copy's
-                 manifest differs from the tag's only in its version, 0.0.1,
-                 and, in the components, in the foundation dependency, which
-                 names the registry foundation at exactly 0.0.1. The task
-                 writes nothing to the repository and removes its scratch
-                 directory.
-              2. The task reads gh's token from an environment variable and
-                 never writes it to a file, in the repository or in scratch.
-                 Before it publishes anything, it fails naming what is
-                 missing: the variable, the token's write:packages scope, or
-                 a layer's v0.1.0 tag.
-              3. A version GitHub Packages already holds is never published
-                 again. The task publishes only the layers not yet at 0.0.1
-                 and names each one it skips, so once all three are held, a
-                 rerun publishes nothing.
-              4. Each published package is linked to its layer's repository,
-                 and is public once the architect has changed its visibility.
-              5. The wrapper that runs every install with none of the user's
-                 config still unsets every npm_config_*, pnpm_config_*, and
-                 BUN_CONFIG_* variable, except the one pnpm reads for GitHub
-                 Packages' token. It lets that one through only when the
-                 networked task sets it. `mise run check`, `mise run
-                 install`, and `mise run lock` need no token and read no
+Problem       Evidence 6 and 7 are open. The import-map page renders the
+              components from jsDelivr, but no page or Vite app renders them
+              from an install. Trying that exposed a defect in the
+              components' v0.1.0. Its manifest names the foundation as a
+              plain dependency, so a consumer whose foundation comes from
+              another source (a release-asset URL, GitHub Packages) installs
+              a second copy. The sheets are per-module objects, so a
+              consumer's restyle by package name misses the components'
+              shadow roots. This task releases the corrected components at
+              v0.2.0 with the foundation as a peer. It then measures a page
+              loading the install unbundled and a Vite app with the local
+              CSS module script plugin, on every hosting, offline and from
+              the network. It republishes GitHub Packages at the tags'
+              versions. It also compares pnpm's change-intent versioning
+              against the hand flow the layers release by, in scratch.
+Repositories  changes: spike-html-packages-components (its upgrade, its
+              manifest, its release test, currency, README, and changelog,
+              released at v0.2.0), and spike-html-packages (its fixtures,
+              check, networked tasks, publish task, and docs). Read-only:
+              spike-html-packages-foundation and -sdk at their v0.1.0 tags,
+              and the foundation's main, which the release-flow trial
+              clones.
+Behaviors     1. The components' manifest is at 0.2.0. lit 3.3.3 is its one
+                 dependency. The foundation is a peer at ^0.1.0 and a
+                 devDependency at its exact release tag. The pack carries
+                 the manifest as written, with no scripts.
+              2. The components' release test requires that form. It
+                 rejects the foundation in dependencies, a peer that is a
+                 git spec or not a caret range, a devDependency that is not
+                 an exact github: tag, and a devDependency tag the peer
+                 range doesn't admit. The lint, types, and browser tier
+                 pass as before, the tier serving the foundation from its
+                 devDependency install.
+              3. The components' currency reports the foundation's
+                 devDependency tag behind its latest release, and the peer
+                 range when it doesn't admit that release.
+              4. The components' README installs them with the foundation
+                 declared beside them, naming the guards measured for
+                 each hosting. CHANGELOG.md gains a dated v0.2.0 section
+                 saying a consumer now declares the foundation. On the
+                 merge, release.yml cuts v0.2.0 with its release asset,
+                 the tag's tree equal to the pack.
+              5. The six consumer fixtures install the v0.2.0 components:
+                 the three together, and the components with the
+                 foundation. Each holds the least guard measured for it.
+                 `mise run check` proves npm's guard by an install that
+                 fails with it lowered. Each install is its tags' trees,
+                 with one foundation, the one the components resolve to.
+              6. For each of the six installs, `mise run check` serves the
+                 installed tree on the loopback address. In
+                 chrome-headless-shell it loads a page whose hand-written
+                 import map follows that manager's layout, with scopes
+                 where the install nests a package. The page loads lit and
+                 the layers unbundled from the install. It renders the
+                 three components. Each shadow root adopts the same reset
+                 and elements sheet objects the page imports by package
+                 name. A page that finds two foundations fails. Each page
+                 also links the foundation's page.css from the install, and
+                 the check requires the design it gives: the document's
+                 background and font from the tokens, a token custom
+                 property resolving inside each shadow root, and the
+                 foundation's @layer order. Its pagination sets a page size
+                 the size select offers.
+              7. Six Vite fixtures of their own (the two shapes under npm,
+                 pnpm, and bun) each pin Vite and commit a lockfile. They
+                 build with the local CSS module script plugin, copied
+                 from this repository's history with provenance. In
+                 `mise run check`, each one's `vite build`, served
+                 statically, and its dev server each render the three
+                 components and pass behavior 6's sheet and design checks,
+                 the app importing page.css by package name through Vite's
+                 own CSS pipeline. Two foundations fail.
+              8. The check also requires the jsDelivr import-map page's lit
+                 to equal the lit pinned by the components' v0.2.0
+                 manifest; the page names the components at v0.2.0. The
+                 check still reads no network and no token, and writes
+                 nothing in the repository outside its cache.
+              9. `mise run install` fills the new fixtures' caches and the
+                 check's browser; `mise run lock` re-locks every fixture.
+                 `mise run currency` also reads each fixture's Vite pin,
+                 and lists parse-changelog as held.
+              10. `mise run publish` publishes each layer's latest tag to
+                 GitHub Packages at the tag's version: the foundation and
+                 the SDK at 0.1.0, the components at 0.2.0. Each package
+                 is the tag's pack, unchanged. It still skips and names a
+                 version already held, takes the token only from the
+                 environment, and fails before publishing on what is
+                 missing. After the publish, the architect deletes the
+                 three 0.0.1 versions by hand.
+              11. `mise run live`'s table covers v0.2.0. Its preflight
+                 requires each package at its tag's version and public,
+                 and 0.0.1 absent. Its rows:
+                 a. The existing rows for the tags, the release assets,
+                    jsDelivr, and GitHub Packages, each install compared
+                    with the tag's tree file for file, the manifest
+                    included.
+                 b. The installed page and the Vite build for the
+                    release-asset and GitHub Packages installs, the two
+                    shapes under each manager, with behavior 6's sheet
+                    check. Two foundations make the row a no.
+                 c. The components alone with no foundation declared,
+                    under each manager. The row reads yes when the
+                    install fails, or installs no foundation, as
+                    measured, and names the error.
+              12. `mise run release-flow` is a networked task outside the
+                 check. It prints a dated table comparing two flows on
+                 scratch clones of the foundation's main, each pushed to a
+                 local bare remote that holds its tags:
+                 - the hand flow: a bump of the version and a Keep a
+                   Changelog section written by hand;
+                 - pnpm's flow: `pnpm change` and `pnpm version -r`, on a
+                   manifest marked private.
+                 Each flow then runs release.yml's own run steps, read
+                 from the workflow on the foundation's main. Its uses
+                 steps are stood in for: the pinned tools for
+                 mise-action, and parse-changelog 0.6.16 for the release
+                 notes. The upload is skipped. Each row names:
+                 - what the flow wrote, and what a person wrote;
+                 - the version and the changelog section's form, and
+                   whether parse-changelog extracts it;
+                 - whether pnpm's step read the network;
+                 - whether the check is green;
+                 - whether an annotated v0.1.1 lands on a pack commit
+                   equal to the tarball;
+                 - whether the tree can still be published;
+                 - that a dependent repository's bump stays a hand edit.
+                 It writes nothing in the repository, pushes nothing to
+                 GitHub, and removes its scratch.
+              13. Docs. The README records the live and release-flow
+                 tables in sections headed with their dates. Hosting and
+                 Consumer installs gain the peer fix, the guards it leaves,
+                 and the page and Vite consumers. Releases and Tags list
+                 v0.2.0, the tag-version publishes, and the 0.0.1
+                 deletions. The Tasks, Layout, and Path sections, the
+                 CLAUDE.md lines, and the marathon config's comment name
+                 the release-flow task. The goal record logs the decisions
+                 and the pending edits. The code meets STANDARDS.md's
+                 Code.
+Test seams    Each repository's `mise run check`; `mise run live`'s and
+              `mise run release-flow`'s dated tables; `mise run publish`,
+              with the packages it reports.
+Slices        1. The components' upgrade: eslint-plugin-boundaries 7.3.0
+                 and mise-action v5.2.3. Demo: the components' currency
+                 exits 0, and their check passes.
+              2. The components' peer, behaviors 1-4. Demo: the check
+                 passes, and the pack's manifest shows the peer. BUILD
+                 stops for the architect to review and merge the
+                 components' pull request. It resumes once release.yml
+                 has cut v0.2.0 with its asset.
+              3. The fixtures on v0.2.0, behavior 5 and behavior 9's
+                 re-lock. Demo: `mise run check` passes in a network
+                 namespace.
+              4. The installed page, behaviors 6 and 8. Demo: the check
+                 renders the six pages offline.
+              5. The Vite app, behavior 7 and the rest of behavior 9.
+                 Demo: the check builds, serves, and runs the dev server
+                 for all six offline; currency reads the Vite pins.
+              6. Publish at the tags' versions, behavior 10. BUILD stops
+                 before the first publish, so the architect can confirm the
+                 token. It stops again after the publish, so the architect
+                 can run `gh auth refresh -s delete:packages` and delete
+                 the three 0.0.1 versions. Demo: the three packages at
+                 their tags' versions, public; a rerun publishes nothing.
+              7. Live, behavior 11. Demo: the full dated table prints and
+                 exits 0.
+              8. The release flow, behavior 12. Demo: its dated table
+                 prints, and the repository is unchanged after it.
+              9. Docs, behavior 13. Demo: `mise run check` passes, and the
+                 README reads true against the tables, the tags, and
                  GitHub Packages.
-              6. The networked task reads the same token variable, and fails
-                 naming it when it is unset. Before it measures anything, it
-                 also checks that each of the three packages is on GitHub
-                 Packages at 0.0.1 and public, and fails naming any that
-                 isn't.
-              7. The networked task's table gains these rows:
-                 e. Installs from GitHub Packages: the three together and the
-                    components alone, under each manager (npm, pnpm, bun), in
-                    a scratch project with no lockfile and a fresh cache,
-                    each layer named at exactly 0.0.1. The settings are tried
-                    least first: none, then the @jaimestill registry alone,
-                    then the registry and the token. Each row names the least
-                    setting that installs, the error each lesser setting
-                    failed with, and whether pnpm's minimum release age fell
-                    back, skipped a version with no publish time, or didn't
-                    apply. Each row also names the git guard the install
-                    needed, with each manager at its default.
-                 f. Each install's trees: every installed layer equals its
-                    tag's tree, file for file, except its manifest. The
-                    manifest differs from the tag's only in its version, and
-                    in the components' foundation dependency. Exactly one
-                    foundation is installed, and the components resolve to
-                    it. No layer's devDependency is installed. Every export
-                    subpath resolves to the file its exports name: node for
-                    the npm and pnpm installs, bun for bun's. The row names
-                    the .css files installed for each layer, and that a .css
-                    subpath resolves by package name.
-                 The earlier rows are unchanged.
-              8. Docs. The context README records the networked task's table
-                 in a new section headed with its date. Hosting gains the
-                 GitHub Packages findings: what each manager needed to
-                 install (registry config, token, release age), whether gh's
-                 OAuth token was accepted where the docs name a classic PAT,
-                 what of the .css reaches a consumer, and that a public
-                 package can't be made private again but its versions stay
-                 deletable. A JSR section records round 1's deno 2.9.8 dry
-                 runs of 2026-10-23: no .css export entries, so no .css
-                 subpath for npm consumers; CSS module script imports refused,
-                 and so the components; the foundation passing as TS sources
-                 and its build passing without types for npm consumers; the
-                 ./css ambient subpath failing slow types; the SDK passing
-                 only with --no-check; and github: specs unresolved. It
-                 names Deno's end as the reason no JSR package was
-                 published. The Releases and Tags sections list the 0.0.1
-                 publishes. The Tasks, Layout, and Path item 6 sections, the
-                 CLAUDE.md lines, and the marathon config's comment name the
-                 publish task. The goal record logs the decisions, marks the
-                 setup decisions on JSR superseded, and adds pending edits:
-                 the coordinator's registries roadmap entry restated (GitHub
-                 Packages published; JSR recorded from dry runs), and
-                 html-artifacts.md corrected (JSR emits JS and .d.ts only
-                 from TS entrypoints, and the components can't go on JSR as
-                 built). The code meets STANDARDS.md's Code.
-Test seams    `mise run publish`, with the published packages it reports;
-              the networked task's dated table; and `mise run check`,
-              unchanged.
-Slices        1. Publish. The publish task: the token from the environment,
-                 the preflight, the scratch copies at 0.0.1, the components'
-                 registry foundation, and the skip of a version already
-                 held. BUILD stops before the first publish, so the architect
-                 can run `gh auth refresh -s read:packages,write:packages`
-                 and judge whether gh's OAuth token is accepted; a refusal is
-                 an escalation. BUILD stops again after the publish, so the
-                 architect can make the three packages public. Demo: the
-                 three packages at 0.0.1, public and linked to their
-                 repositories, and a rerun that publishes nothing and names
-                 all three.
-              2. The registry rows. The token passed through the wrapper for
-                 pnpm alone, the networked task's package preflight, and rows
-                 e and f. Demo: the full dated table prints, and `mise run
-                 check` still passes in a network namespace with no token
-                 set.
-              3. Docs, as behavior 8 lists. Demo: `mise run check` passes,
-                 and the README reads true against the table, GitHub
-                 Packages, and the dry-run record.
-Out of scope  JSR publishes and any Deno or jsr CLI; any change to a layer
-              repository; new layer releases or tags; publishing from
-              GitHub Actions; registry consumers in the offline check; the
-              npm registry; deleting the published versions; private-package
-              access; type-checking the installs; the page and Vite consumers
-              and the release flow.
-Door          two-way: everything. The GitHub Packages publishes are real and
-              public, but each version and package stays deletable (5,000
-              downloads or fewer, restorable within 30 days). Public can't be
-              made private again. No tag is pushed. The coordinator's edits
-              land as pending edits, applied by the session.
+Out of scope  Any change to the foundation or the SDK, or a release of
+              either; re-cutting v0.1.0; lit as a peer; a Vite dedupe row;
+              the dev server over networked installs; type-checking the
+              installs; publishing from GitHub Actions; the npm registry;
+              adopting pnpm's flow in any layer; the answer task's
+              reweighing of npm against pnpm and ESLint+Prettier against
+              Biome.
+Door          one-way: v0.2.0 of the components, cut by release.yml at the
+              merge, since a release is never changed or re-cut. Two-way:
+              the GitHub Packages publishes, each version deletable while
+              it has 5,000 downloads or fewer, and the 0.0.1 deletions,
+              restorable within 30 days; everything else. The
+              coordinator's edits land as pending edits, applied by the
+              session.
+Release       v0.2.0 of JaimeStill/spike-html-packages-components
 ```
 
 ## Decisions
@@ -415,12 +473,13 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   manager's guard goes in the fixture's own config.
 - components: the browser tier serves lit and its dependencies through the static server's
   /deps/, as at c2b4a19, since pnpm keeps them out of the top-level node_modules.
-- components: the release integrity test requires both dependencies exact (lit 3.3.3 and an
-  exact github: tag).
+- components: superseded by consumers: the release integrity test requires both dependencies exact
+  (lit 3.3.3 and an exact github: tag).
 - components: tooling copied from the foundation names foundation 5dd8a58 as provenance; the
   layer's sources name spike-html-packages c2b4a19.
 - components: currency compares the github: tag against the foundation's latest GitHub release.
-- components: the README's pnpm guard for the components alone is block-exotic-subdeps=false.
+- components: superseded by consumers: the README's pnpm guard for the components alone is
+  block-exotic-subdeps=false.
 - components: the root check stays Prettier alone in this task.
 - components: the setup plan created the components repository from init's commit adfc3aa: the
   foundation's four init files, with downward-dependencies added to STANDARDS.md's pointers, and
@@ -430,9 +489,9 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   under 0.18.0 (setup round 1, 4).
 - components: the coordinator's edits landed at plan apply (standards-lab #97): the goal's repos,
   [workspace.paths], references.toml, the restated components task, and the new by-tag task.
-- components: the release test requires lit and the foundation as exact pins in form (an exact
-  x.y.z, an exact `#vX.Y.Z` github: tag), not the literal 3.3.3, so a currency bump doesn't edit
-  the test.
+- components: superseded by consumers: the release test requires lit and the foundation as exact
+  pins in form (an exact x.y.z, an exact `#vX.Y.Z` github: tag), not the literal 3.3.3, so a
+  currency bump doesn't edit the test.
 - components: a "packed manifest carries no scripts" test guards behavior 9's rule.
 - components: the lint doesn't catch a value import of the foundation's types-only subpath (such
   as `format.js`) by package name, as layout's declaration-policy decision records for siblings;
@@ -441,9 +500,9 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   typescript (a devDependency), and the layer's own name to be flagged as undeclared.
 - components: pnpm needs no setting for a top-level github: dependency; the lockfile records the
   foundation as a codeload tarball at 29d16c0.
-- components: the README's pnpm guard is `--config.block-exotic-subdeps=false` on `pnpm add`, with
-  `blockExoticSubdeps: false` in pnpm-workspace.yaml as the lasting form, measured with pnpm 12.15.0
-  on a pack of this build.
+- components: superseded by consumers: the README's pnpm guard is
+  `--config.block-exotic-subdeps=false` on `pnpm add`, with `blockExoticSubdeps: false` in
+  pnpm-workspace.yaml as the lasting form, measured with pnpm 12.15.0 on a pack of this build.
 - components: CI needs no guard or token to fetch the public github: foundation.
 - components: the static server's /deps/ is a table of package directories by name (lit,
   lit-html, lit-element, and @lit/reactive-element from lit's pnpm store directory; the foundation
@@ -471,10 +530,10 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   tag at the plan's round 1, 2026-10-23, in scratch; by-tag measures them again on all three tags.
 - by-tag: the consumers' lockfiles are committed per fixture; `mise run install` installs frozen
   from them, and a separate networked `mise run lock` re-locks (round 1, 1).
-- by-tag: npm's guard is allow-git=root for the three together and allow-git=all for the
-  components alone, both proven offline (round 1, 2).
-- by-tag: pnpm's blockExoticSubdeps, which a frozen offline install skips, is proven at resolution
-  in the networked task, guards tried least first (round 1, 3).
+- by-tag: superseded by consumers: npm's guard is allow-git=root for the three together and
+  allow-git=all for the components alone, both proven offline (round 1, 2).
+- by-tag: superseded by consumers: pnpm's blockExoticSubdeps, which a frozen offline install skips,
+  is proven at resolution in the networked task, guards tried least first (round 1, 3).
 - by-tag: the offline check compares each install against its tag's tree, from a depth-1 fetch
   kept in the cache directory (round 1, 4).
 - by-tag: no type-check of the installs; file and resolution checks only (round 1, 5).
@@ -514,11 +573,11 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   publisher runs Deno, whose runtime development ends a year after 2026-10-09
   (deno.com/blog/cloudflare); JSR is recorded from PLAN round 1's deno 2.9.8 dry runs of 2026-10-23
   (round 1, 1, 7, 10; round 2, 1).
-- registries: the publishes run from a networked `mise run publish` in this repository, from
-  scratch copies of each layer's v0.1.0 tree at 0.0.1; the layer repositories stay read-only
-  (round 1, 2).
-- registries: the components' published manifest names the registry foundation at exactly 0.0.1,
-  not the github: tag (round 1, 3).
+- registries: superseded by consumers: the publishes run from a networked `mise run publish` in this
+  repository, from scratch copies of each layer's v0.1.0 tree at 0.0.1; the layer repositories stay
+  read-only (round 1, 2).
+- registries: superseded by consumers: the components' published manifest names the registry
+  foundation at exactly 0.0.1, not the github: tag (round 1, 3).
 - registries: the three GitHub Packages packages are made public by the architect after their
   first publish (round 1, 4).
 - registries: the registry consumers are rows in `mise run live`'s dated table, with the token
@@ -558,6 +617,157 @@ Door          two-way: everything. The GitHub Packages publishes are real and
 - registries: live's preflight reads each package's visibility with gh's own login, and checks
   0.0.1 in the registry metadata with GITHUB_PACKAGES_TOKEN.
 
+- consumers: the components repository joins the task, where round 1 kept the layers read-only;
+  the foundation and the SDK need nothing (architect's redirect, superseding round 1, 1).
+- consumers: the release-flow comparison runs in scratch clones with a local bare remote; no tag
+  or repository is created (round 1, 2).
+- consumers: pnpm's side is the change-intent flow, `pnpm change` then `pnpm version -r` (round
+  1, 3).
+- consumers: the hand side is the layers' current flow: a hand bump and a Keep a Changelog
+  section, cut by release.yml's steps (round 1, 4).
+- consumers: the installed page and the Vite app run offline in `mise run check` over the tag
+  installs, with chrome-headless-shell joining the check, and in `mise run live` over the
+  release-asset URLs and GitHub Packages (round 1, 5).
+- consumers: the consumer shapes are the three together and the components alone (round 1, 6).
+- consumers: the hostings are the tag, the release-asset URL, and GitHub Packages (round 1, 7).
+- consumers: the managers are npm, pnpm, and bun (round 1, 8).
+- consumers: the installed page loads the installed lit, unbundled (round 1, 9).
+- consumers: the installed page's import map is written by hand for each manager's layout, not
+  generated by @jspm/generator (round 1, 10).
+- consumers: the Vite app runs `vite build`, served statically, and the dev server (round 1, 11).
+- consumers: the Vite plugin is the local CSS module script plugin from c2b4a19, copied with
+  provenance, not vite-plugin-standard-css-modules; Vite has no native support (vitejs/vite#17700)
+  (round 1, 12).
+- consumers: Vite is pinned in each Vite fixture, and `mise run currency` reads those pins (round
+  1, 13).
+- consumers: the offline check requires the jsDelivr page's lit to equal the components' lit pin
+  at their latest tag (round 1, 14).
+- consumers: pnpm's trial marks the scratch manifest "private": true; unmarked, `pnpm version -r`
+  takes an unpublished version as a first release and never bumps (round 2, 1).
+- consumers: the release-flow comparison is a networked mise task of its own printing a dated
+  table, recorded in a dated README section (round 2, 2).
+- consumers: held parse-changelog at 0.6.16: create-gh-release-action v1.11.0 runs 0.6.16 (round
+  2, 3).
+- consumers: the page on any install follows the install's resolution through import map scopes
+  (round 2, 5).
+- consumers: the Vite dev server runs in the offline check only (round 2, 7).
+- consumers: six Vite fixtures of their own; the page reuses the consumer fixtures' installs
+  (round 2, 8).
+- consumers: the release-flow trial cuts the foundation alone; pnpm's bump propagation follows
+  workspace: ranges only, so a dependent repository's bump stays a hand edit (round 2, 9).
+- consumers: round 2's answers 4 (the dedupe row) and 6 (two-foundation rows) are superseded by
+  round 3.
+- consumers: two foundations are a defect of the components' v0.1.0: its plain github:
+  dependency installs a second copy whenever the consumer's foundation comes from another source,
+  and the sheets are per-module objects, so a consumer's restyle misses the shadow roots; the
+  registry and keys state survive through Symbol.for on globalThis (round 3, architect's
+  question).
+- consumers: the components' foundation peer is ^0.1.0, not the git spec, which npm refuses
+  (ERESOLVE) whenever the consumer's foundation comes from the release asset or GitHub Packages
+  (round 3, 1).
+- consumers: the components release v0.2.0, the 0.y breaking bump, with its CHANGELOG section
+  (round 3, 2).
+- consumers: lit stays an exact dependency of the components (round 3, 3).
+- consumers: the components keep the foundation as a devDependency at its exact tag beside the
+  peer, and their release test requires that form (round 3, 4).
+- consumers: round 3's answer 5 (a 0.0.2 publish) is superseded by round 4.
+- consumers: the six consumer fixtures move to v0.2.0; v0.1.0's evidence stays in the README's
+  dated tables (round 3, 6).
+- consumers: the components-alone consumer declares the components and the foundation (round 3,
+  7).
+- consumers: live adds rows of the components alone with no foundation on v0.2.0, which read yes
+  when each manager fails as measured (round 3, 8).
+- consumers: the jsDelivr import-map page names the components at v0.2.0 (round 3, 9).
+- consumers: on v0.2.0, a page or Vite row that finds two foundations fails live and the check
+  (round 3, 10).
+- consumers: every page and Vite row requires the sheets the consumer imports by package name to
+  be the objects the components' shadow roots adopt (round 3, 11).
+- consumers: no Vite dedupe row (round 3, 12).
+- consumers: BUILD stops after the components' slices for the architect to review and merge their
+  pull request, then waits for release.yml to cut v0.2.0 with its asset before the root's slices
+  (round 3, 13).
+- consumers: GitHub Packages publishes each layer at its tag's version (the foundation and the SDK
+  at 0.1.0, the components at 0.2.0), each package equal to the tag's pack with no rewrites;
+  live's tree comparison drops its manifest exceptions; supersedes hosting's "the registries keep
+  their own 0.0.x" and registries' 0.0.1 rewrite of the components' foundation (round 4, 1).
+- consumers: the publish task publishes each layer's latest tag only, so there is no components
+  0.1.0 on GitHub Packages (round 5, 1).
+- consumers: the three 0.0.1 versions are deleted by the architect by hand, at a BUILD stop after
+  `gh auth refresh -s delete:packages`, once the tag versions are published; live's preflight
+  requires 0.0.1 absent (round 5, 2).
+- consumers: measured in PLAN, 2026-10-26, with the components' pack rewritten at 0.2.0: with the
+  foundation peer at ^0.1.0, the tag and release-asset installs give one foundation under npm
+  12.2.1, pnpm 12.15.0, and bun 1.4.4, with no nested git guard (npm allow-git=root at the tags,
+  allow-remote=root alone by the asset URLs); the components alone fail under every manager. The
+  same measure with the foundation kept in dependencies at its tag (v0.1.0's form) gave two
+  foundations by the release asset or beside GitHub Packages' 0.0.1 under every manager.
+- consumers: the session deleted the three 0.0.1 versions through GitHub's REST API, once the
+  architect had granted gh's token delete:packages, where round 5, 2 named a hand deletion.
+- consumers: measured in PLAN: pnpm 12.15.0 doesn't apply blockExoticSubdeps to a peer it
+  auto-installs, so a git-spec peer bypasses the guard.
+- consumers: measured in PLAN: `pnpm version -r` reads the registry for an unmarked package and
+  bumps a private one offline; it writes changesets-form `## X.Y.Z` / `### Patch Changes`
+  sections above a Keep a Changelog preamble, with no format setting.
+
+- consumers: held typescript-eslint at 8.72.0 in the components: 8.72.1 (2026-10-26T17:09Z) is
+  younger than pnpm 12's default minimum release age, and taking it would commit a
+  minimumReleaseAgeExclude; retried before the brief, as layout held eslint-plugin-boundaries.
+
+- consumers: the components' slices were reviewed (standards, spec, editor) before their merge
+  rather than at the task's end, since the merge cuts v0.2.0, which is never re-cut.
+- consumers: the components' CHANGELOG and README leave GitHub Packages out, since 0.2.0 isn't
+  published there until the publish slice (spec review).
+- consumers: the components' currency imports `caretAdmits` from their `test/unit/release.js`, so
+  the peer-range check runs the rule the release test covers (standards review).
+- consumers: live's row c from GitHub Packages expects each manager to install the foundation as
+  the peer, as measured, where the brief named only a failed install or no foundation; it reads
+  yes only on one foundation (standards review).
+- consumers: the pages run inside `test:consumers`, with no `test:pages` task of their own.
+- consumers: pnpm's page hard-codes pnpm's hashed store directory names, which the lockfile's tags
+  fix; live rewrites every page's map to its install with `test/live/installed-map.js`.
+- consumers: Vite runs under node for every manager, bun's fixtures included.
+- consumers: the Vite fixtures skip the subpath and npm guard proofs; their check is the build,
+  the dev server, and the sheet check.
+- consumers: the npm guard proof requires the refused package to be one the consumer declares;
+  npm names one, the sdk for the three and the foundation for the components.
+- consumers: publish takes a layer's latest tag as the highest `vX.Y.Z` on its remote, and fails
+  when that tag's manifest names another version.
+- consumers: release-flow's publishability row runs a real `pnpm publish`, offline, to a loopback
+  registry nothing serves, since npm's and pnpm's `--dry-run` exit 0 on "private": true.
+- consumers: release-flow exits 1 only when a flow can't be set up; a row's no is a measured fact.
+- consumers: release-flow's extract row reads no when parse-changelog's notes carry more than the
+  section; the check row finds its step by `mise run check`, not by its name (standards review).
+- consumers: release-flow's steps run without GH_TOKEN, GITHUB_TOKEN, GITHUB_PACKAGES_TOKEN, and
+  MISE_GITHUB_TOKEN (standards review).
+- consumers: currency prints parse-changelog as held and exits 0 when a held pin is all that is
+  behind.
+
+- consumers: redirected at BRIEF (round 6): the consumers must show the layers shaping the app's
+  design, not only the sheet identity.
+- consumers: the installed pages and the Vite app both load the foundation's page.css (round 6,
+  1).
+- consumers: the Vite app imports page.css by package name, a plain import Vite's own CSS
+  pipeline bundles; the local plugin stays for the components' CSS module scripts (round 6, 2).
+- consumers: the check requires computed design values page.css gives (the document's background
+  and font, a token resolving inside each shadow root, the @layer order), not a screenshot
+  (round 6, 3).
+- consumers: the fixtures' pagination sets a page size the size select offers; an unoffered size
+  is the components' concern, left unchanged (round 6, 4).
+- consumers: corrects round 6's PLAN facts, which held that the jsDelivr import-map page already
+  linked page.css; it linked no stylesheet.
+- consumers: the jsDelivr page also links page.css, from jsDelivr at the foundation's tag, and
+  live's import-map row runs the design check; the offline check requires that link (decided by
+  the session after round 6, matching the redirect's intent).
+- consumers: the jsDelivr page's link carries `crossorigin="anonymous"`, so the page can read
+  page.css's rules; its four imported sheets stay unreadable cross-origin, and page.css's own
+  statement names all eight layers before them.
+- consumers: the check reads the layer order as the cascade's tree, each name under its parent in
+  first-named order, through each import's `layer()`, read depth first, since Vite's build
+  minifier drops page.css's `@layer` statement; an unreadable sheet before every foundation layer
+  is named makes the order unknown (standards review, d123ede).
+- consumers: the shadow-root token check can fail only on a component overriding a token or an
+  empty shadow root, since custom properties inherit across the boundary; judged and left.
+
 ## Pending edits
 
 - coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.by-tag]`'s
@@ -577,8 +787,9 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   summary becomes:
 
   ```
-  Real 0.0.1 publishes of the three layers under @jaimestill to GitHub Packages, from a networked
-  `mise run publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
+  Real publishes of the three layers under @jaimestill to GitHub Packages, first at 0.0.1 and then,
+  in the consumers task, at their tags' versions with 0.0.1 deleted, from a networked `mise run
+  publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
   installing them in `mise run live`'s dated table, each needing the registry and a token even
   for public packages, with the .css arriving whole. JSR is recorded from deno 2.9.8 dry runs and
   not published, since every JSR publisher runs Deno, whose runtime development ends
@@ -595,4 +806,19 @@ Door          two-way: everything. The GitHub Packages publishes are real and
   so the components can't go on JSR as built. It installs natively in pnpm 10.9+ and Yarn 4.9+,
   while npm and Bun install it through npm.jsr.io as `@jsr/<scope>__<name>`, with `.npmrc` setup
   (jsr.io/docs/npm-compatibility).
+  ```
+
+- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.consumers]`'s
+  summary as:
+
+  ```
+  The components' v0.2.0, with the foundation as a peer at ^0.1.0, so every hosting installs one
+  foundation; a page loading each install unbundled by a hand-written import map, and a Vite app
+  with the local CSS module script plugin, built and on its dev server, rendering the components
+  with their shadow roots adopting the sheets the consumer imports and the foundation's page.css
+  shaping the design, offline in `mise run check`
+  over the tags and in `mise run live` over the release-asset URLs and GitHub Packages, now at the
+  tags' versions; and
+  a networked `mise run release-flow` comparing pnpm's change-intent versioning with the hand
+  flow, in scratch. Evidence 6, 7.
   ```

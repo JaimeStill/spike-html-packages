@@ -5,7 +5,7 @@
   "description": "A test fixture, never released: scripts/consumers.sh installs it under npm, offline from its lockfile, with the three layers at their tags.",
   "type": "module",
   "dependencies": {
-    "@jaimestill/spike-html-packages-components": "github:JaimeStill/spike-html-packages-components#v0.1.0",
+    "@jaimestill/spike-html-packages-components": "github:JaimeStill/spike-html-packages-components#v0.2.0",
     "@jaimestill/spike-html-packages-foundation": "github:JaimeStill/spike-html-packages-foundation#v0.1.0",
     "@jaimestill/spike-html-packages-sdk": "github:JaimeStill/spike-html-packages-sdk#v0.1.0"
   }

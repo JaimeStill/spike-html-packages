@@ -1,5 +1,5 @@
-# Tasks never install a missing tool; mise run install, lock, currency, and live are the tasks that
-# read the network.
+# Tasks never install a missing tool; mise run install, lock, currency, live, release-flow, and
+# publish are the tasks that read the network.
 [settings]
 task.run_auto_install = false
 
@@ -12,8 +12,12 @@ node = "26.12.1"
 npm = "12.2.1"
 pnpm = "12.15.0"
 shellcheck = "0.11.0"
+# The release-flow task's stand-in for taiki-e/create-gh-release-action v1.11.0, at the
+# parse-changelog that action downloads and runs.
+"github:taiki-e/parse-changelog" = "0.6.16"
 
-# The live task's browser, at spike-html-packages-components' (8cb64a8) pin. Chrome for Testing
+# The browser the consumer pages and the live task load, at spike-html-packages-components'
+# (8cb64a8) pin. Chrome for Testing
 # publishes no checksums: take the sha256 and size from the download by hand at each bump.
 [tools."http:chrome-headless-shell"]
 version = "156.0.8078.47"
@@ -26,7 +30,7 @@ linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{
 # Adapted from spike-html-packages-components (8cb64a8): mise.toml's preflight, its description
 # naming the caches, the tag fetches, and the live task's browser.
 [tasks.preflight]
-description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the live task's browser"
+description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the browser alone"
 hide = true
 run = "scripts/preflight.sh"
 
@@ -45,16 +49,16 @@ depends = ["preflight"]
 run = "shellcheck scripts/*.sh"
 
 [tasks."test:consumers"]
-description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, and check the install against the layers' tags"
+description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, check the install against the layers' tags, load its page in the browser, check the jsDelivr page's pins, and build and serve each Vite fixture's app, then serve it from Vite's dev server, in the browser"
 depends = ["preflight"]
-run = "scripts/consumers.sh"
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) scripts/consumers.sh"
 
 [tasks.check]
 description = "Run every check; reads no network; writes nothing in the repository outside .cache/"
 depends = ["lint", "test:consumers"]
 
 [tasks.install]
-description = "Install the pins and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
+description = "Install the pins, the browser among them, and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
 run = "scripts/install.sh"
 
 [tasks.lock]
@@ -62,15 +66,19 @@ description = "Resolve each consumer fixture anew under its manager and guard, a
 run = "scripts/lock.sh"
 
 [tasks.currency]
-description = "Report every pin behind its latest, exiting nonzero if any"
+description = "Report every pin behind its latest, exiting nonzero if any but a pin held at what another tool runs; reads the network"
 run = "scripts/currency.sh"
 quiet = true
 
 [tasks.live]
-description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
+description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, the installs' pages and Vite builds and the components alone among them, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
 depends = ["preflight live"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.js"
 
+[tasks.release-flow]
+description = "Print a dated table of two release flows for the foundation's 0.1.1, by hand and by pnpm change and pnpm version -r, each through release.yml's own steps in a scratch clone pushed to a local bare remote; reads the network, pushes nothing to GitHub, writes nothing in the repository"
+run = "node scripts/release-flow.js"
+
 [tasks.publish]
-description = "Publish each layer's v0.1.0 tree to GitHub Packages at 0.0.1, skipping the layers it already holds, with the token in GITHUB_PACKAGES_TOKEN; dry-run uploads nothing; reads the network, writes nothing in the repository"
+description = "Publish each layer's latest tag, unchanged, to GitHub Packages at the tag's version, skipping the layers it already holds, with the token in GITHUB_PACKAGES_TOKEN; dry-run uploads nothing; reads the network, writes nothing in the repository"
 run = "scripts/publish.sh"

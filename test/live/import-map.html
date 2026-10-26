@@ -1,8 +1,10 @@
 <!doctype html>
-<!-- The import-map page: the components and the foundation at v0.1.0, unbundled from jsDelivr's
-     /gh/ by a hand-written import map, and lit from its /npm/ build. It renders the three
-     components and sets window.report, a promise of what each shadow root adopted, or of the
-     error that stopped it. scripts/live.js serves it from the loopback address. -->
+<!-- The import-map page: the foundation at v0.1.0 and the components at v0.2.0, unbundled from
+     jsDelivr's /gh/ by a hand-written import map, and lit from its /npm/ build, at the components'
+     pin, which mise run check holds it to. It renders the three components and sets
+     window.report, a promise of what each shadow root adopted, or of the error that stopped it.
+     It links the foundation's page.css from jsDelivr at the foundation's tag, which mise run check
+     also holds it to. scripts/live.js serves it from the loopback address. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -15,16 +17,24 @@
         "imports": {
           "lit": "https://cdn.jsdelivr.net/npm/lit@3.3.3/+esm",
           "@jaimestill/spike-html-packages-foundation/": "https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-foundation@v0.1.0/dist/",
-          "@jaimestill/spike-html-packages-components/": "https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-components@v0.1.0/dist/"
+          "@jaimestill/spike-html-packages-components/": "https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-components@v0.2.0/dist/"
         }
       }
     </script>
+    <!-- The foundation's page entry: its layer order, then its relative imports, which resolve
+         beside it on jsDelivr. Fetched with CORS, which jsDelivr allows, so the page can read its
+         rules, as the check of its layer order does. -->
+    <link
+      rel="stylesheet"
+      crossorigin="anonymous"
+      href="https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-foundation@v0.1.0/dist/page.css"
+    />
   </head>
   <body>
     <main>
       <sl-status-badge label="draft"></sl-status-badge>
       <sl-entry-lit-shadow></sl-entry-lit-shadow>
-      <sl-pagination-lit-shadow page="1" size="10" total="30"></sl-pagination-lit-shadow>
+      <sl-pagination-lit-shadow page="1" size="12" total="30"></sl-pagination-lit-shadow>
     </main>
     <script type="module">
       window.report = (async () => {
