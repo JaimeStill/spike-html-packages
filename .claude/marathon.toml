@@ -1,11 +1,12 @@
 # Project kind: this repository holds the spike's record, docs, and consumer check, checked by
-# `mise run check` (Prettier, shellcheck, and the consumer fixtures installed offline by tag); the
-# layers live in spike-html-packages-foundation, spike-html-packages-sdk, and
-# spike-html-packages-components.
+# `mise run check` (Prettier, shellcheck, and the consumer fixtures installed offline by tag, with
+# their pages and Vite apps loaded in chrome-headless-shell); the layers live in
+# spike-html-packages-foundation, spike-html-packages-sdk, and spike-html-packages-components.
 # Its goals live in the coordinator's roadmap (standards-lab/context/roadmap.toml).
-# `mise run currency` reports every mise tool, package.json pin, and fixture tag behind its latest.
-# `mise run publish`, by hand with GITHUB_PACKAGES_TOKEN, publishes the layers to GitHub Packages
-# at 0.0.1; `mise run live` needs the same token.
+# `mise run currency` reports every mise tool, package.json pin, fixture tag, and Vite pin behind
+# its latest. `mise run publish`, by hand with GITHUB_PACKAGES_TOKEN, publishes each layer's latest
+# tag to GitHub Packages at the tag's version; `mise run live` needs the same token.
+# `mise run release-flow` compares the hand release flow with pnpm's, in scratch.
 # No gate.
 [project]
 kind = "code"

@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · root slice 9 (docs) with the editor · standards —, spec —
+slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · standards ✓ (26a32f9, c03ead8, ea65119) · spec — · editor ✓
 
 ## Decisions
 
@@ -470,12 +470,13 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   manager's guard goes in the fixture's own config.
 - components: the browser tier serves lit and its dependencies through the static server's
   /deps/, as at c2b4a19, since pnpm keeps them out of the top-level node_modules.
-- components: the release integrity test requires both dependencies exact (lit 3.3.3 and an
-  exact github: tag).
+- components: superseded by consumers: the release integrity test requires both dependencies exact
+  (lit 3.3.3 and an exact github: tag).
 - components: tooling copied from the foundation names foundation 5dd8a58 as provenance; the
   layer's sources name spike-html-packages c2b4a19.
 - components: currency compares the github: tag against the foundation's latest GitHub release.
-- components: the README's pnpm guard for the components alone is block-exotic-subdeps=false.
+- components: superseded by consumers: the README's pnpm guard for the components alone is
+  block-exotic-subdeps=false.
 - components: the root check stays Prettier alone in this task.
 - components: the setup plan created the components repository from init's commit adfc3aa: the
   foundation's four init files, with downward-dependencies added to STANDARDS.md's pointers, and
@@ -485,9 +486,9 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   under 0.18.0 (setup round 1, 4).
 - components: the coordinator's edits landed at plan apply (standards-lab #97): the goal's repos,
   [workspace.paths], references.toml, the restated components task, and the new by-tag task.
-- components: the release test requires lit and the foundation as exact pins in form (an exact
-  x.y.z, an exact `#vX.Y.Z` github: tag), not the literal 3.3.3, so a currency bump doesn't edit
-  the test.
+- components: superseded by consumers: the release test requires lit and the foundation as exact
+  pins in form (an exact x.y.z, an exact `#vX.Y.Z` github: tag), not the literal 3.3.3, so a
+  currency bump doesn't edit the test.
 - components: a "packed manifest carries no scripts" test guards behavior 9's rule.
 - components: the lint doesn't catch a value import of the foundation's types-only subpath (such
   as `format.js`) by package name, as layout's declaration-policy decision records for siblings;
@@ -496,9 +497,9 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   typescript (a devDependency), and the layer's own name to be flagged as undeclared.
 - components: pnpm needs no setting for a top-level github: dependency; the lockfile records the
   foundation as a codeload tarball at 29d16c0.
-- components: the README's pnpm guard is `--config.block-exotic-subdeps=false` on `pnpm add`, with
-  `blockExoticSubdeps: false` in pnpm-workspace.yaml as the lasting form, measured with pnpm 12.15.0
-  on a pack of this build.
+- components: superseded by consumers: the README's pnpm guard is
+  `--config.block-exotic-subdeps=false` on `pnpm add`, with `blockExoticSubdeps: false` in
+  pnpm-workspace.yaml as the lasting form, measured with pnpm 12.15.0 on a pack of this build.
 - components: CI needs no guard or token to fetch the public github: foundation.
 - components: the static server's /deps/ is a table of package directories by name (lit,
   lit-html, lit-element, and @lit/reactive-element from lit's pnpm store directory; the foundation
@@ -526,10 +527,10 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   tag at the plan's round 1, 2026-10-23, in scratch; by-tag measures them again on all three tags.
 - by-tag: the consumers' lockfiles are committed per fixture; `mise run install` installs frozen
   from them, and a separate networked `mise run lock` re-locks (round 1, 1).
-- by-tag: npm's guard is allow-git=root for the three together and allow-git=all for the
-  components alone, both proven offline (round 1, 2).
-- by-tag: pnpm's blockExoticSubdeps, which a frozen offline install skips, is proven at resolution
-  in the networked task, guards tried least first (round 1, 3).
+- by-tag: superseded by consumers: npm's guard is allow-git=root for the three together and
+  allow-git=all for the components alone, both proven offline (round 1, 2).
+- by-tag: superseded by consumers: pnpm's blockExoticSubdeps, which a frozen offline install skips,
+  is proven at resolution in the networked task, guards tried least first (round 1, 3).
 - by-tag: the offline check compares each install against its tag's tree, from a depth-1 fetch
   kept in the cache directory (round 1, 4).
 - by-tag: no type-check of the installs; file and resolution checks only (round 1, 5).
@@ -569,11 +570,11 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   publisher runs Deno, whose runtime development ends a year after 2026-10-09
   (deno.com/blog/cloudflare); JSR is recorded from PLAN round 1's deno 2.9.8 dry runs of 2026-10-23
   (round 1, 1, 7, 10; round 2, 1).
-- registries: the publishes run from a networked `mise run publish` in this repository, from
-  scratch copies of each layer's v0.1.0 tree at 0.0.1; the layer repositories stay read-only
-  (round 1, 2).
-- registries: the components' published manifest names the registry foundation at exactly 0.0.1,
-  not the github: tag (round 1, 3).
+- registries: superseded by consumers: the publishes run from a networked `mise run publish` in this
+  repository, from scratch copies of each layer's v0.1.0 tree at 0.0.1; the layer repositories stay
+  read-only (round 1, 2).
+- registries: superseded by consumers: the components' published manifest names the registry
+  foundation at exactly 0.0.1, not the github: tag (round 1, 3).
 - registries: the three GitHub Packages packages are made public by the architect after their
   first publish (round 1, 4).
 - registries: the registry consumers are rows in `mise run live`'s dated table, with the token
@@ -694,7 +695,11 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
 - consumers: measured in PLAN, 2026-10-26, with the components' pack rewritten at 0.2.0: with the
   foundation peer at ^0.1.0, the tag and release-asset installs give one foundation under npm
   12.2.1, pnpm 12.15.0, and bun 1.4.4, with no nested git guard (npm allow-git=root at the tags,
-  allow-remote=root alone by the asset URLs); the components alone fail under every manager.
+  allow-remote=root alone by the asset URLs); the components alone fail under every manager. The
+  same measure with the foundation kept in dependencies at its tag (v0.1.0's form) gave two
+  foundations by the release asset or beside GitHub Packages' 0.0.1 under every manager.
+- consumers: the session deleted the three 0.0.1 versions through GitHub's REST API, once the
+  architect had granted gh's token delete:packages, where round 5, 2 named a hand deletion.
 - consumers: measured in PLAN: pnpm 12.15.0 doesn't apply blockExoticSubdeps to a peer it
   auto-installs, so a git-spec peer bypasses the guard.
 - consumers: measured in PLAN: `pnpm version -r` reads the registry for an unmarked package and
@@ -711,6 +716,28 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   published there until the publish slice (spec review).
 - consumers: the components' currency imports `caretAdmits` from their `test/unit/release.js`, so
   the peer-range check runs the rule the release test covers (standards review).
+- consumers: live's row c from GitHub Packages expects each manager to install the foundation as
+  the peer, as measured, where the brief named only a failed install or no foundation; it reads
+  yes only on one foundation (standards review).
+- consumers: the pages run inside `test:consumers`, with no `test:pages` task of their own.
+- consumers: pnpm's page hard-codes pnpm's hashed store directory names, which the lockfile's tags
+  fix; live rewrites every page's map to its install with `test/live/installed-map.js`.
+- consumers: Vite runs under node for every manager, bun's fixtures included.
+- consumers: the Vite fixtures skip the subpath and npm guard proofs; their check is the build,
+  the dev server, and the sheet check.
+- consumers: the npm guard proof requires the refused package to be one the consumer declares;
+  npm names one, the sdk for the three and the foundation for the components.
+- consumers: publish takes a layer's latest tag as the highest `vX.Y.Z` on its remote, and fails
+  when that tag's manifest names another version.
+- consumers: release-flow's publishability row runs a real `pnpm publish`, offline, to a loopback
+  registry nothing serves, since npm's and pnpm's `--dry-run` exit 0 on "private": true.
+- consumers: release-flow exits 1 only when a flow can't be set up; a row's no is a measured fact.
+- consumers: release-flow's extract row reads no when parse-changelog's notes carry more than the
+  section; the check row finds its step by `mise run check`, not by its name (standards review).
+- consumers: release-flow's steps run without GH_TOKEN, GITHUB_TOKEN, GITHUB_PACKAGES_TOKEN, and
+  MISE_GITHUB_TOKEN (standards review).
+- consumers: currency prints parse-changelog as held and exits 0 when a held pin is all that is
+  behind.
 
 ## Pending edits
 
@@ -759,8 +786,9 @@ slices 8/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   The components' v0.2.0, with the foundation as a peer at ^0.1.0, so every hosting installs one
   foundation; a page loading each install unbundled by a hand-written import map, and a Vite app
   with the local CSS module script plugin, built and on its dev server, rendering the components
-  with the consumer's sheets the roots' own, offline in `mise run check` over the tags and in
-  `mise run live` over the release-asset URLs and GitHub Packages, now at the tags' versions; and
+  with their shadow roots adopting the sheets the consumer imports, offline in `mise run check`
+  over the tags and in `mise run live` over the release-asset URLs and GitHub Packages, now at the
+  tags' versions; and
   a networked `mise run release-flow` comparing pnpm's change-intent versioning with the hand
   flow, in scratch. Evidence 6, 7.
   ```

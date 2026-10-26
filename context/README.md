@@ -62,8 +62,8 @@ keys family in spike-html-packages-foundation, the SDK declarations in spike-htm
 and the components in spike-html-packages-components, taken from this repository's history at
 c2b4a19, the last commit that holds `packages/`, which they name as provenance. Lit is the one
 runtime dependency, of the components. The three layers are published for real to GitHub Packages
-under `@jaimestill` at 0.0.1, from their v0.1.0 trees; JSR is recorded from dry runs, and no JSR
-package was published.
+under `@jaimestill`, each at its latest tag's version and equal to that tag's pack; JSR is recorded
+from dry runs, and no JSR package was published.
 
 ## Capabilities
 
@@ -101,15 +101,20 @@ The tasks, in the order they run; each cites the evidence it proves.
    0.0.1, and `mise run live`'s rows of npm, pnpm, and bun installing them from there, the three
    together and the components alone; JSR, recorded from deno 2.9.8's dry runs, with no publish
    (evidence 1).
-7. `consumers`: the page and Vite app consumers, and the release flow (evidence 6, 7).
+7. `consumers`: the components' v0.2.0, with the foundation as a peer at `^0.1.0`; a page loading
+   each install unbundled and a Vite app with the local CSS module script plugin, in
+   `mise run check` over the tags and in `mise run live` over the release assets and GitHub
+   Packages, now at the tags' versions; and `mise run release-flow`, comparing pnpm's change-intent
+   versioning with the hand flow in scratch (evidence 6, 7). Both are measured: "Live, 2026-10-26,
+   components v0.2.0" and "Release flow, 2026-10-26" record them.
 8. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
 
 ## Releases
 
 Each layer repository releases at 0.y.z by its own `release.yml`, which Hosting describes; this
-repository releases nothing by tag. Its `mise run publish` published each layer's v0.1.0 tree to
-GitHub Packages at 0.0.1 on 2026-10-26. A release or publish is never changed or re-cut, and Tags
-lists each one.
+repository releases nothing by tag. Its `mise run publish` publishes each layer's latest tag to
+GitHub Packages at the tag's version. A release or publish is never changed or re-cut, and Tags
+lists each one, with the 0.0.1 publishes that were deleted.
 
 ## References
 
@@ -129,12 +134,17 @@ This repository is the spike's record and its docs:
 - `scripts/`: the tasks' scripts: `install.sh`, `lock.sh`, `consumers.sh` (the consumer tier, and
   the cache warm `install.sh` runs), `installed.sh` (the comparison against the tags that
   `consumers.sh` and `live.js` share), `unconfigured.sh` (runs a manager with none of the user's
-  config), `preflight.sh`, `currency.sh`, `live.js`, and `publish.sh`.
-- `test/consumers/`: the six consumer fixtures, `<consumer>/<manager>/`, the three together
-  (`three/`) and the components alone (`components/`) under npm, pnpm, and bun, each with its
-  manager's guard and its committed lockfile; and `consumers.js`, `exports.js`, and `resolve.js`,
-  which resolve each install's exported subpaths.
-- `test/live/`: the live task's import-map page, its loopback server, and its browser pipe.
+  config), `preflight.sh`, `currency.sh`, `live.js`, `publish.sh`, and `release-flow.js`.
+- `test/consumers/`: the twelve fixtures, each with its committed lockfile and, under npm, its
+  guard. The six consumer fixtures, `<consumer>/<manager>/`, are the three together (`three/`) and
+  the components with the foundation (`components/`) under npm, pnpm, and bun. The six Vite
+  fixtures, `vite/<consumer>/<manager>/`, are the same two with Vite in their devDependencies.
+  `consumers.js`, `exports.js`, and `resolve.js` resolve each install's exported subpaths;
+  `pages/` holds each manager's page and `pages.js` loads them; `vite/app/` holds the Vite app and
+  `vite.js` builds and serves it.
+- `test/live/`: the import-map page, the loopback server and browser pipe that the check's pages
+  and Vite apps use too, and `installed-map.js`, which rewrites a page's import map to a networked
+  install's directories.
 - `.cache/`, ignored: the managers' caches, `consumers/`, and the layers' tag fetches, `tags/`,
   which `mise run install` fills and the check reads.
 
@@ -149,7 +159,8 @@ working context, standards, check, CI, release workflow, and changelog:
   declarations, types only, with no dependencies.
 - JaimeStill/spike-html-packages-components: `@jaimestill/spike-html-packages-components`, the
   status badge, the entry, and the pagination, Lit with shadow roots, and their sheets. It depends
-  on lit 3.3.3 and on the foundation by its tag,
+  on lit 3.3.3 and takes the foundation as a peer at `^0.1.0`, which the consumer declares; its
+  devDependency is the foundation's exact tag,
   `github:JaimeStill/spike-html-packages-foundation#v0.1.0`.
 
 All three are the goal's repositories in the coordinator's roadmap, located through the
@@ -157,34 +168,41 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
 
 ## Tasks
 
-- `mise run install`: the mise pins and node_modules, from the lockfile, then each fixture's frozen
-  install from its lockfile, which fills `.cache/consumers/`, and the three tags, fetched into
-  `.cache/tags/`; reads the network and changes no fixture.
-- `mise run lock`: each fixture resolved anew under its manager and guard, in a scratch copy, its
-  lockfile copied back over the committed one; reads the network, and with the tags unchanged
-  leaves every lockfile as it is.
+- `mise run install`: the mise pins, chrome-headless-shell among them, and node_modules, from the
+  lockfile, then each fixture's frozen install from its lockfile, which fills `.cache/consumers/`,
+  and the three tags, fetched into `.cache/tags/`; reads the network and changes no fixture.
+- `mise run lock`: each of the twelve fixtures resolved anew under its manager and guard, in a
+  scratch copy, its lockfile copied back over the committed one; reads the network, and with the
+  tags unchanged leaves every lockfile as it is.
 - `mise run check`: `lint:format`, Prettier over the code, JSON, and CSS; `lint:shell`,
-  shellcheck 0.11.0 over the scripts; and `test:consumers`, each fixture installed offline and
-  frozen from its lockfile and checked against the tags, then npm's guard proven by each
-  consumer's install failing under it lowered. It reads no network and writes nothing in the
-  repository outside `.cache/`; a preflight names `mise run install` when a cache or tag fetch
-  is missing.
-- `mise run currency`: every mise tool, package.json pin, and fixture's layer tag behind its
-  latest.
-- `mise run live`: the dated table that Live records, from the network, in the pinned
+  shellcheck 0.11.0 over the scripts; and `test:consumers`, which Consumer installs describes:
+  each fixture installed offline and frozen from its lockfile and checked against the tags, each
+  consumer install's page and each Vite app loaded in chrome-headless-shell, the jsDelivr page's
+  pins checked, and npm's guard proven by each consumer's install failing under it lowered. It
+  reads no network and no token, and writes nothing in the repository outside `.cache/`; a
+  preflight names `mise run install` when the browser, a cache, or a tag fetch is missing.
+- `mise run currency`: every mise tool, package.json pin, fixture's layer tag, and Vite fixture's
+  Vite pin behind its latest. It prints parse-changelog as held, at the 0.6.16 that
+  create-gh-release-action v1.11.0 runs, and exits 0 when a held pin is all that is behind.
+- `mise run live`: the dated tables that the Live sections record, from the network, in the pinned
   chrome-headless-shell; it writes nothing in the repository and exits 1 if any row is a no. Its
   GitHub Packages installs need a token with read:packages in `GITHUB_PACKAGES_TOKEN`, run as
   `GITHUB_PACKAGES_TOKEN=$(gh auth token) mise run live`; it fails naming the variable when it is
-  unset, and, before it measures anything, names each package GitHub Packages doesn't hold at 0.0.1
-  or doesn't make public.
-- `mise run publish`: each layer's v0.1.0 tree published to GitHub Packages at 0.0.1, in the order
-  foundation, sdk, components, from a scratch copy whose manifest differs from the tag's only in
-  its version and, in the components, the foundation dependency, `0.0.1`. It runs by hand, as
+  unset, and, before it measures anything, names each package GitHub Packages doesn't hold at its
+  tag's version or doesn't make public, and each that still holds a 0.0.1.
+- `mise run release-flow`: the dated table that "Release flow, 2026-10-26" records, from the
+  network. It cuts the foundation's 0.1.1 twice, by the hand flow and by pnpm's, each in a scratch
+  clone of the foundation's main pushed to a local bare remote, through release.yml's own steps.
+  It pushes nothing to GitHub, gives the steps no token, writes nothing in the repository, and
+  removes its scratch. It exits 1 only when a flow can't be set up; a row's no is a measured fact.
+- `mise run publish`: each layer's latest tag, the highest `vX.Y.Z` on its remote, published to
+  GitHub Packages at the tag's version, in the order foundation, sdk, components, from a scratch
+  copy of the tag's tree, unchanged. It runs by hand, as
   `GITHUB_PACKAGES_TOKEN=$(gh auth token) mise run publish`, and before it publishes anything fails
-  naming the variable unset, the token's missing write:packages scope, or a layer's missing tag.
-  It skips and names each layer GitHub Packages already holds at 0.0.1, so a rerun publishes
-  nothing; `mise run publish dry-run` uploads nothing. It reads the network, writes nothing in the
-  repository, and writes the token to no file.
+  naming the variable unset, the token's missing write:packages scope, a layer's missing tag, or a
+  tag whose manifest names another version. It skips and names each layer GitHub Packages already
+  holds at its tag's version, so a rerun publishes nothing; `mise run publish dry-run` uploads
+  nothing. It reads the network, writes nothing in the repository, and writes the token to no file.
 
 ## Hosting
 
@@ -212,22 +230,43 @@ repository script cuts a release.
 
 A consumer installs a release by its tag, for example
 `github:JaimeStill/spike-html-packages-foundation#v0.1.0`, and the release's tarball is the same
-pack. jsDelivr /gh/ serves the tag's tree. The components name their foundation by its tag, a git
-dependency below the consumer's top level, so the components' README installs them with npm's
-`--allow-git=all`, pnpm's `blockExoticSubdeps: false`, and no guard under bun. Consumer installs
-lists the guards this repository's fixtures need, "Live, 2026-10-23" records the measures of
-jsDelivr /gh/ and of the installs at the tags and by the release assets' URLs, and "Live,
-2026-10-26" adds the installs from GitHub Packages.
+pack. jsDelivr /gh/ serves the tag's tree.
+
+The components take the foundation as a peer at `^0.1.0`, so the consumer declares the foundation
+beside them and one copy serves both. The components' v0.1.0 names it as a plain dependency by
+its tag, which installs a second foundation whenever the consumer's comes from another source, a
+release asset or GitHub Packages ("Live, 2026-10-23" counts two by the assets' URLs under every
+manager; a scratch measure of 2026-10-26, a v0.1.0-form pack beside GitHub Packages' 0.0.1
+foundation, counted two from GitHub Packages too). The sheets are per-module objects, so a consumer's restyle by package name then misses
+the components' shadow roots. With the v0.2.0 peer, every hosting installs one foundation under
+every manager, and each git dependency is the consumer's own, so the guards that remain are these:
+
+- npm: `allow-git=root` at the tags, and `allow-remote=root` alone by the release assets' URLs.
+- pnpm: none; `blockExoticSubdeps` no longer applies, since no dependency of a dependency is a git
+  spec.
+- bun: none.
+- GitHub Packages, under every manager: the `@jaimestill` registry and a token with read:packages.
+
+The components alone, with no foundation declared, fail at the tags and by the assets' URLs: each
+manager looks the peer up on npmjs, which holds no `@jaimestill` package, and fails 404. npm and
+pnpm leave neither layer installed; bun leaves the components without a foundation. From GitHub
+Packages, every manager installs the foundation 0.1.0 as their peer, one foundation.
+
+Consumer installs lists the guards this repository's fixtures hold, and "Live, 2026-10-26,
+components v0.2.0" records each of these measures from the network. "Live, 2026-10-23" records
+jsDelivr /gh/ and the v0.1.0 installs at the tags and by the release assets' URLs, and "Live,
+2026-10-26, GitHub Packages at 0.0.1" adds the installs from GitHub Packages.
 
 The facts below were measured on 2026-10-22 against releases of the monorepo's packages,
-installed offline by `git+file://`, and again on the layer repositories' tags:
+installed offline by `git+file://`, and again on the layer repositories' v0.1.0 tags, where the
+components named the foundation by its tag:
 
 - npm 12.2.1's `allow-git` defaults to none, which refuses even a root git dependency; root
-  suffices except where a nested git foundation is fetched, which needs all. It applies even to
-  `npm ci --offline`, which refuses with `EALLOWGIT` before it reads the cache.
+  sufficed except where the nested git foundation was fetched, which needed all. It applies even
+  to `npm ci --offline`, which refuses with `EALLOWGIT` before it reads the cache.
 - pnpm 12.15.0 refuses a dependency's git dependency (`ERR_PNPM_EXOTIC_SUBDEP`) by default unless
-  `blockExoticSubdeps` is false: the components alone, and the three together too, though the
-  consumer declares the foundation itself by the same tag. A frozen install from a lockfile skips
+  `blockExoticSubdeps` is false: v0.1.0's components alone, and the three together too, though the
+  consumer declared the foundation itself by the same tag. A frozen install from a lockfile skips
   that check.
 - bun 1.4.4's overrides never reach a nested `github:` spec, and bun fails every `#semver:` git
   spec, so a layer names the one below by its exact tag.
@@ -239,16 +278,16 @@ installed offline by `git+file://`, and again on the layer repositories' tags:
 - pnpm 12.15.0 packs the workspace root's `LICENSE` into a package that has none, so a pack can't
   show a package's missing copy.
 
-`mise run publish` published the three layers to GitHub Packages at 0.0.1 on 2026-10-26, from the
-workstation, and "Live, 2026-10-26" records npm, pnpm, and bun installing them. The facts below
-were measured then:
+`mise run publish` publishes from the workstation; Tags lists its publishes. "Live, 2026-10-26,
+GitHub Packages at 0.0.1" and "Live, 2026-10-26, components v0.2.0" record npm, pnpm, and bun
+installing them. The facts below were measured on those publishes:
 
 - gh's OAuth token (`gho_`), granted read:packages and write:packages by
   `gh auth refresh -s read:packages,write:packages`, was accepted by npm.pkg.github.com for
   publishing, where GitHub's docs name a classic personal access token only.
-- Each published manifest differs from its v0.1.0 tag's only in its version and, in the
-  components, the foundation dependency, `0.0.1`; the rest of each layer installs as its tag's
-  tree, file for file.
+- Each package at its tag's version is the tag's pack, unchanged: each layer installs as its tag's
+  tree, file for file, its manifest included. The 0.0.1 publishes differed from their v0.1.0 tags
+  only in the version and, in the components, the foundation dependency, `0.0.1`.
 - A first publish is private. Neither gh nor the REST API can change a package's visibility or its
   repository link: the user packages endpoints list, get, delete, and restore only, and visibility
   and repository are read-only fields of their responses. The architect made the three public in
@@ -258,7 +297,8 @@ were measured then:
 - GitHub's docs say a package with no `repository` field is linked to the repository its name
   gives; measured, it isn't. The v0.1.0 manifests carry no `repository` field, and all three
   published unlinked. The architect linked them by hand, with Connect Repository on each package's
-  page, in place of a 0.0.2 with a `repository` field.
+  page, in place of a 0.0.2 with a `repository` field. The publishes at the tags' versions went
+  to the same packages, which stayed public and linked.
 - Every manager needs two settings to install the public packages: the `@jaimestill` registry,
   `https://npm.pkg.github.com`, and a token with read:packages. With no registry setting, each
   looks the package up on npmjs and fails 404; with the registry alone, GitHub Packages refuses it
@@ -268,11 +308,12 @@ were measured then:
   12.15.0 refuses environment expansion in registry credentials the repository controls, and
   rejects `pnpm_config__auth`; only the variable `pnpm_config_//npm.pkg.github.com/:_authToken`
   gives it the token.
-- pnpm's minimum release age fell back for the same-day versions: it added them to
-  `minimumReleaseAgeExclude` and installed them. GitHub Packages' metadata carries `time["0.0.1"]`
-  alone, with no `created` or `modified`, and pnpm skipped nothing for a missing time.
-- No install needs a git guard under any manager, since the components name the foundation by its
-  registry version; each installs one foundation, the one the components resolve to.
+- pnpm's minimum release age fell back for the same-day versions, at 0.0.1 and again at the tags'
+  versions: it added them to `minimumReleaseAgeExclude` and installed them. GitHub Packages'
+  metadata carried `time["0.0.1"]` alone, with no `created` or `modified`, and pnpm skipped
+  nothing for a missing time.
+- No install needs a git guard under any manager, since every layer comes from the registry; each
+  installs one foundation, the one the components resolve to.
 - The `.css` arrive whole, the foundation's 13 and the components' 3 (the SDK has none), and a
   `.css` subpath, such as `@jaimestill/spike-html-packages-components/entry-shadow.css`, resolves by
   package name. On JSR, below, none would.
@@ -287,37 +328,76 @@ Each layer repository tags a release with one plain `vX.Y.Z`:
 | `v0.1.0` | `JaimeStill/spike-html-packages-foundation` | `@jaimestill/spike-html-packages-foundation` |
 | `v0.1.0` | `JaimeStill/spike-html-packages-sdk` | `@jaimestill/spike-html-packages-sdk` |
 | `v0.1.0` | `JaimeStill/spike-html-packages-components` | `@jaimestill/spike-html-packages-components` |
+| `v0.2.0` | `JaimeStill/spike-html-packages-components` | `@jaimestill/spike-html-packages-components`, the foundation as a peer |
 
-`mise run publish` published each layer's v0.1.0 tree to GitHub Packages at 0.0.1 on 2026-10-26;
-no tag names a 0.0.1 publish:
+`mise run publish` published each layer's latest tag to GitHub Packages at the tag's version on
+2026-10-26, so the components' v0.1.0 has no publish:
 
 | version | package | published from |
 | --- | --- | --- |
-| `0.0.1` | `@jaimestill/spike-html-packages-foundation` | `v0.1.0` of `JaimeStill/spike-html-packages-foundation` |
-| `0.0.1` | `@jaimestill/spike-html-packages-sdk` | `v0.1.0` of `JaimeStill/spike-html-packages-sdk` |
-| `0.0.1` | `@jaimestill/spike-html-packages-components` | `v0.1.0` of `JaimeStill/spike-html-packages-components` |
+| `0.1.0` | `@jaimestill/spike-html-packages-foundation` | `v0.1.0` of `JaimeStill/spike-html-packages-foundation` |
+| `0.1.0` | `@jaimestill/spike-html-packages-sdk` | `v0.1.0` of `JaimeStill/spike-html-packages-sdk` |
+| `0.2.0` | `@jaimestill/spike-html-packages-components` | `v0.2.0` of `JaimeStill/spike-html-packages-components` |
+
+Earlier on 2026-10-26, it published each layer's v0.1.0 tree at 0.0.1, a version no tag names.
+The three 0.0.1 versions were deleted on 2026-10-26, through GitHub's REST API with gh's token
+granted delete:packages, once the tags' versions were published:
+
+| version | package | published from |
+| --- | --- | --- |
+| `0.0.1`, deleted | `@jaimestill/spike-html-packages-foundation` | `v0.1.0` of `JaimeStill/spike-html-packages-foundation` |
+| `0.0.1`, deleted | `@jaimestill/spike-html-packages-sdk` | `v0.1.0` of `JaimeStill/spike-html-packages-sdk` |
+| `0.0.1`, deleted | `@jaimestill/spike-html-packages-components` | `v0.1.0` of `JaimeStill/spike-html-packages-components` |
 
 ## Consumer installs
 
-`mise run check`'s `test:consumers` tier installs the six fixtures in `test/consumers/`: the three
-layers together and the components alone, each under npm, pnpm, and bun, by the layers'
-`github:...#v0.1.0` specs. Each installs offline and frozen from its committed lockfile and the
-caches in `.cache/consumers/`, in a scratch copy, and leaves the fixture unchanged. Every copy of
-each layer installed is its tag's tree, file for file, against the tags fetched into
-`.cache/tags/`; there is one foundation, the one the components resolve theirs to, and no layer's
-devDependency; and every exported subpath resolves to its target under node, or bun for bun's
-fixtures, where the keys grammar imports and runs. Each fixture holds its manager's guard in its
-own config file, `.npmrc` or `pnpm-workspace.yaml`:
+`mise run check`'s `test:consumers` tier installs the twelve fixtures in `test/consumers/`. The six
+consumer fixtures are the three layers together and the components with the foundation, their
+peer, each under npm, pnpm, and bun, by the tags `github:...-foundation#v0.1.0`,
+`github:...-sdk#v0.1.0`, and `github:...-components#v0.2.0`. The six Vite fixtures are the same
+two consumers under the same three managers, each with Vite 8.3.5 pinned in its devDependencies.
+Each fixture installs offline and frozen from its committed lockfile and the caches in
+`.cache/consumers/`, in a scratch copy, and leaves the fixture unchanged. Every copy of each layer
+installed is its tag's tree, file for file, against the tags fetched into `.cache/tags/`; there is
+one foundation, the one the components resolve theirs to, and no layer's devDependency. In each
+consumer fixture, every exported subpath also resolves to its target under node, or bun for bun's
+fixtures, where the keys grammar imports and runs. Only npm needs a guard, which each npm fixture
+holds in its `.npmrc`:
 
 | consumer | npm | pnpm | bun |
 | --- | --- | --- | --- |
-| the three together | `allow-git=root` | `blockExoticSubdeps: false` | none |
-| the components alone | `allow-git=all` | `blockExoticSubdeps: false` | none |
+| the three together | `allow-git=root` | none | none |
+| the components with the foundation | `allow-git=root` | none | none |
 
-npm's guard is proven both ways: each npm fixture's install fails under its guard lowered one step,
-`allow-git=none` for the three and `allow-git=root` for the components, with `EALLOWGIT`. A frozen
-pnpm install skips the check its guard lowers, so the offline tier can't prove pnpm's; the live
-task's installs with no lockfile do.
+npm's guard is proven both ways: each npm consumer fixture's install fails under `allow-git=none`
+with `EALLOWGIT`, and the package npm names as refused must be one the consumer declares, the sdk
+for the three and the foundation for the components. The Vite fixtures repeat neither the subpath
+nor the guard proof.
+
+Each consumer fixture's install is then served from the loopback address, and
+chrome-headless-shell loads that manager's page, `test/consumers/pages/<manager>.html`. Its import
+map is written by hand to follow the manager's layout: npm and bun hoist every package to the top
+of `node_modules/`, and pnpm puts each in its virtual store, `node_modules/.pnpm/`, with scopes
+giving each store directory the packages pnpm links beside it. pnpm names a git dependency's store
+directory by its codeload URL, cut short and hashed, so the pnpm page hard-codes those names, and
+the lockfile's tags fix them. The page loads lit and the layers unbundled from the install and
+renders the three components. It passes when each shadow root adopts the same reset and elements
+sheet objects that the page imports by package name, every file comes from the loopback address,
+and each package from one directory, the foundation from the one the install check found; a page
+that finds two foundations fails. The check then requires the jsDelivr import-map page,
+`test/live/import-map.html`, to map lit at the version the components' v0.2.0 manifest pins and
+each layer at its tag.
+
+Each Vite fixture's app, `test/consumers/vite/app/`, imports the components and the foundation's
+sheets by package name. Its config loads the local CSS module script plugin, `css-sheets.js`,
+copied from this repository's history at c2b4a19, since Vite has no CSS module scripts of its own
+(vitejs/vite#17700). The install's own Vite, run under node for every manager, builds the app;
+the build is served statically, then the app is served from Vite's dev server, and each renders
+the three components in chrome-headless-shell and passes the page's sheet check. A build bundles
+the packages, so the sheet check is what proves one foundation there. On the dev server, Vite's
+pre-bundling leaves each CSS import out of the bundled modules, and the plugin rewrites it as the
+server serves them, so the config needs no `optimizeDeps` setting. The dev server runs in the
+offline check only; `mise run live` builds the Vite apps over its networked installs.
 
 Every install the check, `mise run lock`, and `mise run live` make runs through
 `scripts/unconfigured.sh`, which points npm, pnpm, and bun at empty user and global config files
@@ -395,7 +475,9 @@ The `answer` task is planned to weigh two of the table's findings:
   consumer's asset copy, and the components' own `github:` copy. Installing them by the tags gives
   one.
 
-## Live, 2026-10-26
+The components' v0.2.0 removes both, as "Live, 2026-10-26, components v0.2.0" records.
+
+## Live, 2026-10-26, GitHub Packages at 0.0.1
 
 `mise run live`, run with gh's token in `GITHUB_PACKAGES_TOKEN` and the three packages public,
 printed the table below and exited 0. Its rows through the release assets' URLs read as on
@@ -438,6 +520,127 @@ subpath, under node for npm and pnpm and under bun for bun's.
 | npm 12.2.1's install of the components alone from GitHub Packages at 0.0.1 is each layer's v0.1.0 tree and resolves under node | yes: each layer its v0.1.0 tree but its manifest, which differs only in version 0.0.1 and the components' foundation dependency 0.0.1; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
 | pnpm 12.15.0's install of the components alone from GitHub Packages at 0.0.1 is each layer's v0.1.0 tree and resolves under node | yes: each layer its v0.1.0 tree but its manifest, which differs only in version 0.0.1 and the components' foundation dependency 0.0.1; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
 | bun 1.4.4's install of the components alone from GitHub Packages at 0.0.1 is each layer's v0.1.0 tree and resolves under bun | yes: each layer its v0.1.0 tree but its manifest, which differs only in version 0.0.1 and the components' foundation dependency 0.0.1; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under bun as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+
+## Live, 2026-10-26, components v0.2.0
+
+`mise run live`, run with gh's token in `GITHUB_PACKAGES_TOKEN`, printed the table below and
+exited 0, over the components' v0.2.0, the foundation and the SDK at v0.1.0, and GitHub Packages
+at the tags' versions. Its first row is the preflight: each tag and release asset on GitHub, and
+each package on GitHub Packages at its tag's version, public, with no 0.0.1 left. Then come
+jsDelivr /gh/ and the import-map page, and each manager's installs with no lockfile and a fresh
+cache, at the tags, by the release assets' URLs, and from GitHub Packages, the three together and
+the components with the foundation, each compared with its tag's tree file for file, its manifest
+included. The page and Vite rows load the release-asset and GitHub Packages installs: the
+manager's page, its import map rewritten to the install's directories by
+`test/live/installed-map.js`, and the Vite app's build, each held to the sheet check that Consumer
+installs describes; a second foundation makes the row a no. The last rows install the components
+alone, with no foundation declared, and read yes when the manager does what it was measured to
+do, naming the error.
+
+Every install gives one foundation, and every page and Vite build renders the components with
+their shadow roots adopting the sheets the consumer imports. Hosting states the guards each
+install needs and what the components alone do.
+
+| measure | result |
+| --- | --- |
+| GitHub holds the layers' latest tags (foundation v0.1.0, sdk v0.1.0, components v0.2.0) and their release assets; GitHub Packages each at its tag's version, public, and no 0.0.1 | yes: jaimestill-spike-html-packages-foundation-0.1.0.tgz, jaimestill-spike-html-packages-sdk-0.1.0.tgz, jaimestill-spike-html-packages-components-0.2.0.tgz |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-foundation@v0.1.0/ as the tag's tree | yes: 28/28 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-sdk@v0.1.0/ as the tag's tree | yes: 7/7 files byte-equal (status 200); .js no files; .css no files; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
+| jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-components@v0.2.0/ as the tag's tree | yes: 12/12 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.2.0`; x-jsd-version-type `version` |
+| chrome-headless-shell 156.0.8078.47 renders the import-map page from jsDelivr | yes: sl-status-badge 3 sheets, sl-entry-lit-shadow 3 sheets, sl-pagination-lit-shadow 3 sheets; the foundation's reset and elements sheets the same objects in every root; loaded from the loopback page, https://cdn.jsdelivr.net |
+| npm 12.2.1 installs the three at the tags, with no lockfile | yes: allow-git=root allow-remote=none installs it; allow-git=none allow-remote=none fails EALLOWGIT; each layer its tag's tree, its manifest included; one foundation |
+| pnpm 12.15.0 installs the three at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| bun 1.4.4 installs the three at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| npm 12.2.1 installs the components and the foundation, their peer, at the tags, with no lockfile | yes: allow-git=root allow-remote=none installs it; allow-git=none allow-remote=none fails EALLOWGIT; each layer its tag's tree, its manifest included; one foundation |
+| pnpm 12.15.0 installs the components and the foundation, their peer, at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| bun 1.4.4 installs the components and the foundation, their peer, at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| npm 12.2.1 installs the three by their release assets' URLs | yes: allow-git=none allow-remote=root installs it; allow-git=none allow-remote=none fails EALLOWREMOTE; each layer its tag's tree, its manifest included; one foundation |
+| pnpm 12.15.0 installs the three by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| bun 1.4.4 installs the three by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| npm 12.2.1 installs the components and the foundation, their peer, by their release assets' URLs | yes: allow-git=none allow-remote=root installs it; allow-git=none allow-remote=none fails EALLOWREMOTE; each layer its tag's tree, its manifest included; one foundation |
+| pnpm 12.15.0 installs the components and the foundation, their peer, by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| bun 1.4.4 installs the components and the foundation, their peer, by their release assets' URLs | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
+| npm 12.2.1 installs the three from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails E404, the registry alone fails E401; the git guard at its least (allow-git=none allow-remote=none) |
+| pnpm 12.15.0 installs the three from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails ERR_PNPM_FETCH_404, the registry alone fails ERR_PNPM_FETCH_401; the git guard at its least (defaults); pnpm's minimum release age fell back: it added 3 versions to minimumReleaseAgeExclude, published foundation 2026-10-26T18:23:29Z, sdk 2026-10-26T18:23:30Z, components 2026-10-26T18:23:31Z |
+| bun 1.4.4 installs the three from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-components - 404, the registry alone fails GET https://npm.pkg.github.com/@jaimestill%2fspike-html-packages-components - 401; the git guard at its least (defaults) |
+| npm 12.2.1 installs the components and the foundation, their peer, from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails E404, the registry alone fails E401; the git guard at its least (allow-git=none allow-remote=none) |
+| pnpm 12.15.0 installs the components and the foundation, their peer, from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails ERR_PNPM_FETCH_404, the registry alone fails ERR_PNPM_FETCH_401; the git guard at its least (defaults); pnpm's minimum release age fell back: it added 2 versions to minimumReleaseAgeExclude, published foundation 2026-10-26T18:23:29Z, sdk 2026-10-26T18:23:30Z, components 2026-10-26T18:23:31Z |
+| bun 1.4.4 installs the components and the foundation, their peer, from GitHub Packages at the tags' versions | yes: the registry and the token installs it; no registry setting fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-components - 404, the registry alone fails GET https://npm.pkg.github.com/@jaimestill%2fspike-html-packages-components - 401; the git guard at its least (defaults) |
+| npm 12.2.1's install of the three from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 30 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; sdk none; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| pnpm 12.15.0's install of the three from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 30 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; sdk none; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| bun 1.4.4's install of the three from GitHub Packages at the tags' versions is each layer's tag tree and resolves under bun | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 30 export subpaths resolve under bun as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; sdk none; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| npm 12.2.1's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| pnpm 12.15.0's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| bun 1.4.4's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under bun | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under bun as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
+| npm 12.2.1's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| pnpm 12.15.0's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| bun 1.4.4's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| npm 12.2.1's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| pnpm 12.15.0's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| bun 1.4.4's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| npm 12.2.1's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| pnpm 12.15.0's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| bun 1.4.4's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| npm 12.2.1's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| pnpm 12.15.0's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| bun 1.4.4's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| npm 12.2.1 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: allow-git=none allow-remote=none fails EALLOWGIT, allow-git=root allow-remote=none fails E404; it stops on E404, leaving no components and no foundation in node_modules |
+| pnpm 12.15.0 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: defaults fails ERR_PNPM_FETCH_404; it stops on ERR_PNPM_FETCH_404, leaving no components and no foundation in node_modules |
+| bun 1.4.4 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: defaults fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404; it stops on GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404, leaving the components and no foundation in node_modules |
+| npm 12.2.1 installs the components alone, no foundation declared, by their release assets' URLs: it gives the components no foundation | yes: no setting installs it: allow-git=none allow-remote=none fails EALLOWREMOTE, allow-git=none allow-remote=root fails E404; it stops on E404, leaving no components and no foundation in node_modules |
+| pnpm 12.15.0 installs the components alone, no foundation declared, by their release assets' URLs: it gives the components no foundation | yes: no setting installs it: defaults fails ERR_PNPM_FETCH_404; it stops on ERR_PNPM_FETCH_404, leaving no components and no foundation in node_modules |
+| bun 1.4.4 installs the components alone, no foundation declared, by their release assets' URLs: it gives the components no foundation | yes: no setting installs it: defaults fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404; it stops on GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404, leaving the components and no foundation in node_modules |
+| npm 12.2.1 installs the components alone, no foundation declared, from GitHub Packages at the tags' versions: it installs the foundation as their peer | yes: the registry and the token installs it; no registry setting fails E404, the registry alone fails E401; the foundation 0.1.0 as their peer, one foundation, the one the components resolve; each layer its tag's tree |
+| pnpm 12.15.0 installs the components alone, no foundation declared, from GitHub Packages at the tags' versions: it installs the foundation as their peer | yes: the registry and the token installs it; no registry setting fails ERR_PNPM_FETCH_404, the registry alone fails ERR_PNPM_FETCH_401; the foundation 0.1.0 as their peer, one foundation, the one the components resolve; each layer its tag's tree |
+| bun 1.4.4 installs the components alone, no foundation declared, from GitHub Packages at the tags' versions: it installs the foundation as their peer | yes: the registry and the token installs it; no registry setting fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-components - 404, the registry alone fails GET https://npm.pkg.github.com/@jaimestill%2fspike-html-packages-components - 401; the foundation 0.1.0 as their peer, one foundation, the one the components resolve; each layer its tag's tree |
+
+## Release flow, 2026-10-26
+
+`mise run release-flow` printed the table below and exited 0. It cut the foundation's 0.1.1 twice,
+each in a scratch clone of the foundation's main pushed to a local bare remote that holds its tags.
+In the hand flow, a person bumps the version and writes a Keep a Changelog section. In pnpm's flow,
+a person marks the manifest `"private": true` and runs `pnpm change`, and `pnpm version -r` writes
+the version and the changelog. Each flow then ran release.yml's own run steps, read from the
+foundation's main, with the pinned tools standing in for jdx/mise-action and parse-changelog
+0.6.16, the version create-gh-release-action v1.11.0 runs, standing in for the release notes; the
+tarball's upload was skipped.
+
+The table's findings are these:
+
+- Both flows pass the check and land an annotated v0.1.1 on a pack commit whose tree is the
+  tarball's, file for file.
+- parse-changelog extracts the hand flow's section exactly.
+- pnpm's flow needs `"private": true`: unmarked, `pnpm version -r` takes the unpublished 0.1.0 as
+  a first release and never bumps. A private tree can't be published, and a `--dry-run` publish
+  doesn't show it, since npm's and pnpm's both exit 0 on a private manifest; the table's row runs
+  a real `pnpm publish` to a loopback registry nothing serves.
+- pnpm writes `## 0.1.1`, then `### Patch Changes`, above the Keep a Changelog preamble, so
+  parse-changelog's notes for 0.1.1 carry the preamble after the section.
+- `pnpm change` and `pnpm version -r` read no network.
+- pnpm bumps dependents only through `workspace:` ranges, so a dependent repository's bump, such as
+  the components' peer range or devDependency tag, stays a hand edit.
+
+| measure | result |
+| --- | --- |
+| hand flow: what the flow wrote | nothing: no tool writes before the workflow |
+| hand flow: what a person wrote | M CHANGELOG.md, M package.json: the version 0.1.0 -> 0.1.1, the [v0.1.1] - 2026-10-26 section under ### Fixed, and the compare and tag links |
+| hand flow: release.yml's steps | actions/checkout@v7.0.1: the clone; Read the version and whether it is tagged: ran; jdx/mise-action@v5.2.2: mise install ran; mise run install: ran; mise run check: ran; Pack, commit the pack's tree, and tag it: ran; Create the GitHub release: parse-changelog CHANGELOG.md 0.1.1 ran; Attach the tarball: skipped, it reaches GitHub |
+| hand flow: the version, and the changelog section's form | 0.1.1; ## [v0.1.1] - 2026-10-26, then ### Fixed, between "## [Unreleased]" and "## [v0.1.0] - 2026-10-23"; 3 other changelog lines changed |
+| hand flow: parse-changelog 0.6.16 extracts 0.1.1 | yes: the section as written, exactly |
+| hand flow: pnpm's step read the network | no pnpm step: the person's edits read nothing |
+| hand flow: the check is green | yes: mise run check: ran |
+| hand flow: an annotated v0.1.1 on a pack commit equal to the tarball, in the bare remote | yes: annotated v0.1.1 on 14b3cd2, its one parent the pushed 6c1a6f7, its tree the tarball's package/ file for file; the remote's tags v0.1.1, v0.1.0 |
+| hand flow: the tree can still be published | yes: pnpm publish passes its checks and sends @jaimestill/spike-html-packages-foundation@0.1.1's request, which the namespace refuses |
+| pnpm flow: what the flow wrote | pnpm change: ?? .changeset/hungry-beds-bow.md; pnpm version -r: D .changeset/hungry-beds-bow.md, M CHANGELOG.md, M package.json, ?? .changeset/ledger.yaml |
+| pnpm flow: what a person wrote | package.json's "private": true, and pnpm change's arguments: the package, --bump patch, and --summary "The foundation's next patch, cut to measure the release flow." |
+| pnpm flow: release.yml's steps | actions/checkout@v7.0.1: the clone; Read the version and whether it is tagged: ran; jdx/mise-action@v5.2.2: mise install ran; mise run install: ran; mise run check: ran; Pack, commit the pack's tree, and tag it: ran; Create the GitHub release: parse-changelog CHANGELOG.md 0.1.1 ran; Attach the tarball: skipped, it reaches GitHub |
+| pnpm flow: the version, and the changelog section's form | 0.1.1; ## 0.1.1, then ### Patch Changes, between "# Changelog" and "All notable changes to `@jaimestill/spik..."; 0 other changelog lines changed |
+| pnpm flow: parse-changelog 0.6.16 extracts 0.1.1 | no: the section as written, then the file's next lines to the next heading, which the release notes would carry: All notable changes to `@jaimestill/spike-html-packages-foundation` are documented here. The ... |
+| pnpm flow: pnpm's step read the network | no: pnpm change and pnpm version -r exit 0 under unshare -rn, the loopback interface alone, where a fetch of registry.npmjs.org fails |
+| pnpm flow: the check is green | yes: mise run check: ran |
+| pnpm flow: an annotated v0.1.1 on a pack commit equal to the tarball, in the bare remote | yes: annotated v0.1.1 on 29b7312, its one parent the pushed e0ef8a6, its tree the tarball's package/ file for file; the remote's tags v0.1.1, v0.1.0 |
+| pnpm flow: the tree can still be published | no: pnpm publish refuses: This package has been marked as private |
+| a dependent repository's bump stays a hand edit | yes: the foundation's workspace holds 1 project, @jaimestill/spike-html-packages-foundation; pnpm version -r changed D .changeset/hungry-beds-bow.md, M CHANGELOG.md, M package.json, ?? .changeset/ledger.yaml, all in the clone; the components' main names the foundation by peerDependencies ^0.1.0, devDependencies github:JaimeStill/spike-html-packages-foundation#v0.1.0, no workspace: range, so pnpm bumps nothing there |
 
 ## JSR
 
