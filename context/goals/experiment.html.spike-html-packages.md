@@ -102,7 +102,7 @@ Door          two-way: no tag or publish. The measure runs in scratch, and the
 
 ## Progress
 
-slices 1/3 committed · standards — · spec — · editor — · stopped for the lint pick (ESCALATION after the measure)
+slices 1/3 committed · standards — · spec — · editor —
 
 ## Decisions
 
@@ -687,6 +687,10 @@ slices 1/3 committed · standards — · spec — · editor — · stopped for t
 - answer: the three public GitHub Packages versions stay published, as the measured alternative.
 - answer: STANDARDS.md's Packages bullet is corrected to the peer form; download and funding
   figures are re-read and dated for the reweighing.
+- answer: the lint pick stays ESLint+Prettier, now settled: Biome 2.6.3 matched every case with
+  far less surface, but ESLint is the standard by use and judges a .d.ts import by the resolved
+  file, where Biome's GritQL plugin relies on a naming convention and on version-bound node names.
+  Biome is the measured alternative; a change in ESLint's or Prettier's stewardship reopens it.
 
 ## Pending edits
 
