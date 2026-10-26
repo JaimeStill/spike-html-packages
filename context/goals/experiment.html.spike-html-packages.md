@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 2/9 committed (components 2662e5f, 68c90f9; reviewed early: standards bb569f6, spec 153c90a, editor fb2f202) · at the slice 2 stop: components PR #2 awaiting the architect's merge, then release.yml cuts v0.2.0 · root slices 3-9 —
+slices 2/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset) · root slices 3-9 —
 
 ## Decisions
 
@@ -704,6 +704,13 @@ slices 2/9 committed (components 2662e5f, 68c90f9; reviewed early: standards bb5
 - consumers: held typescript-eslint at 8.72.0 in the components: 8.72.1 (2026-10-26T17:09Z) is
   younger than pnpm 12's default minimum release age, and taking it would commit a
   minimumReleaseAgeExclude; retried before the brief, as layout held eslint-plugin-boundaries.
+
+- consumers: the components' slices were reviewed (standards, spec, editor) before their merge
+  rather than at the task's end, since the merge cuts v0.2.0, which is never re-cut.
+- consumers: the components' CHANGELOG and README leave GitHub Packages out, since 0.2.0 isn't
+  published there until the publish slice (spec review).
+- consumers: the components' currency imports `caretAdmits` from their `test/unit/release.js`, so
+  the peer-range check runs the rule the release test covers (standards review).
 
 ## Pending edits
 
