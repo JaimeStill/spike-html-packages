@@ -38,6 +38,7 @@ import { fileURLToPath } from "node:url";
 import { launch } from "../test/live/browser-pipe.js";
 import { followInstall } from "../test/live/installed-map.js";
 import { serve } from "../test/live/server.js";
+import { failure, layerOrder, measured as designOf, summary } from "../test/consumers/design.js";
 import { listFiles } from "../test/consumers/exports.js";
 
 // The layers, each its own repository on GitHub, each released by its latest tag, the one
@@ -248,11 +249,13 @@ function jsdelivrRow(layer) {
 }
 
 /** The import-map page, test/live/import-map.html, from the loopback server in the pinned
- * chrome-headless-shell, which resolves no host but the loopback address and jsDelivr's. */
+ * chrome-headless-shell, which resolves no host but the loopback address and jsDelivr's: every
+ * root adopting the page's sheets, and the design the page.css it links from jsDelivr gives
+ * (test/consumers/design.js), held to the layer order of the foundation's page.css at its tag. */
 async function importMapRow(browser, origin) {
   const shell = /\d+(\.\d+)+/.exec(run(process.env.BROWSER_EXECUTABLE, ["--version"]).output)?.[0];
   await measured(
-    `chrome-headless-shell ${shell} renders the import-map page from jsDelivr`,
+    `chrome-headless-shell ${shell} renders the import-map page from jsDelivr, styled by the page.css it links there`,
     async () => {
       // A blank page first, so the network events are on before the page's first request.
       const page = await browser.open("about:blank");
@@ -268,12 +271,16 @@ async function importMapRow(browser, origin) {
         const adopted = roots.every((root) => root.elements > 0 && root.sheets === 3);
         const shared = roots.every((root) => root.reset && root.baseline);
         const foreign = [...origins].filter((at) => at !== origin && at !== cdn);
+        const design = await page.evaluate(designOf(roots.map(({ tag }) => tag)));
+        const order = layerOrder(tagTree("foundation").get("dist/page.css").toString());
+        const unstyled = failure(design, order);
         const facts = [
           roots.map((root) => `${root.tag} ${root.sheets} sheets`).join(", "),
           `the foundation's reset and elements sheets ${shared ? "the same objects" : "not the same objects"} in every root`,
+          unstyled ? `the page ${unstyled}` : summary(design, order),
           `loaded from ${[...origins].map((at) => (at === origin ? "the loopback page" : at)).join(", ")}`,
         ];
-        return [adopted && shared && foreign.length === 0, facts.join("; ")];
+        return [adopted && shared && !unstyled && foreign.length === 0, facts.join("; ")];
       } finally {
         await page.close();
       }

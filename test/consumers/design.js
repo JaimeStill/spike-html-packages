@@ -1,7 +1,8 @@
 // The design check the consumer pages and the Vite apps share: the foundation's page.css, which
 // each page links from the install and each app imports by package name, must shape the document.
 // test/consumers/pages.js and test/consumers/vite.js evaluate measure() in each loaded page, once
-// its report is in, and hold what it returns to the install's own page.css with failure().
+// its report is in, and hold what it returns to the install's own page.css with failure(), as
+// scripts/live.js holds the jsDelivr page to the foundation's page.css at its tag.
 //
 // The values are computed, never hard-coded, so the check follows whatever the foundation's
 // tokens define: the body's background and font family against the --bg and --font-body tokens as
@@ -56,6 +57,18 @@ async function measure(tokens, tags) {
   // name: a statement's names, a block's, nested under the block it is in, through each import.
   const layers = [];
   const named = (name) => layers.includes(name) || layers.push(name);
+  // A sheet whose rules the document can't read, one from another origin fetched without CORS, is
+  // named by its URL, so a failure says which. The jsDelivr page's page.css is fetched with CORS,
+  // but its imports are not: its own statement names every layer, and fixes their order first.
+  const closed = [];
+  const rulesOf = (sheet) => {
+    try {
+      return sheet.cssRules;
+    } catch {
+      closed.push(sheet.href);
+      return [];
+    }
+  };
   const walk = (rules, prefix) => {
     for (const rule of rules) {
       if (rule instanceof CSSLayerStatementRule) {
@@ -66,31 +79,34 @@ async function measure(tokens, tags) {
         named(prefix + rule.name);
         walk(rule.cssRules, `${prefix}${rule.name}.`);
       } else if (rule instanceof CSSImportRule) {
-        if (rule.styleSheet) walk(rule.styleSheet.cssRules, prefix);
+        if (rule.styleSheet) walk(rulesOf(rule.styleSheet), prefix);
       } else if (rule.cssRules) {
         walk(rule.cssRules, prefix);
       }
     }
   };
-  for (const sheet of document.styleSheets) walk(sheet.cssRules, "");
-  return { values, shadows, layers };
+  for (const sheet of document.styleSheets) walk(rulesOf(sheet), "");
+  return { values, shadows, layers, closed };
 }
 
 /** The expression a page evaluates for the tags' shadow roots. */
 export const measured = (tags) =>
   `(${measure})(${JSON.stringify(tokens)}, ${JSON.stringify(tags)})`;
 
-/** The layer order the installed foundation's page.css fixes: its first layer statement. */
-export function layerOrder(foundation) {
-  const css = readFileSync(join(foundation, "dist/page.css"), "utf8").replace(/\/\*[^]*?\*\//g, "");
-  const statement = /@layer\s+([^;{]+);/.exec(css);
-  if (!statement) throw new Error(`${foundation}/dist/page.css states no layer order`);
+/** The layer order a page.css fixes, from its text: its first layer statement. */
+export function layerOrder(css) {
+  const statement = /@layer\s+([^;{]+);/.exec(css.replace(/\/\*[^]*?\*\//g, ""));
+  if (!statement) throw new Error("the foundation's page.css states no layer order");
   return statement[1].split(",").map((name) => name.trim());
 }
 
-/** What the measured design misses of the installed foundation's page.css, as a message; or
- * undefined when the document has it all. */
-export function failure(design, foundation) {
+/** The layer order the page.css of the foundation installed in the directory fixes. */
+export const installedOrder = (foundation) =>
+  layerOrder(readFileSync(join(foundation, "dist/page.css"), "utf8"));
+
+/** What the measured design misses of the foundation's page.css, whose layer order is the order,
+ * as a message; or undefined when the document has it all. */
+export function failure(design, order) {
   const missing = [];
   for (const { token, property, declared, expected, body } of design.values) {
     if (declared === "") missing.push(`the ${token} token on :root`);
@@ -110,23 +126,23 @@ export function failure(design, foundation) {
   }
   // The foundation's layers, in the document's order, against page.css's: each present and in
   // its place, whatever layers the page adds around them.
-  const order = layerOrder(foundation);
   const present = design.layers.filter((name) => order.includes(name));
   if (present.join(", ") !== order.join(", ")) {
     missing.push(
       `the foundation's layer order, ${order.join(", ")}: the document's is` +
-        ` ${present.join(", ") || "none of them"}`,
+        ` ${present.join(", ") || "none of them"}` +
+        (design.closed.length > 0 ? `, ${design.closed.join(", ")} unread` : ""),
     );
   }
   return missing.length > 0 ? `misses ${[...new Set(missing)].join("; ")}` : undefined;
 }
 
 /** The line a passing check adds: what the design came to. */
-export function summary(design, foundation) {
+export function summary(design, order) {
   const [bg, font] = design.values;
   return (
     `page.css shapes it: the body's background ${bg.body} from ${bg.token} and its font from` +
     ` ${font.token}, both tokens resolving in every shadow root, and the foundation's` +
-    ` ${layerOrder(foundation).length} layers in page.css's order`
+    ` ${order.length} layers in page.css's order`
   );
 }

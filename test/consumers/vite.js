@@ -25,7 +25,7 @@ import { realpathSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { launch } from "../live/browser-pipe.js";
-import { failure, measured, summary } from "./design.js";
+import { failure, installedOrder, measured, summary } from "./design.js";
 import { serve } from "../live/server.js";
 
 const installs = [];
@@ -123,9 +123,9 @@ async function load(browser, named, origin, page, roots, foundation) {
     roots.push(...report.roots.map(({ tag }) => tag));
 
     const design = await tab.evaluate(measured(roots));
-    const unstyled = failure(design, foundation);
+    const unstyled = failure(design, installedOrder(foundation));
     if (unstyled) fail(`${named} ${unstyled}`);
-    return { responses, design: summary(design, foundation) };
+    return { responses, design: summary(design, installedOrder(foundation)) };
   } finally {
     await tab.close();
   }

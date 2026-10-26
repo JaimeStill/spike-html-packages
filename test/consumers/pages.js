@@ -6,13 +6,14 @@
 // every file must come from the loopback address, and each package from one directory, the
 // foundation from the one installed.sh found. The foundation's page.css, which each page links from
 // the install, must shape the document and every root (test/consumers/design.js). Then the jsDelivr page, test/live/import-map.html,
-// must map lit at the version the components' tag pins and each layer at its tag.
+// must map lit at the version the components' tag pins and each layer at its tag, and link the
+// foundation's page.css at its tag.
 
 import { spawnSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { launch } from "../live/browser-pipe.js";
-import { failure, measured, summary } from "./design.js";
+import { failure, installedOrder, measured, summary } from "./design.js";
 import { root, serve } from "../live/server.js";
 
 const [tags, ...rest] = process.argv.slice(2);
@@ -52,7 +53,7 @@ async function check(browser, { manager, consumer, project, foundation }) {
     if (error) fail(`${named}: ${error}`);
 
     const design = await page.evaluate(measured(roots.map(({ tag }) => tag)));
-    const unstyled = failure(design, foundation);
+    const unstyled = failure(design, installedOrder(foundation));
     if (unstyled) fail(`${named} ${unstyled}`);
 
     const foreign = responses.filter(({ url }) => !url.startsWith(`${origin}/`));
@@ -90,7 +91,7 @@ async function check(browser, { manager, consumer, project, foundation }) {
     return (
       `pages: ${named} renders ${roots.map(({ tag }) => tag).join(", ")} from` +
       ` ${responses.length} files on the loopback address, none from elsewhere; one foundation,` +
-      ` ${reached}, whose reset and elements sheets every root adopts as the page imports them; ${summary(design, foundation)}`
+      ` ${reached}, whose reset and elements sheets every root adopts as the page imports them; ${summary(design, installedOrder(foundation))}`
     );
   } finally {
     await page.close();
@@ -130,7 +131,17 @@ for (const [layer, at] of Object.entries(tag)) {
     fail(`the jsDelivr page maps the ${layer} other than at ${at}`);
   }
 }
+const sheet = /<link\s+rel="stylesheet"\s+(?:crossorigin="anonymous"\s+)?href="([^"]+)"/.exec(
+  html,
+)?.[1];
+const entry = `/spike-html-packages-foundation@${tag.foundation}/dist/page.css`;
+if (!sheet?.startsWith("https://cdn.jsdelivr.net/gh/") || !sheet.endsWith(entry)) {
+  fail(
+    `the jsDelivr page links ${sheet ?? "no stylesheet"}, not the foundation's page.css at ${tag.foundation}`,
+  );
+}
 console.log(
   `pages: the jsDelivr page maps lit ${lit}, the lit the components' ${tag.components} pin, the` +
-    ` foundation at ${tag.foundation}, and the components at ${tag.components}`,
+    ` foundation at ${tag.foundation}, and the components at ${tag.components}, and links the` +
+    ` foundation's page.css at ${tag.foundation}`,
 );
