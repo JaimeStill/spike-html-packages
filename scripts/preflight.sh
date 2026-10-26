@@ -26,7 +26,9 @@ fi
 for manager in npm pnpm bun; do
   [[ -n $(ls -A ".cache/consumers/$manager" 2>/dev/null) ]] || fail "$manager's cache"
 done
+# Each layer's tag fetch holds the tag scripts/consumers.sh names it by, and no other.
+declare -A tag=([foundation]=v0.1.0 [sdk]=v0.1.0 [components]=v0.2.0)
 for layer in foundation sdk components; do
-  git --git-dir=".cache/tags/$layer" rev-parse -q --verify refs/tags/v0.1.0 >/dev/null 2>&1 ||
-    fail "the $layer tag fetch"
+  [[ $(git --git-dir=".cache/tags/$layer" tag -l 2>/dev/null) == "${tag[$layer]}" ]] ||
+    fail "the $layer ${tag[$layer]} tag fetch"
 done

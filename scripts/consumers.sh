@@ -15,24 +15,21 @@ tags=$root/.cache/tags
 scratch=$(mktemp -d)
 trap 'rm -rf "$scratch"' EXIT
 
-# The layers, each its own repository on GitHub, released by the one tag every fixture names.
+# The layers, each its own repository on GitHub, released by the tag every fixture names it by;
+# scripts/preflight.sh holds the cache to the same tags.
 owner=JaimeStill
 repository=spike-html-packages-
 layers=(foundation sdk components)
-tag=v0.1.0
-# The three together, and the components alone, which reach the foundation through their own
-# dependency on its tag.
+declare -A tag=([foundation]=v0.1.0 [sdk]=v0.1.0 [components]=v0.2.0)
+# The three together, and the components with the foundation, the peer they leave to the consumer.
 consumers=(three components)
 managers=(npm pnpm bun)
 declare -A lockfile=([npm]=package-lock.json [pnpm]=pnpm-lock.yaml [bun]=bun.lock)
-# Each consumer's npm guard lowered one step below its committed .npmrc: three's root to none, which
-# refuses even the consumer's own git dependencies, and the components' all to root, which refuses
-# theirs, the foundation's tag: the package each refusal must name.
-declare -A lowered=([three]=none [components]=root)
-declare -A refused=(
-  [three]="@jaimestill/$repository"
-  [components]="@jaimestill/${repository}foundation@"
-)
+# Each consumer's npm guard is allow-git=root, every git dependency its own now the components name
+# the foundation as a peer: lowered one step to none, it refuses even those, and the package the
+# refusal names must be one the consumer declares. npm names one, not the first in its manifest:
+# the sdk for the three, the foundation for the components.
+lowered=none
 
 fail() {
   echo "consumers: $*" >&2
@@ -65,11 +62,13 @@ if [[ $mode == warm ]]; then
       install "$manager" "$scratch/$consumer-$manager"
     done
   done
-  # The tag alone, at depth 1: the tag object bun records and the tree the installs must equal.
+  # The tag alone, at depth 1, in a repository made anew, so it holds no other tag: the tag object
+  # bun records and the tree the installs must equal, the one scripts/installed.sh reads.
   for layer in "${layers[@]}"; do
+    rm -rf "${tags:?}/$layer"
     git init -q --bare "$tags/$layer"
     git --git-dir="$tags/$layer" fetch -q --depth 1 \
-      "https://github.com/$owner/$repository$layer.git" "+refs/tags/$tag:refs/tags/$tag"
+      "https://github.com/$owner/$repository$layer.git" "+refs/tags/${tag[$layer]}:refs/tags/${tag[$layer]}"
   done
   exit 0
 fi
@@ -91,8 +90,8 @@ for consumer in "${consumers[@]}"; do
     diff -r -x node_modules "$fixture" "$project" >&2 ||
       fail "$manager's install of $consumer changed the fixture"
 
-    # Each layer its tag's tree, one foundation, no devDependency: the comparison live.js's
-    # networked installs share.
+    # Each layer its tag's tree, one foundation, the one the components resolve to, no
+    # devDependency: the comparison live.js's networked installs share.
     checked=$("$root/scripts/installed.sh" "$manager" "$project" "$tags")
     releases=()
     while read -r kind dir; do
@@ -103,31 +102,35 @@ for consumer in "${consumers[@]}"; do
     cp "$fixtures/resolve.js" "$project"
     (cd "$project" && "$runtime" resolve.js)
     echo "consumers: $manager installed $consumer offline from ${lockfile[$manager]}, each layer" \
-      "its $tag tree, one foundation, no devDependency; it resolves under $runtime"
+      "its tag's tree, one foundation, no devDependency; it resolves under $runtime"
   done
 done
 
 # npm's guard, proven both ways: the install that passes under each committed .npmrc fails under
-# the guard lowered, in a scratch copy, refusing a git dependency. npm ci --offline enforces
+# the guard lowered, in a scratch copy, refusing one of the consumer's own git dependencies. npm ci --offline enforces
 # allow-git before it reads the cache, so the refusal is EALLOWGIT, and any other failure, such as
 # ENOTCACHED, proves nothing; nor does a refusal of a package other than the one the lowered guard
 # refuses.
 for consumer in "${consumers[@]}"; do
   project=$scratch/$consumer-npm-lowered
   cp -r "$fixtures/$consumer/npm" "$project"
-  echo "allow-git=${lowered[$consumer]}" >"$project/.npmrc"
+  echo "allow-git=$lowered" >"$project/.npmrc"
   if install npm "$project" --offline >"$project.log" 2>&1; then
-    fail "npm installed $consumer under allow-git=${lowered[$consumer]}"
+    fail "npm installed $consumer under allow-git=$lowered"
   fi
   if ! grep -q "^npm error code EALLOWGIT$" "$project.log"; then
     cat "$project.log" >&2
-    fail "npm's install of $consumer under allow-git=${lowered[$consumer]} failed other than EALLOWGIT"
+    fail "npm's install of $consumer under allow-git=$lowered failed other than EALLOWGIT"
   fi
-  if ! grep -q "^npm error Refusing to fetch \"${refused[$consumer]}" "$project.log"; then
+  refused=$(sed -n 's/^npm error Refusing to fetch "\(@[^@]*\)@.*/\1/p' "$project.log")
+  if ! node -e '
+    const [manifest, name] = process.argv.slice(1);
+    process.exit(Object.hasOwn(require(manifest).dependencies, name) ? 0 : 1);
+  ' "$project/package.json" "$refused"; then
     cat "$project.log" >&2
-    fail "npm's install of $consumer under allow-git=${lowered[$consumer]} refused other than" \
-      "${refused[$consumer]}"
+    fail "npm's install of $consumer under allow-git=$lowered refused other than a git" \
+      "dependency $consumer declares"
   fi
-  echo "consumers: npm refused $consumer under allow-git=${lowered[$consumer]} (EALLOWGIT)," \
+  echo "consumers: npm refused $consumer's $refused under allow-git=$lowered (EALLOWGIT)," \
     "and installed it under the committed $(grep -v '^#' "$fixtures/$consumer/npm/.npmrc")"
 done
