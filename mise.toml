@@ -68,7 +68,7 @@ run = "scripts/currency.sh"
 quiet = true
 
 [tasks.live]
-description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
+description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, the installs' pages and Vite builds and the components alone among them, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
 depends = ["preflight live"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.js"
 

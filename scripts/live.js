@@ -1,10 +1,18 @@
 // The releases' facts on GitHub and jsDelivr, and the managers' installs of them from the network
 // and from GitHub Packages, as one dated markdown table: the networked evidence the check's offline
-// tier can't reach. It fails first, naming the token variable when it is unset, and each v0.1.0 tag
-// and release asset GitHub doesn't hold, and each package GitHub Packages doesn't hold at 0.0.1 or
-// doesn't make public. It writes nothing to the repository: every fetch and install is in a scratch
+// tier can't reach. The releases are the layers' latest tags, the foundation's and the SDK's v0.1.0
+// and the components' v0.2.0, whose components name the foundation as a peer. It fails first,
+// naming the token variable when it is unset, each tag and release asset GitHub doesn't hold, each
+// package GitHub Packages doesn't hold at its tag's version or doesn't make public, and each 0.0.1
+// it still holds. It writes nothing to the repository: every fetch and install is in a scratch
 // directory it removes. Each measure is a row, yes or no with what it observed; it exits 1 if any
 // row is a no.
+//
+// The rows: the tags and assets; jsDelivr's /gh/ of each tag, and the import-map page from it; each
+// consumer installed under each manager at the tags, by the release assets, and from GitHub
+// Packages, each install against the tags file for file; the page and the Vite build of each asset
+// and GitHub Packages install, on one foundation; and the components alone, no foundation declared,
+// from each hosting, against what each manager was measured to do.
 //
 //   GITHUB_PACKAGES_TOKEN=$(gh auth token) BROWSER_EXECUTABLE=... node scripts/live.js
 //
@@ -15,9 +23,12 @@ import { spawn, spawnSync } from "node:child_process";
 import {
   appendFileSync,
   copyFileSync,
+  cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -25,26 +36,32 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "../test/live/browser-pipe.js";
+import { followInstall } from "../test/live/installed-map.js";
 import { serve } from "../test/live/server.js";
 import { listFiles } from "../test/consumers/exports.js";
 
-// The layers, each its own repository on GitHub, released by the one tag.
+// The layers, each its own repository on GitHub, each released by its latest tag, the one
+// scripts/consumers.sh and scripts/preflight.sh name it by.
 const owner = "JaimeStill";
 const scope = "@jaimestill/";
 const layers = ["foundation", "sdk", "components"];
 const repository = (layer) => `spike-html-packages-${layer}`;
-const version = "0.1.0";
-const tag = `v${version}`;
+const tags = { foundation: "v0.1.0", sdk: "v0.1.0", components: "v0.2.0" };
+const versionOf = (layer) => tags[layer].slice(1);
+const tagsNamed = layers.map((layer) => `${layer} ${tags[layer]}`).join(", ");
+/** The layer a package name names. */
+const layerOf = (name) => name.slice((scope + repository("")).length);
 /** The asset each layer's release holds: pnpm pack's tarball name for its package. */
-const asset = (layer) => `${scope.slice(1, -1)}-${repository(layer)}-${version}.tgz`;
+const asset = (layer) => `${scope.slice(1, -1)}-${repository(layer)}-${versionOf(layer)}.tgz`;
 const cdn = "https://cdn.jsdelivr.net";
 /** A layer's release asset by its GitHub download URL, a dependency a manager installs by. */
 const assetURL = (layer) =>
-  `https://github.com/${owner}/${repository(layer)}/releases/download/${tag}/${asset(layer)}`;
-// The layers on GitHub Packages, scripts/publish.sh's publishes of the tags, read with gh's token.
+  `https://github.com/${owner}/${repository(layer)}/releases/download/${tags[layer]}/${asset(layer)}`;
+// The layers on GitHub Packages, scripts/publish.sh's publishes of the tags, each at its tag's
+// version, read with gh's token; 0.0.1, the publishes before them, are deleted.
 const registry = "https://npm.pkg.github.com";
 const registryHost = new URL(registry).host;
-const published = "0.0.1";
+const retired = "0.0.1";
 const tokenVariable = "GITHUB_PACKAGES_TOKEN";
 const token = process.env[tokenVariable];
 if (!token) {
@@ -104,16 +121,18 @@ async function measured(measure, body) {
   rows[at] = `| ${cell(measure)} | ${holds ? "yes" : "no"}: ${cell(observed)} |`;
 }
 
-/** Each layer's 0.0.1 publish time in GitHub Packages' metadata, null where it names none: filled
- * by unpublished() and read by the pnpm rows, whose minimum release age reads the same field. */
+/** Each layer's publish time at its tag's version in GitHub Packages' metadata, null where it names
+ * none: filled by unpublished() and read by the pnpm rows, whose minimum release age reads the
+ * same field. */
 const publishTimes = new Map();
 
-/** Each tag or release asset GitHub doesn't hold, and each package GitHub Packages doesn't hold at
- * 0.0.1 or make public, named; none when all six are published and the three packages public. */
+/** Each tag or release asset GitHub doesn't hold, each package GitHub Packages doesn't hold at its
+ * tag's version or make public, and each 0.0.1 it still holds, named; none when all six are
+ * published, the three packages public, and no 0.0.1 left. */
 async function unpublished() {
   const absent = [];
   for (const layer of layers) {
-    const repo = `${owner}/${repository(layer)}`;
+    const [repo, tag, version] = [`${owner}/${repository(layer)}`, tags[layer], versionOf(layer)];
     if (!run("gh", ["api", `repos/${repo}/git/ref/tags/${tag}`]).ok) {
       absent.push(`the tag ${tag} on ${repo}`);
     }
@@ -130,10 +149,13 @@ async function unpublished() {
       headers: { authorization: `Bearer ${token}` },
     });
     const metadata = response.ok ? await response.json() : {};
-    if (!Object.hasOwn(metadata.versions ?? {}, published)) {
-      absent.push(`${name}@${published} on GitHub Packages (status ${response.status})`);
+    if (!Object.hasOwn(metadata.versions ?? {}, version)) {
+      absent.push(`${name}@${version} on GitHub Packages (status ${response.status})`);
     }
-    publishTimes.set(layer, metadata.time?.[published] ?? null);
+    if (Object.hasOwn(metadata.versions ?? {}, retired)) {
+      absent.push(`${name}@${retired} deleted from GitHub Packages: it is still there`);
+    }
+    publishTimes.set(layer, metadata.time?.[version] ?? null);
     const visibility = run("gh", [
       ...["api", `users/${owner}/packages/npm/${repository(layer)}`],
       ...["--jq", ".visibility"],
@@ -146,14 +168,14 @@ async function unpublished() {
   return absent;
 }
 
-/** A layer's tree at the tag, each file's path to its bytes, from a depth-1 fetch of the tag into
+/** A layer's tree at its tag, each file's path to its bytes, from a depth-1 fetch of the tag into
  * the scratch directory, made once: a bare repository at tags/<layer>, as scripts/installed.sh
- * reads it. */
-const tags = join(scratch, "tags");
+ * and test/consumers/pages.js read it. */
+const fetched = join(scratch, "tags");
 const trees = new Map();
 function tagTree(layer) {
   if (trees.has(layer)) return trees.get(layer);
-  const git = join(tags, layer);
+  const [git, tag] = [join(fetched, layer), tags[layer]];
   const steps = [
     ["init", "--quiet", "--bare", git],
     [
@@ -191,7 +213,7 @@ const distinct = (responses, name) =>
 
 /** jsDelivr's /gh/ at the tag against the tag's tree, byte for byte, with the headers it sends. */
 function jsdelivrRow(layer) {
-  const base = `${cdn}/gh/${owner}/${repository(layer)}@${tag}/`;
+  const base = `${cdn}/gh/${owner}/${repository(layer)}@${tags[layer]}/`;
   return measured(`jsDelivr serves ${base} as the tag's tree`, async () => {
     const tree = tagTree(layer);
     const responses = [];
@@ -260,8 +282,15 @@ async function importMapRow(browser, origin) {
 }
 
 // The consumers the installs measure, each by its fixture's package.json: the three together, and
-// the components alone, which reach the foundation through their own dependency on its tag.
+// the components with the foundation, the peer they leave to the consumer. Each has a Vite
+// fixture, test/consumers/vite/<consumer>/, whose dependencies are its own with Vite beside them.
+// The components alone, with no foundation declared, are the components fixture without it.
 const consumers = ["three", "components"];
+const described = {
+  three: "the three",
+  components: "the components and the foundation, their peer,",
+  alone: "the components alone, no foundation declared,",
+};
 const managers = ["npm", "pnpm", "bun"];
 
 /** Each manager's install with no lockfile, into a cache of its own, run from the project so the
@@ -326,77 +355,115 @@ function errorCode(output) {
 const releases = {
   tag: "at the tags, with no lockfile",
   asset: "by their release assets' URLs",
-  registry: `from GitHub Packages at ${published}`,
+  registry: "from GitHub Packages at the tags' versions",
 };
 
-/** The consumer's fixture package.json: the layers at their tags as committed, each by its
- * release asset's URL, or each at exactly its GitHub Packages version. */
+/** The consumer's fixture package.json, its devDependencies kept: the layers at their tags as
+ * committed, each by its release asset's URL, or each at exactly its tag's version on GitHub
+ * Packages. `vite/<consumer>` is the consumer's Vite fixture; `alone` the components fixture
+ * without the foundation. */
 function manifest(consumer, manager, by) {
-  const fixture = join(fixtures, consumer, manager, "package.json");
-  const { description, ...json } = JSON.parse(readFileSync(fixture, "utf8"));
-  if (by === "asset") {
-    json.dependencies = Object.fromEntries(
-      layers
-        .filter((layer) => Object.hasOwn(json.dependencies, scope + repository(layer)))
-        .map((layer) => [scope + repository(layer), assetURL(layer)]),
-    );
-  } else if (by === "registry") {
-    json.dependencies = Object.fromEntries(
-      Object.keys(json.dependencies).map((name) => [name, published]),
-    );
+  const fixture = join(fixtures, consumer === "alone" ? "components" : consumer, manager);
+  const { description, ...json } = JSON.parse(readFileSync(join(fixture, "package.json"), "utf8"));
+  if (consumer === "alone") delete json.dependencies[scope + repository("foundation")];
+  for (const name of Object.keys(json.dependencies).filter((name) => name.startsWith(scope))) {
+    if (by === "asset") json.dependencies[name] = assetURL(layerOf(name));
+    else if (by === "registry") json.dependencies[name] = versionOf(layerOf(name));
   }
   return `${JSON.stringify(json, null, 2)}\n`;
 }
 
-/** The consumer installed under the manager from the network, in a scratch project with no
- * lockfile and a fresh scratch cache, its guard tried least first until an install passes; then
- * the install against the tags by scripts/installed.sh. A row with no passing setting, or an
- * install that isn't its tags, is a no. */
-function installRow(consumer, manager, by, version) {
-  const guard = guards[manager];
-  const which = consumer === "three" ? "the three" : "the components alone";
-  return measured(`${manager} ${version} installs ${which} ${releases[by]}`, async () => {
-    for (const layer of layers) tagTree(layer);
-    const refused = [];
-    for (let setting = guard.least, n = 0; setting; n++) {
-      const project = join(scratch, "installs", `${consumer}-${manager}-${by}-${n}`);
-      mkdirSync(project, { recursive: true });
-      writeFileSync(join(project, "package.json"), manifest(consumer, manager, by));
-      guard.write(project, setting);
-      const args = [manager, ...installs[manager](`${project}.cache`)];
-      const install = await started(unconfigured, args, { cwd: project });
-      if (!install.ok) {
-        const code = errorCode(install.output);
-        refused.push(`${guard.name(setting)} fails ${code}`);
-        setting = guard.raise(setting, code);
-        continue;
-      }
-
-      const lesser = refused.length > 0 ? `; ${refused.join(", ")}` : "; no lesser setting";
-      const check = await started(join(root, "scripts/installed.sh"), [
-        ...[manager, project, tags, by],
-      ]);
-      if (!check.ok) {
-        const mismatch = check.output.split("\n").findLast((line) => line.startsWith("installed:"));
-        return [false, `${guard.name(setting)} installs it${lesser}; ${mismatch ?? check.output}`];
-      }
-      const lines = check.stdout.split("\n").map((line) => line.split(" "));
-      const found = lines.filter(([kind]) => kind === "foundation");
-      const theirs = lines.find(([kind]) => kind === "components-foundation")?.[1];
-      const declared = lines.find(
-        ([kind, dir]) => kind === "release" && dir.endsWith("-foundation") && dir !== theirs,
-      );
-      const foundations =
-        found.length === 1
-          ? "one foundation"
-          : `${found.length} foundations${declared ? ": the components resolve theirs to one apart from the consumer's" : ""}`;
-      return [
-        true,
-        `${guard.name(setting)} installs it${lesser}; each layer its ${tag} tree; ${foundations}`,
-      ];
+/** Runs the task once fewer than `limit` others are running: the installs, a few dozen, each read
+ * the network, and GitHub's codeload and release downloads are spared them all at once. */
+function limiter(limit) {
+  let active = 0;
+  const waiting = [];
+  return async (task) => {
+    while (active >= limit) await new Promise((resolve) => waiting.push(resolve));
+    active++;
+    try {
+      return await task();
+    } finally {
+      active--;
+      waiting.shift()?.();
     }
-    return [false, `no setting installs it: ${refused.join(", ")}`];
-  });
+  };
+}
+const limited = limiter(12);
+/** One browser task at a time: each page and Vite build launches a browser of its own. */
+const serially = limiter(1);
+
+/** The consumer installed under the manager from the network, in a scratch project with no
+ * lockfile and a fresh scratch cache, run from the project so the manager reads the guard in the
+ * project's own config file, and through scripts/unconfigured.sh so it reads none of the user's
+ * own. The manager's guard is tried least first, a refusal raising it; from GitHub Packages, the
+ * registry settings are too, least first, any other failure raising the registry setting, the
+ * guard kept where it stands. Resolves to the project and its settings, ok when an install passed,
+ * or to the last project tried and the error that stopped it. */
+async function attempt(consumer, manager, by) {
+  const guard = guards[manager];
+  const refused = [];
+  const last = by === "registry" ? registrySettings.length - 1 : 0;
+  let [setting, step] = [guard.least, 0];
+  for (let n = 0; ; n++) {
+    const name = `${consumer.replace("/", "-")}-${manager}-${by}-${n}`;
+    const project = join(scratch, "installs", name);
+    mkdirSync(project, { recursive: true });
+    writeFileSync(join(project, "package.json"), manifest(consumer, manager, by));
+    guard.write(project, setting);
+    if (by === "registry") writeRegistry(project, manager, step);
+    const pnpmToken = by === "registry" && manager === "pnpm" && step === 2;
+    const args = [
+      ...(pnpmToken ? ["--github-packages-token"] : []),
+      ...[manager, ...installs[manager](`${project}.cache`)],
+    ];
+    const adding = pnpmToken ? { [`pnpm_config_//${registryHost}/:_authToken`]: token } : {};
+    const install = await limited(() => started(unconfigured, args, { cwd: project, adding }));
+    const settings =
+      by !== "registry"
+        ? guard.name(setting)
+        : setting === guard.least
+          ? registrySettings[step]
+          : `${registrySettings[step]}, ${guard.name(setting)}`;
+    if (!install.ok) {
+      const code = errorCode(install.output);
+      refused.push(`${settings} fails ${code}`);
+      const raised = guard.raise(setting, code);
+      if (raised) setting = raised;
+      else if (step < last) step++;
+      else return { ok: false, project, code, refused };
+      continue;
+    }
+    const lesser = refused.length > 0 ? refused.join(", ") : "no lesser setting";
+    return { ok: true, project, settings, setting, step, lesser, output: install.output };
+  }
+}
+
+/** The install against the tags by scripts/installed.sh: resolves to its lines, or throws naming
+ * the mismatch. */
+async function checked(manager, project, by) {
+  for (const layer of layers) tagTree(layer);
+  const check = await started(join(root, "scripts/installed.sh"), [
+    ...[manager, project, fetched, by],
+  ]);
+  if (!check.ok) {
+    const mismatch = check.output.split("\n").findLast((line) => line.startsWith("installed:"));
+    throw new Error(mismatch ?? check.output);
+  }
+  const lines = check.stdout.split("\n").map((line) => line.split(" "));
+  return {
+    releases: lines.filter(([kind]) => kind === "release").map(([, dir]) => dir),
+    foundations: lines.filter(([kind]) => kind === "foundation").map(([, dir]) => dir),
+    theirs: lines.find(([kind]) => kind === "components-foundation")?.[1],
+  };
+}
+
+/** The foundations an installed.sh check found, counted, and whether the components resolve
+ * theirs to one apart from the consumer's. */
+function foundationCount({ releases: dirs, foundations, theirs }) {
+  if (foundations.length === 1) return "one foundation";
+  const apart = dirs.some((dir) => dir.endsWith("-foundation") && dir !== theirs);
+  return `${foundations.length} foundations${apart ? ": the components resolve theirs to one apart from the consumer's" : ""}`;
 }
 
 /** The settings a GitHub Packages install is tried under, least first: none; the @jaimestill
@@ -444,117 +511,241 @@ function releaseAge(output) {
     : `pnpm's minimum release age didn't apply: published ${times}`;
 }
 
-/** Row e: the consumer installed under the manager from GitHub Packages, each layer at exactly
- * 0.0.1, in a scratch project with no lockfile and a fresh scratch cache, the manager's guard and
- * the registry settings tried least first: a refusal raises the guard as installRow raises it, and
- * any other failure the registry setting, the guard kept where it stands. Resolves
- * `installed` to the project that installed, or null, for row f. */
-function registryRow(consumer, manager, version) {
-  const guard = guards[manager];
-  const which = consumer === "three" ? "the three" : "the components alone";
+/** The consumer installed at the tags or by the release assets (attempt()), then against the tags
+ * by scripts/installed.sh: each layer its tag's tree, file for file, its manifest included, and
+ * one foundation. A row with no passing setting, an install that isn't its tags, or a second
+ * foundation is a no. Resolves `installed` to the project and the foundation the components
+ * resolve, or null, for the page row. */
+function installRow(consumer, manager, by, version) {
   let done;
   const installed = new Promise((resolve) => (done = resolve));
-  const row = measured(`${manager} ${version} installs ${which} ${releases.registry}`, async () => {
-    try {
-      const refused = [];
-      let [setting, step] = [guard.least, 0];
-      for (let n = 0; ; n++) {
-        const project = join(scratch, "installs", `${consumer}-${manager}-registry-${n}`);
-        mkdirSync(project, { recursive: true });
-        writeFileSync(join(project, "package.json"), manifest(consumer, manager, "registry"));
-        guard.write(project, setting);
-        writeRegistry(project, manager, step);
-        const pnpmToken = manager === "pnpm" && step === 2;
-        const args = [
-          ...(pnpmToken ? ["--github-packages-token"] : []),
-          ...[manager, ...installs[manager](`${project}.cache`)],
-        ];
-        const adding = pnpmToken ? { [`pnpm_config_//${registryHost}/:_authToken`]: token } : {};
-        const install = await started(unconfigured, args, { cwd: project, adding });
-        const named =
-          setting === guard.least
-            ? registrySettings[step]
-            : `${registrySettings[step]}, ${guard.name(setting)}`;
-        if (!install.ok) {
-          const code = errorCode(install.output);
-          refused.push(`${named} fails ${code}`);
-          const raised = guard.raise(setting, code);
-          if (raised) setting = raised;
-          else if (step < registrySettings.length - 1) step++;
-          else return [false, `no setting installs it: ${refused.join(", ")}`];
-          continue;
-        }
-        done(project);
+  const row = measured(
+    `${manager} ${version} installs ${described[consumer]} ${releases[by]}`,
+    async () => {
+      try {
+        const install = await attempt(consumer, manager, by);
+        if (!install.ok) return [false, `no setting installs it: ${install.refused.join(", ")}`];
+        const found = await checked(manager, install.project, by);
+        done({ project: install.project, foundation: found.theirs });
         const facts = [
-          `${registrySettings[step]} installs it`,
-          refused.length > 0 ? refused.join(", ") : "no lesser setting",
-          setting === guard.least
-            ? `the git guard at its least (${guard.name(setting)})`
-            : `git guard ${guard.name(setting)}`,
-          ...(manager === "pnpm" ? [releaseAge(install.output)] : []),
+          `${install.settings} installs it`,
+          install.lesser,
+          "each layer its tag's tree, its manifest included",
+          foundationCount(found),
         ];
-        return [true, facts.join("; ")];
+        return [found.foundations.length === 1, facts.join("; ")];
+      } finally {
+        done(null);
       }
-    } finally {
-      done(null);
-    }
-  });
+    },
+  );
   return { row, installed };
 }
 
-/** Row f: the install row e made, against the tags by scripts/installed.sh, its manifests held to
- * the registry's exception; then every export subpath resolved by package name, by
- * test/consumers/resolve.js under node for npm and pnpm and bun for bun, with the .css each layer
- * installs. */
-function registryTreeRow(consumer, manager, version, installed) {
-  const which = consumer === "three" ? "the three" : "the components alone";
-  const runtime = manager === "bun" ? "bun" : "node";
-  return measured(
-    `${manager} ${version}'s install of ${which} ${releases.registry} is each layer's ${tag} tree and resolves under ${runtime}`,
+/** Row e: the consumer installed from GitHub Packages, each layer at exactly its tag's version
+ * (attempt()). Resolves `installed` to the project that installed, or null, for row f and the
+ * page row. */
+function registryRow(consumer, manager, version) {
+  const guard = guards[manager];
+  let done;
+  const installed = new Promise((resolve) => (done = resolve));
+  const row = measured(
+    `${manager} ${version} installs ${described[consumer]} ${releases.registry}`,
     async () => {
-      const project = await installed;
-      if (project === null) return [false, "row e installed nothing to check"];
-      for (const layer of layers) tagTree(layer);
-      const check = await started(join(root, "scripts/installed.sh"), [
-        ...[manager, project, tags, "registry"],
-      ]);
-      if (!check.ok) {
-        const mismatch = check.output.split("\n").findLast((line) => line.startsWith("installed:"));
-        return [false, mismatch ?? check.output];
+      try {
+        const install = await attempt(consumer, manager, "registry");
+        if (!install.ok) return [false, `no setting installs it: ${install.refused.join(", ")}`];
+        done({ project: install.project });
+        const facts = [
+          `${registrySettings[install.step]} installs it`,
+          install.lesser,
+          install.setting === guard.least
+            ? `the git guard at its least (${guard.name(install.setting)})`
+            : `git guard ${guard.name(install.setting)}`,
+          ...(manager === "pnpm" ? [releaseAge(install.output)] : []),
+        ];
+        return [true, facts.join("; ")];
+      } finally {
+        done(null);
       }
-      const dirs = check.stdout
-        .split("\n")
-        .filter((line) => line.startsWith("release "))
-        .map((line) => line.slice("release ".length));
+    },
+  );
+  return { row, installed };
+}
 
-      const steps = [
-        [runtime, [join(fixtures, "consumers.js"), project, ...dirs]],
-        [runtime, ["resolve.js"]],
-      ];
-      copyFileSync(join(fixtures, "resolve.js"), join(project, "resolve.js"));
-      for (const [command, args] of steps) {
-        const step = await started(command, args, { cwd: project });
-        if (!step.ok) return [false, `${runtime} ${args[0]} fails: ${errorCode(step.output)}`];
+/** Row f: the install row e made, against the tags by scripts/installed.sh, file for file, its
+ * manifests included: each is its tag's pack, unchanged; then every export subpath resolved by
+ * package name, by test/consumers/resolve.js under node for npm and pnpm and bun for bun, with the
+ * .css each layer installs. Resolves `installed` to the project and its foundation, or null, for
+ * the page row. */
+function registryTreeRow(consumer, manager, version, made) {
+  const runtime = manager === "bun" ? "bun" : "node";
+  let done;
+  const installed = new Promise((resolve) => (done = resolve));
+  const row = measured(
+    `${manager} ${version}'s install of ${described[consumer]} ${releases.registry} is each layer's tag tree and resolves under ${runtime}`,
+    async () => {
+      try {
+        const { project } = (await made) ?? {};
+        if (project === undefined) return [false, "row e installed nothing to check"];
+        const found = await checked(manager, project, "registry");
+        done({ project, foundation: found.theirs });
+
+        const steps = [
+          [runtime, [join(fixtures, "consumers.js"), project, ...found.releases]],
+          [runtime, ["resolve.js"]],
+        ];
+        copyFileSync(join(fixtures, "resolve.js"), join(project, "resolve.js"));
+        for (const [command, args] of steps) {
+          const step = await started(command, args, { cwd: project });
+          if (!step.ok) return [false, `${runtime} ${args[0]} fails: ${errorCode(step.output)}`];
+        }
+        const subpaths = JSON.parse(readFileSync(join(project, "subpaths.json"), "utf8"));
+        const css = found.releases.map((dir) => {
+          const { name } = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+          const files = listFiles(dir).filter((path) => path.endsWith(".css"));
+          return `${layerOf(name)} ${files.length > 0 ? files.join(", ") : "none"}`;
+        });
+        const byName = subpaths.find(({ runtime: target }) => target?.endsWith(".css"));
+        const facts = [
+          "each layer its tag's tree, its manifest included",
+          "one foundation, the one the components resolve to",
+          "no devDependency",
+          `all ${subpaths.length} export subpaths resolve under ${runtime} as their exports name them, types-only ones to nothing`,
+          `.css installed: ${css.join("; ")}`,
+          byName
+            ? `${byName.name}${byName.subpath.slice(1)} resolves by package name to its ${byName.runtime}`
+            : "no .css subpath",
+        ];
+        return [byName !== undefined, facts.join("; ")];
+      } finally {
+        done(null);
       }
-      const subpaths = JSON.parse(readFileSync(join(project, "subpaths.json"), "utf8"));
-      const css = dirs.map((dir) => {
-        const { name } = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
-        const files = listFiles(dir).filter((path) => path.endsWith(".css"));
-        const layer = name.slice((scope + repository("")).length);
-        return `${layer} ${files.length > 0 ? files.join(", ") : "none"}`;
-      });
-      const byName = subpaths.find(({ runtime: target }) => target?.endsWith(".css"));
+    },
+  );
+  return { row, installed };
+}
+
+/** The last line of a runner's output that names what it checked or why it failed. */
+const said = (output, prefix) =>
+  output.split("\n").findLast((line) => line.startsWith(`${prefix}:`)) ?? output;
+
+/** The page and the Vite build of a release-asset or GitHub Packages install, each by its own
+ * runner. The page is test/consumers/pages/ copied into the install its row made, its manager's
+ * import map rewritten to the install's directories (test/live/installed-map.js), loaded by
+ * test/consumers/pages.js; the build is the consumer's Vite fixture installed as the row's was
+ * (attempt()), checked against the tags, test/consumers/vite/app/ copied in, built and loaded by
+ * test/consumers/vite.js --build. Each must render every root adopting the reset and elements
+ * sheets the page or app imports, from the loopback address alone; a second foundation makes the
+ * row a no, as either runner's sheet check finds it. */
+function loadRow(consumer, manager, by, version, made) {
+  return measured(
+    `${manager} ${version}'s install of ${described[consumer]} ${releases[by]} loads on one foundation in its page and its Vite build`,
+    async () => {
+      const install = await made;
+      if (install === null) return [false, "its install row installed nothing to load"];
+      cpSync(join(fixtures, "pages"), join(install.project, "pages"), { recursive: true });
+      followInstall(install.project, manager);
+      const page = await serially(() =>
+        started("node", [
+          ...[join(fixtures, "pages.js"), fetched],
+          ...[manager, consumer, install.project, install.foundation],
+        ]),
+      );
+      if (!page.ok) return [false, `the page: ${said(page.output, "pages")}`];
+      const rendered = /renders (.+?) from (\d+) files/.exec(
+        said(page.output.split("\n")[0], "pages"),
+      );
+
+      const vite = await attempt(`vite/${consumer}`, manager, by);
+      if (!vite.ok)
+        return [false, `the Vite fixture: no setting installs it: ${vite.refused.join(", ")}`];
+      const found = await checked(manager, vite.project, by);
+      if (found.foundations.length !== 1) {
+        return [false, `the Vite fixture's install holds ${foundationCount(found)}`];
+      }
+      const viteVersion = JSON.parse(
+        readFileSync(join(vite.project, "node_modules/vite/package.json"), "utf8"),
+      ).version;
+      cpSync(join(fixtures, "vite/app"), vite.project, { recursive: true });
+      const build = await serially(() =>
+        started("node", [
+          ...[join(fixtures, "vite.js"), "--build"],
+          ...[manager, consumer, vite.project, found.theirs],
+        ]),
+      );
+      if (!build.ok) return [false, `the Vite build: ${said(build.output, "vite")}`];
+      const built = /from (\d+) files/.exec(said(build.output, "vite"));
       const facts = [
-        `each layer its ${tag} tree but its manifest, which differs only in version ${published} and the components' foundation dependency ${published}`,
-        "one foundation, the one the components resolve to",
-        "no devDependency",
-        `all ${subpaths.length} export subpaths resolve under ${runtime} as their exports name them, types-only ones to nothing`,
-        `.css installed: ${css.join("; ")}`,
-        byName
-          ? `${byName.name}${byName.subpath.slice(1)} resolves by package name to its ${byName.runtime}`
-          : "no .css subpath",
+        `the page renders ${rendered?.[1]} from ${rendered?.[2]} files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation`,
+        `Vite ${viteVersion}'s build of the app, its fixture installed under ${vite.settings} with each layer its tag's tree and one foundation, renders them from ${built?.[1]} files, every root adopting the sheets the app imports`,
       ];
-      return [byName !== undefined, facts.join("; ")];
+      return [true, facts.join("; ")];
+    },
+  );
+}
+
+/** Each distinct directory the foundation is installed in below the project's node_modules, as
+ * scripts/installed.sh's installs_of finds them. */
+function foundationsIn(project) {
+  const modules = join(project, "node_modules");
+  if (!existsSync(modules)) return [];
+  const name = scope + repository("foundation");
+  const found = run("find", [modules, "-path", `*/node_modules/${name}`, "-prune", "-print0"]);
+  const dirs = found.stdout.toString().split("\0").filter(Boolean);
+  return [...new Set(dirs.map((dir) => realpathSync(dir)))];
+}
+
+/** What each manager does with the components alone, no foundation declared, by hosting, as
+ * measured on 2026-10-26 (npm 12.2.1, pnpm 12.15.0, bun 1.4.4): from the tags and the release
+ * assets each looks the peer up on npmjs, which holds no @jaimestill package, and fails 404, so
+ * the components get no foundation; from GitHub Packages, the @jaimestill registry holds the
+ * foundation at 0.1.0, which the peer's ^0.1.0 admits, and each installs it as the peer: one
+ * foundation, the one the components resolve. `none` is a failed install or one that holds no
+ * foundation; `peer` is an install whose one foundation is the peer, each layer its tag's tree. */
+const alone = {
+  tag: { npm: "none", pnpm: "none", bun: "none" },
+  asset: { npm: "none", pnpm: "none", bun: "none" },
+  registry: { npm: "peer", pnpm: "peer", bun: "peer" },
+};
+const outcomes = {
+  none: "it gives the components no foundation",
+  peer: "it installs the foundation as their peer",
+};
+
+/** The components alone, no foundation declared, installed under the manager from the hosting
+ * (attempt()): yes when the manager does what it was measured to do, in `alone`, naming the error
+ * a failed install stops on and what it leaves in node_modules. */
+function aloneRow(manager, by, version) {
+  const expected = alone[by][manager];
+  return measured(
+    `${manager} ${version} installs ${described.alone} ${releases[by]}: ${outcomes[expected]}`,
+    async () => {
+      const install = await attempt("alone", manager, by);
+      const foundations = foundationsIn(install.project);
+      if (!install.ok) {
+        const components = existsSync(
+          join(install.project, "node_modules", scope + repository("components")),
+        );
+        const left = `${components ? "the components" : "no components"} and ${foundations.length === 0 ? "no foundation" : `${foundations.length} foundations`}`;
+        const facts = [
+          `no setting installs it: ${install.refused.join(", ")}`,
+          `it stops on ${install.code}, leaving ${left} in node_modules`,
+        ];
+        return [expected === (foundations.length === 0 ? "none" : "other"), facts.join("; ")];
+      }
+      if (foundations.length === 0) {
+        return [expected === "none", `${install.settings} installs it with no foundation`];
+      }
+      const found = await checked(manager, install.project, by);
+      const peer = JSON.parse(readFileSync(join(found.theirs, "package.json"), "utf8")).version;
+      const facts = [
+        `${by === "registry" ? registrySettings[install.step] : install.settings} installs it`,
+        install.lesser,
+        `the foundation ${peer} as their peer, one foundation, the one the components resolve`,
+        "each layer its tag's tree",
+      ];
+      return [expected === "peer", facts.join("; ")];
     },
   );
 }
@@ -565,10 +756,10 @@ try {
     console.error(`live: GitHub doesn't hold what the table reads:\n- ${absent.join("\n- ")}`);
     process.exitCode = 1;
   } else {
-    await measured(`GitHub holds the three ${tag} tags and their release assets`, () => [
-      true,
-      layers.map(asset).join(", "),
-    ]);
+    await measured(
+      `GitHub holds the layers' latest tags (${tagsNamed}) and their release assets; GitHub Packages each at its tag's version, public, and no ${retired}`,
+      () => [true, layers.map(asset).join(", ")],
+    );
 
     for (const layer of layers) await jsdelivrRow(layer);
 
@@ -585,11 +776,15 @@ try {
     const versions = Object.fromEntries(
       managers.map((manager) => [manager, run(manager, ["--version"]).output]),
     );
-    // A row takes its place when it starts: the tags' and assets' rows, then rows e, each GitHub
-    // Packages install, then rows f, each install's trees once row e has made it.
+    // A row takes its place when it starts: the tags' and assets' rows; rows e, each GitHub
+    // Packages install, then rows f, each install's trees once row e has made it; the page and
+    // Vite rows, each once its install's row has made and checked it; the components alone.
     const pairs = consumers.flatMap((consumer) => managers.map((manager) => [consumer, manager]));
-    const installed = ["tag", "asset"].flatMap((by) =>
-      pairs.map(([consumer, manager]) => installRow(consumer, manager, by, versions[manager])),
+    const byTag = pairs.map(([consumer, manager]) =>
+      installRow(consumer, manager, "tag", versions[manager]),
+    );
+    const byAsset = pairs.map(([consumer, manager]) =>
+      installRow(consumer, manager, "asset", versions[manager]),
     );
     const registryInstalls = pairs.map(([consumer, manager]) =>
       registryRow(consumer, manager, versions[manager]),
@@ -597,7 +792,22 @@ try {
     const registryTrees = pairs.map(([consumer, manager], at) =>
       registryTreeRow(consumer, manager, versions[manager], registryInstalls[at].installed),
     );
-    await Promise.all([...installed, ...registryInstalls.map(({ row }) => row), ...registryTrees]);
+    const loads = [
+      ...pairs.map(([consumer, manager], at) =>
+        loadRow(consumer, manager, "asset", versions[manager], byAsset[at].installed),
+      ),
+      ...pairs.map(([consumer, manager], at) =>
+        loadRow(consumer, manager, "registry", versions[manager], registryTrees[at].installed),
+      ),
+    ];
+    const alones = ["tag", "asset", "registry"].flatMap((by) =>
+      managers.map((manager) => aloneRow(manager, by, versions[manager])),
+    );
+    await Promise.all([
+      ...[...byTag, ...byAsset, ...registryInstalls, ...registryTrees].map(({ row }) => row),
+      ...loads,
+      ...alones,
+    ]);
 
     const date = new Date().toISOString().slice(0, 10);
     console.log(`## Live, ${date}\n\n| measure | result |\n| --- | --- |\n${rows.join("\n")}`);

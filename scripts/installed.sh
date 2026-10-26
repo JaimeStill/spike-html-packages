@@ -5,11 +5,10 @@
 # devDependency is installed, but for one the layer also names as a peer, which the consumer
 # installs as its own. `tag`, the default, is an install of the layers from their tags,
 # which must hold one foundation, the one the components resolve theirs to. `asset` is an install
-# from the layers' release assets, whose components still declare the foundation by its tag: its
-# foundations are printed, not held to one. `registry` is an install from GitHub Packages at 0.0.1,
-# held to one foundation as `tag` is, whose manifests are the one exception to the tag's tree: each
-# differs from its tag's only in its version, 0.0.1, and in the components' foundation dependency,
-# which names the registry foundation at 0.0.1, as scripts/publish.sh published them.
+# from the layers' release assets: its foundations are printed, not held to one, so
+# scripts/live.js can count them. `registry` is an install from GitHub Packages, held to one
+# foundation as `tag` is: each layer there is its tag's pack, unchanged, so its manifest is held to
+# the tag's tree with the rest, file for file.
 #
 # Prints a line per layer the consumer resolves, `release <dir>`: each layer it declares, and the
 # foundation the components resolve theirs to when it declares none; then a line per distinct
@@ -20,8 +19,9 @@
 #   scripts/installed.sh <manager> <project> <tags> [tag|asset|registry]
 #
 # <tags> holds a bare repository per layer, <tags>/<layer>, with its tag fetched, and no other:
-# each layer's tag is the one its repository holds, v0.2.0 for the components where
-# scripts/consumers.sh fetches it, v0.1.0 for each layer where scripts/live.js does.
+# each layer's tag is the one its repository holds: the layers' latest, v0.1.0 for the foundation
+# and the SDK and v0.2.0 for the components, where scripts/consumers.sh and scripts/live.js fetch
+# them.
 set -euo pipefail
 
 manager=$1
@@ -36,15 +36,13 @@ repository=spike-html-packages-
 scope=@jaimestill/$repository
 foundation=${scope}foundation
 layers=(foundation sdk components)
-version=0.0.1
 
 fail() {
   echo "installed: $*" >&2
   exit 1
 }
 
-# Each layer's tag, its tree at the tag extracted into the scratch, its manifest kept apart for
-# the registry's exception, and its tag object's hash.
+# Each layer's tag, its tree at the tag extracted into the scratch, and its tag object's hash.
 declare -A tag tag_object
 for layer in "${layers[@]}"; do
   tag[$layer]=$(git --git-dir="$tags/$layer" tag -l)
@@ -52,7 +50,6 @@ for layer in "${layers[@]}"; do
     fail "$tags/$layer holds other than one tag"
   mkdir -p "$scratch/$layer"
   git --git-dir="$tags/$layer" archive "${tag[$layer]}" | tar -x -C "$scratch/$layer"
-  cp "$scratch/$layer/package.json" "$scratch/$layer.package.json"
   tag_object[$layer]=$(git --git-dir="$tags/$layer" rev-parse "refs/tags/${tag[$layer]}")
 done
 
@@ -72,23 +69,6 @@ matches_tag() {
     [[ -f $installed/.bun-tag ]] && written=$(<"$installed/.bun-tag")
     [[ $written == "$expected" || ($mode == asset && $written =~ ^sha512-[A-Za-z0-9+/]+=*$) ]] ||
       fail "$manager's install of $layer holds no .bun-tag naming ${tag[$layer]} ($expected)"
-  fi
-  if [[ $mode == registry ]]; then
-    # The manifest held to its exception, then compared as the tag's: the rest is file for file.
-    node -e '
-      const assert = require("node:assert/strict");
-      const { readFileSync } = require("node:fs");
-      const [tagged, installed, version, foundation] = process.argv.slice(1);
-      const expected = JSON.parse(readFileSync(tagged, "utf8"));
-      expected.version = version;
-      if (expected.dependencies?.[foundation] !== undefined) {
-        expected.dependencies[foundation] = version;
-      }
-      assert.deepEqual(JSON.parse(readFileSync(installed, "utf8")), expected);
-    ' "$scratch/$layer.package.json" "$installed/package.json" "$version" "$foundation" ||
-      fail "$manager's install of $layer holds a manifest that differs from its ${tag[$layer]} tree's" \
-        "other than in its version, $version, and the components' foundation dependency"
-    cp "$installed/package.json" "$scratch/$layer/package.json"
   fi
   diff -r -x .bun-tag -x node_modules "$scratch/$layer" "$installed" >&2 ||
     fail "$manager's install of $layer differs from its ${tag[$layer]} tree"

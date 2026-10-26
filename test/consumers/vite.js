@@ -4,7 +4,9 @@
 // served statically from the loopback address, then served by Vite's dev server on the loopback
 // address, and each is loaded in the browser BROWSER_EXECUTABLE names: every root must render and
 // adopt the reset and elements sheets the app imports from the foundation by package name, and
-// every file must come from the loopback address, each a 200.
+// every file must come from the loopback address, each a 200. With --build first, as
+// scripts/live.js runs it on its networked installs, each app is built and its build loaded, and no
+// dev server is started: the dev server is the offline check's alone.
 //
 // A build bundles the packages, so its files name no package directory: the sheets every root
 // adopts being the app's own is the check that it holds one foundation. The dev server pre-bundles
@@ -24,7 +26,8 @@ import { launch } from "../live/browser-pipe.js";
 import { serve } from "../live/server.js";
 
 const installs = [];
-const args = process.argv.slice(2);
+const buildOnly = process.argv[2] === "--build";
+const args = process.argv.slice(buildOnly ? 3 : 2);
 for (let at = 0; at < args.length; at += 4) {
   const [manager, consumer, project, foundation] = args.slice(at, at + 4);
   installs.push({ manager, consumer, project, foundation });
@@ -194,7 +197,7 @@ const browser = await launch();
 try {
   for (const install of installs) {
     console.log(await build(browser, install));
-    console.log(await dev(browser, install));
+    if (!buildOnly) console.log(await dev(browser, install));
   }
 } finally {
   await browser.close();
