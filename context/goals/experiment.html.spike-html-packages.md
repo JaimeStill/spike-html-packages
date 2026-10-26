@@ -538,6 +538,9 @@ slices 1/3 committed (e2e1322) · published 2026-10-26, private, unlinked · sta
   `live`, since `mise run` has its own --dry-run flag.
 - registries: the token reaches npm through a scratch `.npmrc` that holds the literal
   `${GITHUB_PACKAGES_TOKEN}` reference, not an npm_config_ variable, which unconfigured.sh unsets.
+- registries: behavior 4's links are made by hand with each package page's Connect Repository, by
+  the architect, beside the visibility change; the published manifests keep the brief's two
+  differences, with no `repository` field and no 0.0.2 (escalation 1).
 
 ## Pending edits
 
