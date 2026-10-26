@@ -112,7 +112,8 @@ The tasks, in the order they run; each cites the evidence it proves.
 ## Releases
 
 Each layer repository releases at 0.y.z by its own `release.yml`, which Hosting describes; this
-repository releases nothing by tag. Its `mise run publish` publishes each layer's latest tag to
+repository releases nothing by tag. The layers are at foundation v0.1.0, sdk v0.1.0, and
+components v0.2.0, whose foundation is a peer. Its `mise run publish` publishes each layer's latest tag to
 GitHub Packages at the tag's version. A release or publish is never changed or re-cut, and Tags
 lists each one, with the 0.0.1 publishes that were deleted.
 
