@@ -694,32 +694,6 @@ slices 2/3 committed · standards — · spec — · editor —
 
 ## Pending edits
 
-- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.by-tag]`'s
-  summary as:
-
-  ```
-  This repository's consumer check installing the three v0.1.0 tags under npm, pnpm, and bun, as
-  the three together and as the components alone, offline in `mise run check` from caches and a
-  lockfile per manager that `mise run install` fills, with each manager's guard in the fixture's
-  config; and a networked task that prints a dated table of jsDelivr /gh/ and the import-map page
-  over the three tags, in headless chrome, and of each manager's installs with no lockfile, at the
-  tags and by the release assets' tarball URLs. Evidence 1, 3.
-  ```
-
-- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.registries]`.
-  Its name, now "GitHub Packages and JSR", becomes "GitHub Packages, and JSR from dry runs"; its
-  summary becomes:
-
-  ```
-  Real publishes of the three layers under @jaimestill to GitHub Packages, first at 0.0.1 and then,
-  in the consumers task, at their tags' versions with 0.0.1 deleted, from a networked `mise run
-  publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
-  installing them in `mise run live`'s dated table, each needing the registry and a token even
-  for public packages, with the .css arriving whole. JSR is recorded from deno 2.9.8 dry runs and
-  not published, since every JSR publisher runs Deno, whose runtime development ends
-  (deno.com/blog/cloudflare). Evidence 1.
-  ```
-
 - coordinator · html-artifacts.md: in "Experiment: spike-html-packages", the Hosting item, replace
   "JSR emits JS and `.d.ts` from `.ts` and installs natively in pnpm 10.9+ and Yarn 4.9+, while npm
   needs `.npmrc` setup and Bun's support isn't documented." with:
@@ -732,17 +706,97 @@ slices 2/3 committed · standards — · spec — · editor —
   (jsr.io/docs/npm-compatibility).
   ```
 
-- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.consumers]`'s
-  summary as:
+- coordinator · html-artifacts.md: under "## Answers · experiment.html", after "### Answer ·
+  experiment.html.spike-html-conventions", add:
 
   ```
-  The components' v0.2.0, with the foundation as a peer at ^0.1.0, so every hosting installs one
-  foundation; a page loading each install unbundled by a hand-written import map, and a Vite app
-  with the local CSS module script plugin, built and on its dev server, rendering the components
-  with their shadow roots adopting the sheets the consumer imports and the foundation's page.css
-  shaping the design, offline in `mise run check`
-  over the tags and in `mise run live` over the release-asset URLs and GitHub Packages, now at the
-  tags' versions; and
-  a networked `mise run release-flow` comparing pnpm's change-intent versioning with the hand
-  flow, in scratch. Evidence 6, 7.
+  ### Answer · experiment.html.spike-html-packages
+
+  **Question:** How are the foundation's lateral concerns, its JS/TS modules, and the components
+  packaged and released by tag over spike-html-design v0.7.0: tag naming, release builds beside
+  the sources, and one library or several packages? It also decides the hosting and repository
+  layout, on which spike-html-conventions' pnpm pick depends, and the import extension the
+  releases use.
+
+  **Answer:** One repository per layer, each released by a plain `vX.Y.Z` git tag on a commit
+  whose tree is its pack, tsc's `.js` and `.d.ts` with every `.css` beside them, from `.ts`
+  sources with `.ts` specifiers; the components take the foundation as a peer; a release is cut
+  by hand on a green check; pnpm, and ESLint + Prettier.
+
+  1. Hosting: the git tag is the channel, installed by its tag under npm, pnpm, and bun, and
+     loaded from jsDelivr /gh/ through an import map. Proven offline by the check's
+     `test:consumers` tier, and from the network by `mise run live` ("Live, 2026-10-23" and
+     "Live, 2026-10-26, components v0.2.0"), which adds the release assets' URLs. GitHub
+     Packages is the measured alternative, published for real at the tags' versions: its one
+     gain is that the peer range resolves there, so the components alone install their
+     foundation, at the price of a registry setting and a token under every manager. Proven by
+     `mise run live` ("Live, 2026-10-26, GitHub Packages at 0.0.1" and "Live, 2026-10-26,
+     components v0.2.0"). JSR is recorded from deno 2.9.8's dry runs only, with no publish.
+  2. Layout: one repository per layer, each one package, built on the layer below by its tag,
+     each with its own check, CI, and release workflow. The architect's decision in the goal
+     record; one package against workspace packages was measured in the README's Measures tables
+     of 2026-10-22, now retired.
+  3. Tag naming: one plain `vX.Y.Z` per repository. Proven by the check's `test:consumers` tier
+     under npm, pnpm, and bun, and by `mise run live`'s tables, which add jsDelivr /gh/.
+  4. The release build: tsc's `.js` and `.d.ts` with every `.css` copied beside them, named by
+     `exports` and `files`, carried in the tag's tree on a pack commit parented on the merge
+     commit, with the same pack as the release asset. Proven by the check's `test:consumers` tier
+     and `mise run live`'s tables, every install its tag's tree file for file, and by `mise run
+     release-flow`'s table of 2026-10-26, where the pack commit equals the tarball.
+  5. The import extension: `.ts` relative specifiers, rewritten to `.js` by tsc
+     (`rewriteRelativeImportExtensions`), by the goal record's decision on the Measures table of
+     2026-10-22, now retired; the emit loads unbundled and through Vite in the check's
+     `test:consumers` tier. The emitted `.d.ts` keep `.ts` specifiers, which typescript-go 7.0.2
+     and typescript 6.0.3 accept; other `.d.ts` readers are unmeasured.
+  6. Consumers: a page loading each install unbundled by an import map, and a Vite app with the
+     local CSS module script plugin, built and on its dev server, each rendering the components on
+     one foundation, a peer at `^0.1.0`, styled by its page.css. Proven offline by the check's
+     `test:consumers` tier over the tags, and from the network by `mise run live` ("Live,
+     2026-10-26, components v0.2.0") over the release assets and GitHub Packages. Only npm needs
+     a guard, `allow-git=root` at the tags.
+  7. The release flow: the hand flow, a version bump and a Keep a Changelog section, released by
+     each layer's `release.yml` on a green check. pnpm's change-intent flow is rejected: its tree
+     can't be published, its notes carry the changelog's preamble, and it bumps no dependent
+     repository. Proven by `mise run release-flow`'s table of 2026-10-26 and the goal record's
+     decision on it.
+  8. The manager and the lint: pnpm, no longer provisional, on a consumer's git tag with no
+     setting, phantom imports refused, and a minimum release age by default, against npm's
+     standard by use and stewardship. ESLint + Prettier, settled, with Biome the measured
+     alternative: Biome 2.6.3 matched every case with far less surface, but judges a declaration
+     import by a naming convention. Proven by `mise run biome`'s table of 2026-10-26 and the goal
+     record's decisions; the download and funding figures are sourced facts only, read
+     2026-10-26.
+
+  A change in ESLint's or Prettier's stewardship reopens the lint, with Biome the alternative. A
+  registry release reopens npm against pnpm; GitHub Packages stays published as the measured
+  alternative.
+
+  [The answer](https://github.com/JaimeStill/spike-html-packages/blob/main/context/README.md#the-answer) · [spike-html-packages](https://github.com/JaimeStill/spike-html-packages)
   ```
+
+- coordinator · roadmap: remove `[goals.experiment.html.spike-html-packages]` and its eight task
+  tables, `layers` to `answer`, and remove `"experiment.html.spike-html-packages"` from `active`.
+  In the header comment, replace "spike-html-design and spike-html-conventions have answered
+  (html-artifacts.md, "Answers · experiment.html"), and spike-html-packages is active." with:
+
+  ```
+  spike-html-design, spike-html-conventions, and spike-html-packages have answered
+  (html-artifacts.md, "Answers · experiment.html"), and spike-html-apps is next.
+  ```
+
+  Staging spike-html-apps is the sync's own step, not this edit; when the sync stages it, the
+  clause reads "and spike-html-apps is active" instead.
+
+- coordinator · references.toml: after `[repos.spike-html-conventions]`, add the entry below,
+  committed as "catalog: list spike-html-packages, synced and awaiting intake", as
+  spike-html-conventions was (29d2efe):
+
+  ```
+  [repos.spike-html-packages]
+  remote = "https://github.com/JaimeStill/spike-html-packages.git"
+  ```
+
+- coordinator · .claude/marathon.toml: under `[workspace.paths]`, remove the three layer entries,
+  `spike-html-packages-foundation`, `spike-html-packages-sdk`, and
+  `spike-html-packages-components`; references.toml and references.local.toml locate them for the
+  intake.

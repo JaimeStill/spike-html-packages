@@ -28,9 +28,11 @@ The architecture pages that apply, in the architecture repository:
 - A layer repository resolves the layer below only through its declared dependency on that
   layer's release tag, as a consumer does: no local link, source condition, project references, or
   `paths` aliases.
-- A layer names the one below it in `dependencies` by its exact release tag,
-  `github:JaimeStill/spike-html-packages-<layer>#vX.Y.Z`, never a range: bun fails every
-  `#semver:` git spec and its overrides never reach a nested `github:` spec.
+- A layer takes the one below it as a peer at a caret range, `^X.Y.Z` in `peerDependencies`,
+  which the consumer declares, so every hosting installs one copy, and in `devDependencies` by
+  its exact release tag, `github:JaimeStill/spike-html-packages-<layer>#vX.Y.Z`, never a
+  `#semver:` range: bun fails every `#semver:` git spec and its overrides never reach a nested
+  `github:` spec.
 - This repository's root is private and declares no runtime dependency.
 
 ## Code

@@ -107,7 +107,10 @@ The tasks, in the order they run; each cites the evidence it proves.
    assets and GitHub Packages, now at the tags' versions; and `mise run release-flow`, comparing
    pnpm's change-intent versioning with the hand flow in scratch (evidence 6, 7). Both are measured:
    "Live, 2026-10-26, components v0.2.0" and "Release flow, 2026-10-26" record them.
-8. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
+8. `answer`: `mise run biome`, linting each layer's violation and allowed trees with its ESLint
+   and with Biome 2.6.3 in scratch; the reweighed picks, the answer, and the answer section
+   (evidence 8). Measured and answered: "ESLint and Biome, 2026-10-26" records the measure, and
+   "The answer" states the spike's answer.
 
 ## Releases
 
@@ -135,7 +138,8 @@ This repository is the spike's record and its docs:
 - `scripts/`: the tasks' scripts: `install.sh`, `lock.sh`, `consumers.sh` (the consumer tier, and
   the cache warm `install.sh` runs), `installed.sh` (the comparison against the tags that
   `consumers.sh` and `live.js` share), `unconfigured.sh` (runs a manager with none of the user's
-  config), `preflight.sh`, `currency.sh`, `live.js`, `publish.sh`, and `release-flow.js`.
+  config), `preflight.sh`, `currency.sh`, `live.js`, `publish.sh`, `release-flow.js`, and
+  `biome.js`.
 - `test/consumers/`: the twelve fixtures, each with its committed lockfile and, under npm, its
   guard. The six consumer fixtures, `<consumer>/<manager>/`, are the three together (`three/`) and
   the components with the foundation (`components/`) under npm, pnpm, and bun. The six Vite
@@ -198,6 +202,12 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
   clone of the foundation's main pushed to a local bare remote, through release.yml's own steps.
   It pushes nothing to GitHub, gives the steps no token, writes nothing in the repository, and
   removes its scratch. It exits 1 only when a flow can't be set up; a row's no is a measured fact.
+- `mise run biome`: the dated table that "ESLint and Biome, 2026-10-26" records, from the network.
+  It clones each layer repository's main into scratch, installs it from its lockfile, and lints the
+  tree the layer's own lint test writes with the layer's pinned ESLint and with Biome 2.6.3, which
+  mise pins for this task alone, then formats the clone with Biome at the layer's Prettier
+  options. It pushes nothing, reads no token, writes nothing in the repository, and removes its
+  scratch. It exits 1 only when a layer can't be set up; a missed case is a measured fact.
 - `mise run publish`: each layer's latest tag, the highest `vX.Y.Z` on its remote, published to
   GitHub Packages at the tag's version, in the order foundation, sdk, components, from a scratch
   copy of the tag's tree, unchanged. It runs by hand, as
