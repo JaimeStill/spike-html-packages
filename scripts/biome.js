@@ -277,16 +277,22 @@ function configure(dir, { clone, table, css, vcs }) {
   return written;
 }
 
-/** Biome's JSON report of a command in `cwd`; its exit status is 1 when it finds anything. */
+/** Biome's JSON report of a command in `cwd`; its exit status is 1 when it finds anything. A file
+ * it can't parse it can neither flag nor pass, so that fails the measure. */
 function biomeReport(args, cwd) {
   const result = run(biome, [...args, "--reporter=json", "--max-diagnostics=none"], { cwd });
   if (result.status !== 0 && result.status !== 1) {
     throw new Error(`biome ${args.join(" ")} exited ${result.status}: ${result.output}`);
   }
-  return JSON.parse(result.stdout);
+  const report = JSON.parse(result.stdout);
+  const unparsed = report.diagnostics.filter((diagnostic) => diagnostic.category === "parse");
+  if (unparsed.length > 0) {
+    throw new Error(`biome ${args.join(" ")} can't parse ${unparsed.map((d) => d.location.path)}`);
+  }
+  return report;
 }
 
-/** The names a Biome diagnostic is counted under: its rule, its plugin's file, or parse. */
+/** The names a Biome diagnostic is counted under: its rule or its plugin's file. */
 function biomeRule(diagnostic) {
   if (diagnostic.category === "plugin") {
     return Object.keys(plugins).find((name) => plugins[name].message === diagnostic.message);
@@ -294,15 +300,16 @@ function biomeRule(diagnostic) {
   if ([restricted, undeclared].includes(diagnostic.category)) {
     return diagnostic.category.split("/").pop();
   }
-  return diagnostic.category === "parse" ? "parse" : undefined;
+  return undefined;
 }
 
 /** Each package's identity in a pnpm lockfile key or version: name@version, less its peers. */
 const identity = (key) => key.replace(/\(.*$/, "");
 
+const libc = process.report.getReport().header.glibcVersionRuntime ? "glibc" : "musl";
+
 /** Whether this machine installs a lockfile package: its os, cpu, and libc, where it names them. */
 function installs(entry = {}) {
-  const libc = process.report.getReport().header.glibcVersionRuntime ? "glibc" : "musl";
   const holds = (list, value) =>
     !list ||
     (list.some((item) => !item.startsWith("!"))
@@ -426,8 +433,16 @@ async function measure(repository, biomeVersion, biomePackages) {
   mkdirSync(dir);
   const code = tree.writeTree(dir, { ...tree.sources(tree.violations), ...tree.allowed });
 
+  const report = tree.lint(dir);
+  // A file ESLint can't parse it can neither flag nor pass, as with Biome.
+  const unparsed = report.filter((file) => file.messages.some((message) => message.fatal));
+  if (unparsed.length > 0) {
+    throw new Error(
+      `eslint can't parse ${unparsed.map((file) => file.filePath.slice(dir.length + 1))}`,
+    );
+  }
   const eslint = {};
-  for (const file of tree.lint(dir)) {
+  for (const file of report) {
     const rules = [...new Set(file.messages.map((message) => message.ruleId))]
       .filter((rule) => tree.watched.includes(rule))
       .sort();
