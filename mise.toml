@@ -1,5 +1,5 @@
-# Tasks never install a missing tool; mise run install, lock, currency, live, release-flow, and
-# publish are the tasks that read the network.
+# Tasks never install a missing tool; mise run install, lock, currency, live, release-flow, biome,
+# and publish are the tasks that read the network.
 [settings]
 task.run_auto_install = false
 
@@ -12,6 +12,11 @@ node = "26.12.1"
 npm = "12.2.1"
 pnpm = "12.15.0"
 shellcheck = "0.11.0"
+# The biome task's second linter and formatter, set beside each layer's ESLint and Prettier; the
+# measure alone runs it.
+biome = "2.6.3"
+# The release-flow and biome tasks' YAML reader, for release.yml and pnpm-lock.yaml.
+yq = "4.54.1"
 # The release-flow task's stand-in for taiki-e/create-gh-release-action v1.11.0, at the
 # parse-changelog that action downloads and runs.
 "github:taiki-e/parse-changelog" = "0.6.16"
@@ -78,6 +83,10 @@ run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.
 [tasks.release-flow]
 description = "Print a dated table of two release flows for the foundation's 0.1.1, by hand and by pnpm change and pnpm version -r, each through release.yml's own steps in a scratch clone pushed to a local bare remote; reads the network, pushes nothing to GitHub, writes nothing in the repository"
 run = "node scripts/release-flow.js"
+
+[tasks.biome]
+description = "Print a dated table of each layer's lint under its pinned ESLint and under Biome, case by case, with each side's false positives, config files, pins, and installed packages, and Biome's format at the layer's Prettier options, each layer's main cloned and installed in scratch; reads the network, writes nothing in the repository"
+run = "node scripts/biome.js"
 
 [tasks.publish]
 description = "Publish each layer's latest tag, unchanged, to GitHub Packages at the tag's version, skipping the layers it already holds, with the token in GITHUB_PACKAGES_TOKEN; dry-run uploads nothing; reads the network, writes nothing in the repository"

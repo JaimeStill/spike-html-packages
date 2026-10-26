@@ -107,7 +107,10 @@ The tasks, in the order they run; each cites the evidence it proves.
    assets and GitHub Packages, now at the tags' versions; and `mise run release-flow`, comparing
    pnpm's change-intent versioning with the hand flow in scratch (evidence 6, 7). Both are measured:
    "Live, 2026-10-26, components v0.2.0" and "Release flow, 2026-10-26" record them.
-8. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
+8. `answer`: `mise run biome`, linting the tree each layer's lint test writes with the layer's
+   ESLint and with Biome 2.6.3 in scratch, and formatting the layer with Biome; the reweighed
+   picks; and the answer (evidence 8). "ESLint and Biome, 2026-10-26" records the measure,
+   "Evidence 8, reweighed" the picks, and "The answer" the spike's answer.
 
 ## Releases
 
@@ -135,7 +138,8 @@ This repository is the spike's record and its docs:
 - `scripts/`: the tasks' scripts: `install.sh`, `lock.sh`, `consumers.sh` (the consumer tier, and
   the cache warm `install.sh` runs), `installed.sh` (the comparison against the tags that
   `consumers.sh` and `live.js` share), `unconfigured.sh` (runs a manager with none of the user's
-  config), `preflight.sh`, `currency.sh`, `live.js`, `publish.sh`, and `release-flow.js`.
+  config), `preflight.sh`, `currency.sh`, `live.js`, `publish.sh`, `release-flow.js`, and
+  `biome.js`.
 - `test/consumers/`: the twelve fixtures, each with its committed lockfile and, under npm, its
   guard. The six consumer fixtures, `<consumer>/<manager>/`, are the three together (`three/`) and
   the components with the foundation (`components/`) under npm, pnpm, and bun. The six Vite
@@ -198,6 +202,14 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
   clone of the foundation's main pushed to a local bare remote, through release.yml's own steps.
   It pushes nothing to GitHub, gives the steps no token, writes nothing in the repository, and
   removes its scratch. It exits 1 only when a flow can't be set up; a row's no is a measured fact.
+- `mise run biome`: the dated table that "ESLint and Biome, 2026-10-26" records, from the network.
+  It clones each layer repository's main into scratch, installs it from its lockfile, and lints the
+  tree the layer's own lint test writes with the layer's pinned ESLint and with Biome 2.6.3, which
+  mise pins for this task alone, then formats the clone with Biome at the layer's Prettier
+  options. It pushes nothing, reads no token, writes nothing in the repository, and removes its
+  scratch. It exits 1 only when a layer can't be set up, which includes a file ESLint or Biome
+  can't parse, since each layer's own lint test requires every file to parse; a missed case is a
+  measured fact.
 - `mise run publish`: each layer's latest tag, the highest `vX.Y.Z` on its remote, published to
   GitHub Packages at the tag's version, in the order foundation, sdk, components, from a scratch
   copy of the tag's tree, unchanged. It runs by hand, as
@@ -668,6 +680,78 @@ The table's findings are these:
 | pnpm flow: the tree can still be published | no: pnpm publish refuses: This package has been marked as private |
 | a dependent repository's bump stays a hand edit | yes: the foundation's workspace holds 1 project, @jaimestill/spike-html-packages-foundation; pnpm version -r changed D .changeset/hungry-beds-bow.md, M CHANGELOG.md, M package.json, ?? .changeset/ledger.yaml, all in the clone; the components' main names the foundation by peerDependencies ^0.1.0, devDependencies github:JaimeStill/spike-html-packages-foundation#v0.1.0, no workspace: range, so pnpm bumps nothing there |
 
+## ESLint and Biome, 2026-10-26
+
+`mise run biome` printed the table below and exited 0. It cloned each layer repository's main into
+scratch, installed it from its lockfile, and wrote the tree the layer's own lint test writes,
+`test/unit/layers-tree.js`, its violations and its allowed imports together. It linted the tree
+with the layer's pinned ESLint, through the tree's own `lint()`, and with Biome 2.6.3, pinned in
+mise for the measure alone. Biome's config is built from the layer's own: `noRestrictedImports`'
+groups from `eslint.config.js`'s layer table, `noUndeclaredDependencies`, and two GritQL plugins,
+`css-module.grit` for a `.css` import that isn't a static CSS module script and `declaration.grit`
+for a value import of a declaration; its format settings are mapped option by option from
+`.prettierrc.json`, and its files from `.prettierignore`. A case is a group of the tree's
+violations by the rules that catch them, and each row names the files a rule misses. The task
+wrote nothing in the repository, read no token, and removed its scratch.
+
+The table's findings are these:
+
+- ESLint and Biome each flag every case in every layer, and neither flags an allowed import.
+- `noUndeclaredDependencies` reads the `package.json` beside `biome.json`, so the measure writes
+  `biome.json` at the tree's root, where a layer would hold it; from anywhere else it reads no
+  manifest and flags the declared packages too. In each layer it misses five files, the four imports
+  of the layer's own name and the type import of `typescript`, a devDependency, and
+  `noRestrictedImports` flags all five.
+- `declaration.grit` can't resolve a specifier, so it judges by the layers' convention, not by the
+  file imported: it flags a relative `.js` specifier, which only a declaration answers to, since
+  the sources import each other by `.ts`. ESLint's boundaries judges the resolved file. The plugins
+  match GritQL node names that Biome's version fixes, so a Biome upgrade is theirs too. In the
+  components, `declaration.grit` misses 2 of the 7 relative paths into `node_modules/`, which
+  `noRestrictedImports` flags.
+- Every Prettier option the layers set has a Biome counterpart, and Biome at those options would
+  still change files in every layer, in three ways Prettier doesn't: it puts a short JSON array on
+  one line, `"files": ["dist"]` in each `package.json`; it breaks the foundation's long `@layer`
+  statement in `page.css` one name per line, and indents the broken `:is()` lists in `meta.css` two
+  spaces less; and it breaks a static import's `with { type: "css" }` past the line width over three
+  lines, where Prettier leaves the line long, in the three components and the components' restyle
+  test support. The table names the files; the three ways were read from `biome format --write`'s
+  diff over a scratch rerun's clones the same day.
+- Biome is one pin and 2 installed packages for lint and format together, beside `biome.json` and
+  its plugins. ESLint is 8 pins and 133 to 138 installed packages, beside `eslint.config.js`, and
+  Prettier one pin and one package, beside `.prettierrc.json` and `.prettierignore`.
+
+| measure | result |
+| --- | --- |
+| foundation: the measure | main 5dd8a58, installed from pnpm-lock.yaml; ESLint 10.13.0, Biome 2.6.3; the tree's 41 violations and 10 allowed files, 56 code files under src/ |
+| foundation: a package by name, 22 files | ESLint flags 22 of 22 (boundaries/dependencies 22, import-x/no-extraneous-dependencies 22); Biome flags 22 of 22 (noRestrictedImports 22, noUndeclaredDependencies 17 (not src/forms/typescript-type.ts, src/forms/self-name.ts, src/forms/self-name-type.ts, src/forms/self-name-export.ts, src/forms/self-name-dynamic.ts)) |
+| foundation: a package by a relative path into node_modules/, 1 file | ESLint flags 1 of 1 (boundaries/dependencies 1, import-x/no-relative-packages 1); Biome flags 1 of 1 (declaration.grit 1, noRestrictedImports 1) |
+| foundation: a value import of a declaration, 7 files | ESLint flags 7 of 7 (boundaries/dependencies 7); Biome flags 7 of 7 (declaration.grit 7) |
+| foundation: a .css import that isn't a static CSS module script, 11 files | ESLint flags 11 of 11 (no-restricted-syntax 11); Biome flags 11 of 11 (css-module.grit 11) |
+| foundation: false positives, on the allowed imports and the files they import | ESLint: none; Biome: none |
+| foundation: config files | ESLint: eslint.config.js (111 lines); Prettier: .prettierrc.json (17 lines), .prettierignore (17 lines); Biome, for both: biome.json (66 lines), css-module.grit (16 lines), declaration.grit (15 lines) |
+| foundation: pins to keep current | ESLint: 8, @eslint/js 10.0.1, eslint 10.13.0, eslint-import-resolver-typescript 4.4.5, eslint-plugin-boundaries 7.2.1, eslint-plugin-import-x 4.17.1, globals 17.13.0, typescript 6.0.3, typescript-eslint 8.72.0; Prettier: 1, prettier 3.9.10; Biome, for both: 1, @biomejs/biome 2.6.3 (mise's biome here), whose GritQL node names the plugins hold |
+| foundation: installed packages, on this machine | ESLint: 138; Prettier: 1; Biome, for both: 2 |
+| foundation: Biome's format, at .prettierrc.json's options, leaves the code, JSON, and CSS unchanged | no: of 39 files, its biome.json among them, it would change package.json, src/meta.css, src/page.css; every option has a Biome counterpart |
+| sdk: the measure | main 9d10ca6, installed from pnpm-lock.yaml; ESLint 10.13.0, Biome 2.6.3; the tree's 30 violations and 6 allowed files, 40 code files under src/ |
+| sdk: a package by name, 22 files | ESLint flags 22 of 22 (boundaries/dependencies 22, import-x/no-extraneous-dependencies 22); Biome flags 22 of 22 (noRestrictedImports 22, noUndeclaredDependencies 17 (not src/forms/typescript-type.d.ts, src/forms/self-name.d.ts, src/forms/self-name-type.d.ts, src/forms/self-name-export.d.ts, src/forms/self-name-dynamic.d.ts)) |
+| sdk: a package by a relative path into node_modules/, 1 file | ESLint flags 1 of 1 (boundaries/dependencies 1, import-x/no-relative-packages 1); Biome flags 1 of 1 (noRestrictedImports 1) |
+| sdk: a value import of a declaration, 7 files | ESLint flags 7 of 7 (boundaries/dependencies 7); Biome flags 7 of 7 (declaration.grit 7) |
+| sdk: false positives, on the allowed imports and the files they import | ESLint: none; Biome: none |
+| sdk: config files | ESLint: eslint.config.js (87 lines); Prettier: .prettierrc.json (17 lines), .prettierignore (13 lines); Biome, for both: biome.json (63 lines), declaration.grit (15 lines) |
+| sdk: pins to keep current | ESLint: 8, @eslint/js 10.0.1, eslint 10.13.0, eslint-import-resolver-typescript 4.4.5, eslint-plugin-boundaries 7.2.1, eslint-plugin-import-x 4.17.1, globals 17.13.0, typescript 6.0.3, typescript-eslint 8.72.0; Prettier: 1, prettier 3.9.10; Biome, for both: 1, @biomejs/biome 2.6.3 (mise's biome here), whose GritQL node names the plugins hold |
+| sdk: installed packages, on this machine | ESLint: 138; Prettier: 1; Biome, for both: 2 |
+| sdk: Biome's format, at .prettierrc.json's options, leaves the code, JSON, and CSS unchanged | no: of 14 files, its biome.json among them, it would change package.json; every option has a Biome counterpart |
+| components: the measure | main 4c0a5d8, installed from pnpm-lock.yaml; ESLint 10.13.0, Biome 2.6.3; the tree's 46 violations and 12 allowed files, 63 code files under src/ |
+| components: a package by name, 19 files | ESLint flags 19 of 19 (boundaries/dependencies 19, import-x/no-extraneous-dependencies 19); Biome flags 19 of 19 (noRestrictedImports 19, noUndeclaredDependencies 14 (not src/forms/typescript-type.ts, src/forms/self-name.ts, src/forms/self-name-type.ts, src/forms/self-name-export.ts, src/forms/self-name-dynamic.ts)) |
+| components: a package by a relative path into node_modules/, 7 files | ESLint flags 7 of 7 (boundaries/dependencies 7, import-x/no-relative-packages 7); Biome flags 7 of 7 (declaration.grit 5 (not src/forms/foundation-path-type.ts, src/foundation-sheet-path.ts), noRestrictedImports 7) |
+| components: a value import of a declaration, 7 files | ESLint flags 7 of 7 (boundaries/dependencies 7); Biome flags 7 of 7 (declaration.grit 7) |
+| components: a .css import that isn't a static CSS module script, 13 files | ESLint flags 13 of 13 (no-restricted-syntax 13); Biome flags 13 of 13 (css-module.grit 13) |
+| components: false positives, on the allowed imports and the files they import | ESLint: none; Biome: none |
+| components: config files | ESLint: eslint.config.js (124 lines); Prettier: .prettierrc.json (17 lines), .prettierignore (14 lines); Biome, for both: biome.json (76 lines), css-module.grit (16 lines), declaration.grit (15 lines) |
+| components: pins to keep current | ESLint: 8, @eslint/js 10.0.1, eslint 10.13.0, eslint-import-resolver-typescript 4.4.5, eslint-plugin-boundaries 7.3.0, eslint-plugin-import-x 4.17.1, globals 17.13.0, typescript 6.0.3, typescript-eslint 8.72.0; Prettier: 1, prettier 3.9.10; Biome, for both: 1, @biomejs/biome 2.6.3 (mise's biome here), whose GritQL node names the plugins hold |
+| components: installed packages, on this machine | ESLint: 133; Prettier: 1; Biome, for both: 2 |
+| components: Biome's format, at .prettierrc.json's options, leaves the code, JSON, and CSS unchanged | no: of 23 files, its biome.json among them, it would change package.json, src/entry-lit-shadow.ts, src/pagination-lit-shadow.ts, src/status-badge.ts, test/browser/support/restyle.js; every option has a Biome counterpart |
+
 ## JSR
 
 No JSR package was published. Every supported JSR publisher runs Deno: `deno publish`, and jsr
@@ -772,6 +856,167 @@ resolves. The root's devDependencies were stub packages, packed beside the tree.
 npm refused the workspace:* specs (`npm error Unsupported URL Type "workspace:": workspace:*`), so
 its copies declared each sibling by its version, 0.1.0.
 
+## Evidence 8, reweighed
+
+spike-html-conventions picked pnpm and ESLint+Prettier provisionally (its Results 1 and 6): a
+registry release would reopen the manager, and making the layers packages would reopen the lint.
+The spike has made the layers packages, one repository per layer, and recommends the git tag as
+their release channel. This section weighs both picks again for a repository release at the git
+tag, in conventions' order: first the standard and maintainability, then footprint, then speed,
+which counts only on an order-of-magnitude gap.
+
+**The standard and stewardship, read 2026-10-26.** On 2026-10-26, the npm downloads API's
+`last-week` answered the week 2026-06-25 to 2026-07-01, and its daily counts since 2026-10-06 hold
+days at 0: 2026-10-06, 2026-10-13 to 2026-10-15, and 2026-10-19 to 2026-10-21. So the week
+conventions read, 2026-10-06 to 2026-10-12, counts six days, and the figures below are the last
+complete week, 2026-09-28 to 2026-10-04, from the point range for that week
+(`https://api.npmjs.org/downloads/point/2026-09-28:2026-10-04/<package>`). Like conventions', they
+compare packages within one week only. Funding is each Open Collective's JSON, as conventions read
+it: `yearlyIncome`, in cents, and `backersCount`, at `opencollective.com/<slug>.json`.
+
+| package | npm downloads, 2026-09-28 to 2026-10-04 | 2026-10-06 to 2026-10-12, conventions' week |
+| --- | ---: | ---: |
+| npm | 19.6M | 16.3M |
+| pnpm | 245.2M | 223.2M |
+| eslint | 198.2M | 158.7M |
+| prettier | 168.8M | 139.1M |
+| @biomejs/biome | 21.1M | 17.9M |
+
+| collective | Open Collective, read 2026-10-26 | read 2026-10-16, by conventions |
+| --- | --- | --- |
+| ESLint | $158,789 a year, 548 backers | $146,977 a year, 546 backers |
+| Prettier | $63,054 a year, 352 backers | $58,056 a year, 351 backers |
+| Biome | $30,433 a year, 38 backers | $30,433 a year, 38 backers |
+| pnpm | $99,654 a year, 137 backers | a $87,654 yearly budget and 136 backers, from its page |
+
+npm's figure for conventions' week was read 2026-10-26; conventions recorded none. npm's own
+package counts only the installs of npm made through the registry, and node bundles npm, so it
+isn't npm's use. The standard by use between the managers stays conventions' survey: npm 56.8%
+against pnpm's 13.4% in Stack Overflow 2025, and npm in 10 of the 13 web-component libraries,
+pnpm in none. npm has no Open Collective; it is GitHub's (conventions, Results 1).
+
+**The manager: pnpm, no longer provisional.** First, the standard and maintainability. npm keeps
+what it had in conventions: the standard by use, and the stronger stewardship, a corporate owner
+with release lines kept in parallel and authorship spread wider. The registry release that would
+reopen the call isn't the channel the answer recommends, so the repository-release facts still
+count. One repository per layer, each one package, takes away part of pnpm's lead: the plain
+`vX.Y.Z` tags (Tags) need no prefixed tag or subdirectory install, and each layer's workspace
+holds one project ("Release flow, 2026-10-26"), so `workspace:`, graph-ordered runs, and catalogs
+weigh on no layer repository. What remains is pnpm's:
+
+- A consumer's own git tag installs with no setting. npm needs `allow-git=root` in every consumer
+  that installs a layer at its tag (Consumer installs; "Live, 2026-10-26, components v0.2.0"), and
+  refuses even `npm ci --offline` without it (Hosting).
+- Phantom imports are refused by default: pnpm links only a project's declared dependencies, so an
+  undeclared layer doesn't resolve (Measures, the pnpm column), where npm's default hoisted layout
+  resolves it and its linked layout is opt-in (conventions, Results 1).
+- A minimum release age by default: under no user config, pnpm 12.15.0 applied one to the
+  same-day GitHub Packages versions and fell back to install them (Hosting), and it held
+  eslint-plugin-boundaries 7.2.1 in the layout task (the goal record). npm 12.2.1 has none by
+  default: its `min-release-age` is null under no user config (`npm config ls -l`, read
+  2026-10-26).
+
+Against npm's standard by use and its stewardship, these are a consumer's guard and two install
+defaults, and they decide it, as narrowly as conventions did. Second, footprint: npm is 46.5 MB
+smaller than pnpm (conventions, Results 1), not an order of magnitude. Third, speed: pnpm installs
+3.9 times faster than npm warm (conventions, Results 1), under an order of magnitude. Neither
+overturns the first. The download figures above don't move the standard by use, which they don't
+measure for npm.
+
+**The release flow: the hand flow, not pnpm's change-intent flow.** Choosing pnpm as the manager
+doesn't take its versioning. "Release flow, 2026-10-26" cut the foundation's 0.1.1 both ways. Both
+pass the check and land an annotated tag on a pack commit equal to the tarball. pnpm's flow needs
+the manifest marked `"private": true`, so its tree can't be published; its notes for 0.1.1 carry
+the changelog's preamble; and it bumps a dependent only through `workspace:` ranges, so the
+components' peer range and devDependency tag stay a hand edit. The hand flow is two edits a person
+makes, the version and a Keep a Changelog section, which parse-changelog extracts exactly, and its
+tree can still be published.
+
+**The lint and format: ESLint+Prettier, settled.** First, the standard and maintainability.
+
+- **The standard.** ESLint's 198.2M and Prettier's 168.8M weekly downloads against Biome's 21.1M,
+  9.4 and 8.0 times, about the 8.9 and 7.8 times of conventions' week; SoJS and the web-component
+  libraries stand as conventions read them.
+- **Stewardship.** ESLint is an OpenJS project, at $158,789 a year from 548 backers, and Prettier
+  draws $63,054 from 352; Biome's $30,433 from 38 is unchanged. ESLint's and Prettier's are the
+  stronger, as on 2026-10-16.
+- **Coverage.** Even: both flag every case in every layer, and neither flags an allowed import
+  ("ESLint and Biome, 2026-10-26").
+- **Mechanism.** ESLint's: boundaries judges a declaration import by the resolved file, and
+  Biome's `declaration.grit` by the layers' naming convention, a relative `.js` specifier, on
+  GritQL node names bound to Biome's version. That is Biome's gap.
+- **Surface.** Biome's, clearly: one pin and 2 installed packages against nine pins and 134 to 139
+  installed packages, ESLint's and Prettier's together, with a config file and its plugins against
+  ESLint's config and Prettier's two.
+- **Formatting.** The layers are formatted by Prettier, and Biome at the same options would change
+  files in every layer, in the three ways "ESLint and Biome, 2026-10-26" names, so moving to it is
+  a reformat, not a config swap.
+
+Biome matched every case with far less surface, but ESLint is the standard by use, the tools are
+better stewarded, and ESLint judges a declaration import by the resolved file. The first criterion
+picks ESLint+Prettier. Footprint isn't measured again: conventions measured Biome at 66.7 MB and
+ESLint+Prettier at 62.1 MB, even. Speed isn't measured here: conventions measured Biome's lint and
+format 7.9 times faster, under an order of magnitude. Neither overturns the first. Biome is the
+measured alternative, and a change in ESLint's or Prettier's stewardship reopens it.
+
 ## The answer
 
-Pending: the `answer` task writes it.
+The question: how are the foundation's lateral concerns, its JS/TS modules, and the components
+packaged and released by tag over spike-html-design v0.7.0: tag naming, release builds beside the
+sources, and one library or several packages? It also decides the hosting and repository layout,
+on which spike-html-conventions' pnpm pick depends, and the import extension the releases use.
+
+**One repository per layer, each released by a plain `vX.Y.Z` git tag on a commit whose tree is
+its pack, tsc's `.js` and `.d.ts` with every `.css` beside them, from `.ts` sources with `.ts`
+specifiers; the components take the foundation as a peer; a release is cut by hand on a green
+check; pnpm, and ESLint+Prettier.**
+
+1. **Hosting** (Hosting): the git tag is the channel, installed by its tag under npm, pnpm, and
+   bun, and loaded from jsDelivr /gh/ through an import map. Proven offline by the check's
+   `test:consumers` tier, and from the network by "Live, 2026-10-23" and "Live, 2026-10-26,
+   components v0.2.0", which add the release assets' URLs. GitHub Packages is the measured
+   alternative, published for real ("Live, 2026-10-26, GitHub Packages at 0.0.1" and "Live,
+   2026-10-26, components v0.2.0"): its one gain is that the peer range resolves there, so the
+   components alone install their foundation, at the price of a registry setting and a token under
+   every manager. JSR is recorded from deno 2.9.8's dry runs only, with no publish (JSR).
+2. **Layout** (Hosting, Measures): one repository per layer, each one package, built on the layer
+   below by its tag. The architect's end state, recorded in the goal record; one package against
+   workspace packages was measured in Measures' tables of 2026-10-22, now retired, and the
+   foundation, the SDK, and the components were built as repositories of their own, each with its
+   own check, CI, and release workflow.
+3. **Tag naming** (Tags): one plain `vX.Y.Z` per repository. Each tag resolves under npm, pnpm,
+   and bun in the check's `test:consumers` tier and the Live tables, and on jsDelivr /gh/ in the
+   Live tables.
+4. **The release build** (Hosting): tsc's `.js` and `.d.ts` with every `.css` copied beside them,
+   named by `exports` and `files`, carried in the tag's tree on a pack commit parented on the merge
+   commit, with the same pack as the release asset. Every install is its tag's tree, file for
+   file, in the check's `test:consumers` tier and the Live tables; the pack commit equals the
+   tarball in "Release flow, 2026-10-26".
+5. **The import extension** (Measures): `.ts` relative specifiers, rewritten to `.js` by tsc
+   (`rewriteRelativeImportExtensions`), by the goal record's decision. The emitted `.d.ts` keep
+   `.ts` specifiers, which typescript-go 7.0.2 and typescript 6.0.3 accept; other `.d.ts` readers
+   are unmeasured. Measured in Measures' first table of 2026-10-22, now retired; the emit loads
+   unbundled and through Vite in the check's `test:consumers` tier.
+6. **Consumers** (Consumer installs): a page loading each install unbundled by an import map, and
+   a Vite app with the local CSS module script plugin, built and on its dev server, each rendering
+   the components on one foundation, styled by its page.css. Proven offline by the check's
+   `test:consumers` tier over the tags, and from the network by "Live, 2026-10-26, components
+   v0.2.0" over the release assets and GitHub Packages. With the foundation as a peer, only npm
+   needs a guard, `allow-git=root` at the tags.
+7. **The release flow** ("Release flow, 2026-10-26"): the hand flow, a version bump and a Keep a
+   Changelog section, released by each layer's `release.yml` on a green check. pnpm's change-intent
+   flow is rejected, by the goal record's decision on that table: its tree can't be published, its
+   notes carry the changelog's preamble, and it bumps no dependent repository.
+8. **The manager and the lint** (Evidence 8, reweighed): pnpm, no longer provisional, on a
+   consumer's git tag with no setting, phantom imports refused, and a minimum release age by
+   default, against npm's standard by use and stewardship. ESLint+Prettier, settled, with Biome
+   the measured alternative ("ESLint and Biome, 2026-10-26"): it matched every case with far less
+   surface, but judges a declaration import by a naming convention. Both picks are the goal
+   record's decisions; the download and funding figures are sourced, read 2026-10-26.
+
+**What reopens it.** A change in ESLint's or Prettier's stewardship reopens the lint, with Biome
+the alternative. A registry release would reopen npm against pnpm, as conventions said; GitHub
+Packages stays published as the measured alternative.
+
+This answer is evidence for standards-lab's experiment.html intake; the spike decides nothing
+itself.

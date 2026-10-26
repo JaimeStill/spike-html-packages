@@ -73,20 +73,11 @@ const tail = (output) => output.split("\n").slice(-3).join(" / ");
 
 // The pinned tools, by path, set before the flows: a step under mise exec puts the clone's pins
 // first on PATH.
-let parseChangelog, pnpm;
+let parseChangelog, pnpm, yq;
 
-/** release.yml as JSON: mikefarah's yq or the jq wrapper of the same name, whichever is installed. */
-function workflow(clone) {
-  const file = join(clone, ".github/workflows/release.yml");
-  for (const args of [
-    ["-o=json", ".", file],
-    [".", file],
-  ]) {
-    const parsed = run("yq", args);
-    if (parsed.ok) return JSON.parse(parsed.output);
-  }
-  throw new Error("yq can't read release.yml");
-}
+/** release.yml as JSON, read by the pinned yq. */
+const workflow = (clone) =>
+  JSON.parse(must(yq, ["-o=json", ".", join(clone, ".github/workflows/release.yml")]));
 
 /** A ${{ }} expression's value: a step's output, or a secret, which the stand-ins never hold. */
 function evaluate(expression, outputs) {
@@ -434,6 +425,7 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 try {
   parseChangelog = must("mise", ["which", "parse-changelog"], { cwd: process.cwd() });
   pnpm = must("mise", ["which", "pnpm"], { cwd: process.cwd() });
+  yq = must("mise", ["which", "yq"], { cwd: process.cwd() });
   must("git", ["clone", "--quiet", "--bare", `${origin}.git`, mirror]);
   const hand = handFlow();
   measure("hand flow", hand);

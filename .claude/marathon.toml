@@ -6,7 +6,8 @@
 # `mise run currency` reports every mise tool, package.json pin, fixture tag, and Vite pin behind
 # its latest. `mise run publish`, by hand with GITHUB_PACKAGES_TOKEN, publishes each layer's latest
 # tag to GitHub Packages at the tag's version; `mise run live` needs the same token.
-# `mise run release-flow` compares the hand release flow with pnpm's, in scratch.
+# `mise run release-flow` compares the hand release flow with pnpm's, in scratch; `mise run biome`
+# lints each layer under its ESLint and under Biome, in scratch.
 # No gate.
 [project]
 kind = "code"
