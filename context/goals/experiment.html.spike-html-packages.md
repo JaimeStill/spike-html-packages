@@ -149,7 +149,7 @@ Door          two-way: everything. The GitHub Packages publishes are real and
 
 ## Progress
 
-slices 0/3 committed · standards — · spec — · editor —
+slices 1/3 committed (e2e1322) · published 2026-10-26, private, unlinked · standards — · spec — · editor —
 
 ## Decisions
 
@@ -530,6 +530,14 @@ slices 0/3 committed · standards — · spec — · editor —
   publish stop) lapse with JSR.
 - registries: the architect ran `gh auth refresh -s read:packages,write:packages` during PLAN;
   gh's token lists write:packages.
+- registries: gh's OAuth token (gho_) was accepted by npm.pkg.github.com for publishing, where the
+  docs name a classic PAT only; the three layers were published at 0.0.1 on 2026-10-26, private.
+- registries: a package with no `repository` field isn't linked to the repository its name names,
+  contrary to GitHub's docs; the v0.1.0 manifests have none, so all three published unlinked.
+- registries: `mise run publish` takes a positional `dry-run` argument, as preflight.sh takes
+  `live`, since `mise run` has its own --dry-run flag.
+- registries: the token reaches npm through a scratch `.npmrc` that holds the literal
+  `${GITHUB_PACKAGES_TOKEN}` reference, not an npm_config_ variable, which unconfigured.sh unsets.
 
 ## Pending edits
 
