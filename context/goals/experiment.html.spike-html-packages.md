@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** registries
-- **Branch:** registries
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
@@ -11,7 +11,7 @@
 3. [x] hosting
 4. [x] components
 5. [x] by-tag
-6. [ ] registries
+6. [x] registries
 7. [ ] consumers
 8. [ ] answer
 
@@ -146,10 +146,6 @@ Door          two-way: everything. The GitHub Packages publishes are real and
               made private again. No tag is pushed. The coordinator's edits
               land as pending edits, applied by the session.
 ```
-
-## Progress
-
-slices 3/3 committed (e2e1322, ee5b330, 695f80d) · standards 94aee4d · spec no gaps in behaviors 1–7, record gaps closed by the editor · editor done
 
 ## Decisions
 
