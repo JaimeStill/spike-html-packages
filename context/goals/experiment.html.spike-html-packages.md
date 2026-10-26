@@ -102,7 +102,7 @@ Door          two-way: no tag or publish. The measure runs in scratch, and the
 
 ## Progress
 
-slices 1/3 committed · standards — · spec — · editor —
+slices 2/3 committed · standards — · spec — · editor —
 
 ## Decisions
 
