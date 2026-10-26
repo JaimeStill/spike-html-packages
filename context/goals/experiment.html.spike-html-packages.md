@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** idle
-- **Task:** none
-- **Branch:** none
+- **State:** building
+- **Task:** registries
+- **Branch:** registries
 
 ## Tasks
 
@@ -15,169 +15,141 @@
 7. [ ] consumers
 8. [ ] answer
 
-## Task brief · by-tag
+## Task brief · registries
 
 ```
-Problem       The three layers are released by tag at v0.1.0, but no consumer
-              installs them by tag yet. The guards each manager needs were
-              measured on the foundation tag and the monorepo's releases, not
-              on all three tags, and jsDelivr /gh/ and the import-map page
-              haven't been proven against the layer repositories. Until they
-              are, evidence 1 (hosting) and 3 (tag naming) rest on retired
-              fixtures. This task adds this repository's consumer check by
-              tag, offline in its check, and a networked task that prints the
-              live facts as a dated table.
-Repositories  changes: spike-html-packages (its check, its tasks, and its
+Problem       Evidence 1 has no registry yet. The three layers are released
+              by tag at v0.1.0, but no consumer has installed them from a
+              registry, so the spike can't yet say what a registry carries of
+              the .css or what a consumer pays to install. GitHub Packages is
+              the registry left: JSR's publishers all run Deno, whose runtime
+              development ends (deno.com/blog/cloudflare, 2026-10-09). This
+              task publishes the three layers to GitHub Packages for real at
+              0.0.1 and measures the installs in the networked task's dated
+              table. It records JSR from the dated dry runs of PLAN round 1.
+Repositories  changes: spike-html-packages (its tasks, its live table, and its
               docs). Read-only: spike-html-packages-foundation, -sdk, and
-              -components at their v0.1.0 tags and main (nothing owed).
-Behaviors     1. Six consumer fixtures, one per manager (npm, pnpm, bun) for
-                 each consumer: the three together, and the components alone.
-                 Each manifest is private and names each layer by its exact
-                 tag, github:JaimeStill/spike-html-packages-<layer>#v0.1.0.
-                 The three-together fixture names all three layers; the
-                 components-alone fixture names only the components. Each
-                 fixture holds its manager's committed lockfile and its guard
-                 in the manager's own config: npm allow-git=root for the
-                 three together and allow-git=all for the components alone,
-                 pnpm blockExoticSubdeps false for both, and nothing for bun.
-              2. `mise run install` is still the one task that reads the
-                 network. It installs the mise pins and the root's
-                 node_modules from the lockfile. It runs each fixture's
-                 install frozen from its lockfile, which fills one cache per
-                 manager in the repository's gitignored cache directory. It
-                 also keeps a depth-1 fetch of each layer's v0.1.0 tag there.
-                 It changes no fixture or lockfile.
-              3. `mise run lock` is a networked task, and the only one that
-                 writes the fixtures' lockfiles. It resolves each fixture
-                 anew under its manager and guard. Run while the tags are
-                 unchanged, it leaves every lockfile as it is.
-              4. `mise run check` reads no network once `mise run install`
-                 has run, and writes nothing in the repository outside its
-                 cache directory. It runs Prettier, shellcheck 0.11.0 over
-                 the scripts, and the consumer tier, and fails on any failing
-                 tier. When a cache or a tag fetch is missing, it fails and
-                 names `mise run install`. It passes in a network namespace
-                 that has only the loopback up.
-              5. The consumer tier installs each fixture offline, from its
-                 lockfile and its manager's cache, in a scratch copy outside
-                 the repository, and fails unless all of these hold:
-                 - The lockfile is unchanged after the install.
-                 - Each installed layer package equals its tag's tree, file
-                   for file, compared against the kept fetch of the tag.
-                   bun's .bun-tag is left out of the comparison, and it must
-                   name that tag.
-                 - In the three together, exactly one foundation is
-                   installed, and the components resolve to it. In the
-                   components alone, the components' foundation is the
-                   foundation tag's tree.
-                 - No layer's devDependency is installed.
-                 - The runtime resolves every export subpath of each
-                   installed layer to the file its exports name: node for the
-                   npm and pnpm installs, bun for the bun installs. A
-                   types-only subpath resolves to nothing. The foundation's
-                   keys grammar runs, imported by package name.
-              6. The consumer tier proves npm's guards offline. With its
-                 config at allow-git=none, the three-together install fails
-                 with EALLOWGIT. With allow-git=root, the components-alone
-                 install fails with EALLOWGIT. With its committed config,
-                 each install passes.
-              7. `mise run currency` reports, and exits nonzero on, each of
-                 these behind its latest: every mise tool (bun, npm,
-                 shellcheck, and chrome-headless-shell among them), every
-                 package.json pin, and each fixture's github: tag against
-                 its layer repository's latest GitHub release.
-              8. A networked mise task, outside the check, runs in the pinned
-                 chrome-headless-shell 156.0.8078.47. Before it measures
-                 anything, it checks that the three v0.1.0 tags and their
-                 three release assets are published, and fails naming any
-                 that is missing. It writes nothing to the repository: every
-                 install, cache, and fetch it makes is in a scratch directory
-                 it removes. It prints one markdown table, headed with its
-                 run date, with these rows:
-                 a. jsDelivr /gh/ at @v0.1.0, one row per repository: each
-                    file in the tag's tree is fetched and compared byte for
-                    byte, with the .js and .css content types, cache-control,
-                    x-jsd-version, and x-jsd-version-type.
-                 b. The import-map page, loaded from jsDelivr. Its
-                    hand-written map has three entries: lit to
-                    /npm/lit@3.3.3/+esm, and the foundation's and the
-                    components' package prefixes to each tag's dist/ on
-                    /gh/. There is no SDK entry. The page renders the three
-                    components, each shadow root adopting three sheets, with
-                    the foundation's reset and elements sheets the same
-                    objects in every root. The row names the origins the page
-                    loaded from.
-                 c. Installs with no lockfile: each consumer under each
-                    manager, trying each guard setting least first (npm none,
-                    root, all; pnpm its defaults, then blockExoticSubdeps
-                    false; bun its defaults). Each row names the least
-                    setting that passes and the error each lesser setting
-                    failed with, and checks the installed trees against the
-                    tags.
-                 d. Installs by release-asset tarball URL: the three assets
-                    together, and the components' asset alone, under each
-                    manager, with the guard settings tried least first. Each
-                    install equals its tag's tree.
-                 The browser resolves only the loopback address and
-                 cdn.jsdelivr.net.
-              9. The browser driver (DevTools Protocol over a pipe, with no
-                 package) and the static server are copied from
-                 spike-html-packages-components 8cb64a8, each with a
-                 provenance line. The driver gains a host allowlist, empty by
-                 default. The import-map page and the networked script are
-                 new. No provenance line names the deleted hosting-built
-                 branch.
-              10. Docs. The context README records the networked task's table
-                 in a new section headed with its date. The Hosting section
-                 is corrected: pnpm 12.15.0 refuses the three together by
-                 default too (ERR_PNPM_EXOTIC_SUBDEP), not only the
-                 components alone. A frozen install skips that check, and
-                 npm's allow-git applies even to npm ci --offline. The README
-                 gains each consumer's guard table and each lockfile's record
-                 of the tags: npm a git+ssh commit, pnpm a codeload tarball
-                 at the commit, bun the annotated tag object's hash. The
-                 Tasks, Layout, and Path item 5 sections, the CLAUDE.md check
-                 line, and the marathon config's comment name the new check
-                 and tasks. The goal record logs the decisions, and its
-                 pending edits restate by-tag's roadmap entry with the
-                 tarball-URL installs. The code meets STANDARDS.md's Code.
-Test seams    This repository's `mise run check` (its consumer tier); and
-              the networked task's dated table.
-Slices        1. The three together, offline. The three fixtures with their
-                 lockfiles and guards, `mise run install` filling the caches
-                 and the tag fetches, the consumer tier's tree, foundation,
-                 devDependency, and resolution checks, shellcheck, and the
-                 preflight. Demo: `mise run check` passes in a network
-                 namespace, and a lockfile edited by hand fails it.
-              2. The components alone, and npm's guards. The three
-                 components-alone fixtures and the EALLOWGIT proofs. Demo:
-                 `mise run check` passes offline, and lowering either npm
-                 guard fails it with EALLOWGIT.
-              3. Re-lock and currency. `mise run lock`, and the tags in
-                 `mise run currency`. Demo: `mise run lock` leaves every
-                 lockfile unchanged, and `mise run currency` exits 0.
-              4. The networked task, from jsDelivr: the driver and the
-                 server copied with provenance and the host allowlist, the
-                 publish check, the /gh/ rows, and the import-map page. Demo:
-                 the task prints a dated table with the jsDelivr and page
-                 rows.
-              5. The networked task's installs: the no-lockfile installs
-                 with the guard settings tried least first, and the
-                 tarball-URL installs. Demo: the full dated table prints.
-              6. Docs, as behavior 10 lists. Demo: `mise run check` passes,
-                 and the README reads true against the table and the three
-                 layer repositories.
-Out of scope  Any change to a layer repository (eslint-plugin-boundaries
-              7.3.0 is theirs); a new version of any layer; #semver: ranges;
-              type-checking the installs; ESLint at the root; CI for this
-              repository; GitHub Packages and JSR; the page and Vite
-              consumers and the release flow; npm linked and bun isolated
-              layouts; browsers other than chrome-headless-shell.
-Door          two-way: everything. No tag is pushed and nothing is
-              published. The networked task only reads GitHub and jsDelivr.
-              The coordinator's restated by-tag entry lands as a pending
-              edit, applied by the session.
+              -components at their v0.1.0 tags (eslint-plugin-boundaries
+              7.3.0 is theirs).
+Behaviors     1. `mise run publish` is a networked task, run by hand and
+                 outside the check. It publishes each layer to GitHub
+                 Packages as @jaimestill/spike-html-packages-<layer> at
+                 0.0.1, in the order foundation, sdk, components. Each publish
+                 is a scratch copy of the layer's v0.1.0 tree. The copy's
+                 manifest differs from the tag's only in its version, 0.0.1,
+                 and, in the components, in the foundation dependency, which
+                 names the registry foundation at exactly 0.0.1. The task
+                 writes nothing to the repository and removes its scratch
+                 directory.
+              2. The task reads gh's token from an environment variable and
+                 never writes it to a file, in the repository or in scratch.
+                 Before it publishes anything, it fails naming what is
+                 missing: the variable, the token's write:packages scope, or
+                 a layer's v0.1.0 tag.
+              3. A version GitHub Packages already holds is never published
+                 again. The task publishes only the layers not yet at 0.0.1
+                 and names each one it skips, so once all three are held, a
+                 rerun publishes nothing.
+              4. Each published package is linked to its layer's repository,
+                 and is public once the architect has changed its visibility.
+              5. The wrapper that runs every install with none of the user's
+                 config still unsets every npm_config_*, pnpm_config_*, and
+                 BUN_CONFIG_* variable, except the one pnpm reads for GitHub
+                 Packages' token. It lets that one through only when the
+                 networked task sets it. `mise run check`, `mise run
+                 install`, and `mise run lock` need no token and read no
+                 GitHub Packages.
+              6. The networked task reads the same token variable, and fails
+                 naming it when it is unset. Before it measures anything, it
+                 also checks that each of the three packages is on GitHub
+                 Packages at 0.0.1 and public, and fails naming any that
+                 isn't.
+              7. The networked task's table gains these rows:
+                 e. Installs from GitHub Packages: the three together and the
+                    components alone, under each manager (npm, pnpm, bun), in
+                    a scratch project with no lockfile and a fresh cache,
+                    each layer named at exactly 0.0.1. The settings are tried
+                    least first: none, then the @jaimestill registry alone,
+                    then the registry and the token. Each row names the least
+                    setting that installs, the error each lesser setting
+                    failed with, and whether pnpm's minimum release age fell
+                    back, skipped a version with no publish time, or didn't
+                    apply. Each row also names the git guard the install
+                    needed, with each manager at its default.
+                 f. Each install's trees: every installed layer equals its
+                    tag's tree, file for file, except its manifest. The
+                    manifest differs from the tag's only in its version, and
+                    in the components' foundation dependency. Exactly one
+                    foundation is installed, and the components resolve to
+                    it. No layer's devDependency is installed. Every export
+                    subpath resolves to the file its exports name: node for
+                    the npm and pnpm installs, bun for bun's. The row names
+                    the .css files installed for each layer, and that a .css
+                    subpath resolves by package name.
+                 The earlier rows are unchanged.
+              8. Docs. The context README records the networked task's table
+                 in a new section headed with its date. Hosting gains the
+                 GitHub Packages findings: what each manager needed to
+                 install (registry config, token, release age), whether gh's
+                 OAuth token was accepted where the docs name a classic PAT,
+                 what of the .css reaches a consumer, and that a public
+                 package can't be made private again but its versions stay
+                 deletable. A JSR section records round 1's deno 2.9.8 dry
+                 runs of 2026-10-23: no .css export entries, so no .css
+                 subpath for npm consumers; CSS module script imports refused,
+                 and so the components; the foundation passing as TS sources
+                 and its build passing without types for npm consumers; the
+                 ./css ambient subpath failing slow types; the SDK passing
+                 only with --no-check; and github: specs unresolved. It
+                 names Deno's end as the reason no JSR package was
+                 published. The Releases and Tags sections list the 0.0.1
+                 publishes. The Tasks, Layout, and Path item 6 sections, the
+                 CLAUDE.md lines, and the marathon config's comment name the
+                 publish task. The goal record logs the decisions, marks the
+                 setup decisions on JSR superseded, and adds pending edits:
+                 the coordinator's registries roadmap entry restated (GitHub
+                 Packages published; JSR recorded from dry runs), and
+                 html-artifacts.md corrected (JSR emits JS and .d.ts only
+                 from TS entrypoints, and the components can't go on JSR as
+                 built). The code meets STANDARDS.md's Code.
+Test seams    `mise run publish`, with the published packages it reports;
+              the networked task's dated table; and `mise run check`,
+              unchanged.
+Slices        1. Publish. The publish task: the token from the environment,
+                 the preflight, the scratch copies at 0.0.1, the components'
+                 registry foundation, and the skip of a version already
+                 held. BUILD stops before the first publish, so the architect
+                 can run `gh auth refresh -s read:packages,write:packages`
+                 and judge whether gh's OAuth token is accepted; a refusal is
+                 an escalation. BUILD stops again after the publish, so the
+                 architect can make the three packages public. Demo: the
+                 three packages at 0.0.1, public and linked to their
+                 repositories, and a rerun that publishes nothing and names
+                 all three.
+              2. The registry rows. The token passed through the wrapper for
+                 pnpm alone, the networked task's package preflight, and rows
+                 e and f. Demo: the full dated table prints, and `mise run
+                 check` still passes in a network namespace with no token
+                 set.
+              3. Docs, as behavior 8 lists. Demo: `mise run check` passes,
+                 and the README reads true against the table, GitHub
+                 Packages, and the dry-run record.
+Out of scope  JSR publishes and any Deno or jsr CLI; any change to a layer
+              repository; new layer releases or tags; publishing from
+              GitHub Actions; registry consumers in the offline check; the
+              npm registry; deleting the published versions; private-package
+              access; type-checking the installs; the page and Vite consumers
+              and the release flow.
+Door          two-way: everything. The GitHub Packages publishes are real and
+              public, but each version and package stays deletable (5,000
+              downloads or fewer, restorable within 30 days). Public can't be
+              made private again. No tag is pushed. The coordinator's edits
+              land as pending edits, applied by the session.
 ```
+
+## Progress
+
+slices 0/3 committed · standards — · spec — · editor —
 
 ## Decisions
 
@@ -541,6 +513,23 @@ Door          two-way: everything. No tag is pushed and nothing is
 - by-tag: the root package.json gains "type": "module".
 - by-tag: the npm EALLOWGIT proof also requires npm's "Refusing to fetch" line to name the expected
   package (standards review).
+- registries: JSR is dropped, with no publish, no deno pin, and no jsr CLI: every supported JSR
+  publisher runs Deno, whose runtime development ends a year after 2026-10-09
+  (deno.com/blog/cloudflare); JSR is recorded from PLAN round 1's deno 2.9.8 dry runs of 2026-10-23
+  (round 1, 1, 7, 10; round 2, 1).
+- registries: the publishes run from a networked `mise run publish` in this repository, from
+  scratch copies of each layer's v0.1.0 tree at 0.0.1; the layer repositories stay read-only
+  (round 1, 2).
+- registries: the components' published manifest names the registry foundation at exactly 0.0.1,
+  not the github: tag (round 1, 3).
+- registries: the three GitHub Packages packages are made public by the architect after their
+  first publish (round 1, 4).
+- registries: the registry consumers are rows in `mise run live`'s dated table, with the token
+  from the environment; `mise run check` stays token-free (round 1, 9).
+- registries: round 1's answers 5, 6, 8, and 11 (JSR's sources, ./css, components attempt, and
+  publish stop) lapse with JSR.
+- registries: the architect ran `gh auth refresh -s read:packages,write:packages` during PLAN;
+  gh's token lists write:packages.
 
 ## Pending edits
 
