@@ -46,7 +46,7 @@ depends = ["preflight"]
 run = "shellcheck scripts/*.sh"
 
 [tasks."test:consumers"]
-description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, check the install against the layers' tags, load its page in the browser, and check the jsDelivr page's pins"
+description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, check the install against the layers' tags, load its page in the browser, check the jsDelivr page's pins, and build and serve each Vite fixture's app, then serve it from Vite's dev server, in the browser"
 depends = ["preflight"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) scripts/consumers.sh"
 
