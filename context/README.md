@@ -460,9 +460,10 @@ infrastructure. JSR is recorded instead from the `registries` plan's deno 2.9.8 
 - The SDK's handwritten `.d.ts` passes only with `--no-check`.
 
 A JSR version can be deleted only within 24 hours of its publish, with fewer than 10 downloads and
-no dependents, and its number stays reserved; after that it can only be yanked. npm and bun install
-a JSR package through npm.jsr.io as `@jsr/<scope>__<name>`, and pnpm 10.9 and later take `jsr:`
-specs natively.
+no dependents, and its number stays reserved; after that it can only be yanked
+(jsr.io/docs/packages, jsr.io/docs/immutability). npm and bun install a JSR package through
+npm.jsr.io as `@jsr/<scope>__<name>`, and pnpm 10.9 and later take `jsr:` specs natively
+(jsr.io/docs/npm-compatibility, pnpm.io/package-sources).
 
 ## Measures
 

@@ -91,16 +91,18 @@ for layer in "${layers[@]}"; do
 done
 
 # Whether GitHub Packages holds the layer at the version: npm view prints the version when it
-# does, and fails E404, or prints nothing, when it doesn't. Any other failure is fatal.
+# does, and fails E404, or prints nothing, when it doesn't. Any other failure is fatal. Its
+# warnings go to stderr, apart from the version it prints, so a warning can't read as not held.
 held() {
   local layer=$1 output
+  local errors=$scratch/$layer.view-errors
   if output=$(cd "$scratch/$layer" &&
-    "$unconfigured" npm view "$scope$layer@$version" version 2>&1); then
+    "$unconfigured" npm view "$scope$layer@$version" version 2>"$errors"); then
     [[ $output == "$version" ]]
-  elif [[ $output == *E404* ]]; then
+  elif grep -q E404 "$errors"; then
     return 1
   else
-    fail "can't ask GitHub Packages for $scope$layer@$version: $output"
+    fail "can't ask GitHub Packages for $scope$layer@$version: $(<"$errors")"
   fi
 }
 

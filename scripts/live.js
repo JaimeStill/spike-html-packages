@@ -445,8 +445,9 @@ function releaseAge(output) {
 }
 
 /** Row e: the consumer installed under the manager from GitHub Packages, each layer at exactly
- * 0.0.1, in a scratch project with no lockfile and a fresh scratch cache, the registry settings
- * tried least first, and at each the manager's guard least first as installRow tries it. Resolves
+ * 0.0.1, in a scratch project with no lockfile and a fresh scratch cache, the manager's guard and
+ * the registry settings tried least first: a refusal raises the guard as installRow raises it, and
+ * any other failure the registry setting, the guard kept where it stands. Resolves
  * `installed` to the project that installed, or null, for row f. */
 function registryRow(consumer, manager, version) {
   const guard = guards[manager];
