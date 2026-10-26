@@ -149,7 +149,7 @@ Door          two-way: everything. The GitHub Packages publishes are real and
 
 ## Progress
 
-slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three packages public and linked, then the real `mise run live` and slice 3 · standards — · spec — · editor —
+slices 3/3 committed (e2e1322, ee5b330, 695f80d) · standards 94aee4d · spec no gaps in behaviors 1–7, record gaps closed by the editor · editor done
 
 ## Decisions
 
@@ -165,9 +165,9 @@ slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three p
   strings against the convention.
 - setup: default profiles only (Flexoki, regular, mono); spike-html-design already proved
   profiles as extension packages.
-- setup: registry trials publish for real to GitHub Packages and JSR, `@jaimestill` at 0.0.x; a
-  JSR version can never be removed (a one-way door). How JSR is published (workstation or Actions
-  OIDC) waits on the registries task's plan.
+- setup: superseded by the registries plan: registry trials publish for real to GitHub Packages and
+  JSR, `@jaimestill` at 0.0.x; a JSR version can never be removed (a one-way door). How JSR is
+  published (workstation or Actions OIDC) waits on the registries task's plan.
 - setup: GitHub Packages uses gh's token, granted read:packages and write:packages by a one-time
   `gh auth refresh`, passed by environment variable and never written to a file.
 - setup: consumers install under npm, pnpm, and bun; bun 1.4.3 is pinned as a consumer only.
@@ -176,8 +176,9 @@ slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three p
   `[remote] ci`. Public repository, since jsDelivr /gh/ serves public repositories only.
 - setup: releases are 0.y.z annotated tags pushed as evidence and never changed; their form is
   the tag-naming evidence's. The layers task pushes no tag.
-- setup: hosting splits into `hosting` (git tag, tarball, import map, tag naming) and
-  `registries` (GitHub Packages, JSR), keeping the registries' one-way door apart.
+- setup: superseded by the registries plan: hosting splits into `hosting` (git tag, tarball,
+  import map, tag naming) and `registries` (GitHub Packages, JSR), keeping the registries' one-way
+  door apart.
 - setup: references are keys in the coordinator's catalog: spike-html-design (v0.7.0) and
   spike-html-conventions (main a88828a), read-only; herald is spike-html-apps' concern. The spike
   keeps no references files.
@@ -541,6 +542,25 @@ slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three p
 - registries: behavior 4's links are made by hand with each package page's Connect Repository, by
   the architect, beside the visibility change; the published manifests keep the brief's two
   differences, with no `repository` field and no 0.0.2 (escalation 1).
+- registries: pnpm 12.15.0 takes GitHub Packages' token only from the variable
+  `pnpm_config_//npm.pkg.github.com/:_authToken`: it ignores `${...}` in a project .npmrc's
+  `_authToken` and refuses `pnpm_config__auth`. unconfigured.sh lets that variable through only
+  with `--github-packages-token`, which only live.js passes.
+- registries: unconfigured.sh reads variable names from `env -0`, since `compgen -e` omits names
+  bash can't hold, such as pnpm's per-registry settings, which the wrapper therefore left set.
+- registries: bun's registry and token go in the scratch project's bunfig.toml
+  `[install.scopes]`, where bun expands `$GITHUB_PACKAGES_TOKEN`.
+- registries: the public packages still need a token: with the registry alone, every manager
+  fails 401.
+- registries: bun 1.4.4 writes no .bun-tag for a registry install, so installed.sh's registry mode
+  requires none.
+- registries: rows e and f are separate rows, six each, after rows a-d.
+- registries: publish's held check reads npm view's stdout alone, so a warning can't read as a
+  version not held (standards review).
+- registries: GitHub's REST API can't change a package's visibility or repository link, so both
+  are hand steps in the package's settings.
+- registries: live's preflight reads each package's visibility with gh's own login, and checks
+  0.0.1 in the registry metadata with GITHUB_PACKAGES_TOKEN.
 
 ## Pending edits
 
@@ -554,4 +574,29 @@ slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three p
   config; and a networked task that prints a dated table of jsDelivr /gh/ and the import-map page
   over the three tags, in headless chrome, and of each manager's installs with no lockfile, at the
   tags and by the release assets' tarball URLs. Evidence 1, 3.
+  ```
+
+- coordinator · roadmap: restate `[goals.experiment.html.spike-html-packages.tasks.registries]`.
+  Its name, now "GitHub Packages and JSR", becomes "GitHub Packages, and JSR from dry runs"; its
+  summary becomes:
+
+  ```
+  Real 0.0.1 publishes of the three layers under @jaimestill to GitHub Packages, from a networked
+  `mise run publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
+  installing them in `mise run live`'s dated table, each needing the registry and a token even
+  for public packages, with the .css arriving whole. JSR is recorded from deno 2.9.8 dry runs and
+  not published, since every JSR publisher runs Deno, whose runtime development ends
+  (deno.com/blog/cloudflare). Evidence 1.
+  ```
+
+- coordinator · html-artifacts.md: in "Experiment: spike-html-packages", the Hosting item, replace
+  "JSR emits JS and `.d.ts` from `.ts` and installs natively in pnpm 10.9+ and Yarn 4.9+, while npm
+  needs `.npmrc` setup and Bun's support isn't documented." with:
+
+  ```
+  JSR emits JS and `.d.ts` only from TS entrypoints: tsc's `.js` without `@ts-self-types` gets no
+  types in its npm-compatibility package. JSR refuses `.css` exports and CSS module script imports,
+  so the components can't go on JSR as built. It installs natively in pnpm 10.9+ and Yarn 4.9+,
+  while npm and Bun install it through npm.jsr.io as `@jsr/<scope>__<name>`, with `.npmrc` setup
+  (jsr.io/docs/npm-compatibility).
   ```
