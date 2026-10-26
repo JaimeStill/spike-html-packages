@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 1/9 committed (components 2662e5f) · standards — · spec — · editor —
+slices 2/9 committed (components 2662e5f, 68c90f9; reviewed early: standards bb569f6, spec 153c90a, editor fb2f202) · at the slice 2 stop: components PR #2 awaiting the architect's merge, then release.yml cuts v0.2.0 · root slices 3-9 —
 
 ## Decisions
 
