@@ -30,8 +30,9 @@ const scratch = mkdtempSync(join(tmpdir(), "release-flow."));
 // The steps get no token, never prompt, and push nothing to GitHub: a push there is rewritten to a
 // path that doesn't exist. Each step's mktemp lands in the scratch directory.
 const env = { ...process.env, GIT_TERMINAL_PROMPT: "0", TMPDIR: join(scratch, "tmp") };
-delete env.GH_TOKEN;
-delete env.GITHUB_TOKEN;
+for (const variable of ["GH_TOKEN", "GITHUB_TOKEN", "GITHUB_PACKAGES_TOKEN", "MISE_GITHUB_TOKEN"]) {
+  delete env[variable];
+}
 Object.assign(env, {
   GIT_CONFIG_COUNT: "1",
   GIT_CONFIG_KEY_0: `url.${join(scratch, "github-unreachable")}/.pushInsteadOf`,
@@ -61,9 +62,11 @@ function must(command, args, options) {
 
 /** Runs a command in a network namespace of its own, the loopback interface up and nothing else. */
 const offline = (command, args, options) =>
-  run("unshare", ["-rn", "sh", "-c", 'ip link set lo up && exec "$@"', "sh", command, ...args], {
-    ...options,
-  });
+  run(
+    "unshare",
+    ["-rn", "sh", "-c", 'ip link set lo up && exec "$@"', "sh", command, ...args],
+    options,
+  );
 
 /** The last lines of a command's output, for a row that names why it failed. */
 const tail = (output) => output.split("\n").slice(-3).join(" / ");
@@ -103,12 +106,13 @@ function holds(condition, outputs) {
 }
 
 /** release.yml's steps in the clone, at the pushed commit: each step's name and what became of it,
- * the outputs, and, from the release step's stand-in, parse-changelog's extract. */
+ * the outputs, the step that runs mise run check and what became of it, and, from the release
+ * step's stand-in, parse-changelog's extract. */
 function released(clone, sha) {
   const steps = workflow(clone).jobs.release.steps;
   const outputs = {};
   const ran = [];
-  let [mise, failed, notes] = [false, false, null];
+  let [mise, failed, notes, check] = [false, false, null, null];
   for (const [at, step] of steps.entries()) {
     const label = step.name ?? step.uses;
     if (failed || !holds(step.if, outputs)) {
@@ -164,9 +168,10 @@ function released(clone, sha) {
         );
       }
       ran.push(`${label}: ${result.ok ? "ran" : `failed (${tail(result.output)})`}`);
+      if (/^\s*mise run check\s*$/.test(step.run)) check = [result.ok, ran.at(-1)];
     }
   }
-  return { ran, outputs, notes, failed };
+  return { ran, outputs, notes, check };
 }
 
 const mirror = join(scratch, "foundation.git");
@@ -309,8 +314,9 @@ function tagged(remote, sha, tarball) {
     `${tag}^{commit}`,
   ]);
   const [commit, ...rest] = parents.split(" ");
-  if (rest.join(" ") !== sha)
+  if (rest.join(" ") !== sha) {
     return [false, `${commit}'s parents are ${rest.join(" ")}, not ${sha}`];
+  }
   if (!tarball) return [false, "the tag step named no tarball"];
   const [pack, tree] = [join(scratch, "pack"), join(scratch, "tree")];
   rmSync(pack, { recursive: true, force: true });
@@ -361,7 +367,7 @@ function measure(label, flow) {
   must("git", ["-C", flow.clone, "push", "--quiet", "origin", "HEAD:main"]);
   const version = JSON.parse(readFileSync(join(flow.clone, "package.json"), "utf8")).version;
   const written = section(flow.clone, flow.base);
-  const { ran, outputs, notes } = released(flow.clone, sha);
+  const { ran, outputs, notes, check } = released(flow.clone, sha);
 
   row(`${label}: what the flow wrote`, flow.wrote);
   row(`${label}: what a person wrote`, flow.person);
@@ -380,11 +386,10 @@ function measure(label, flow) {
             true,
             `the section as written, then the file's next lines to the next heading: ${extracted.slice(written.body.length).trim().split("\n")[0]} ...`,
           ]
-        : [true, `not the section as written: ${extracted.split("\n")[0]} ...`];
+        : [false, `not the section as written: ${extracted.split("\n")[0]} ...`];
   row(`${label}: parse-changelog 0.6.16 extracts ${to}`, yes(extract));
   row(`${label}: pnpm's step read the network`, flow.network);
-  const check = ran.find((line) => line.startsWith("mise run check"));
-  row(`${label}: the check is green`, yes([check?.endsWith(": ran"), check ?? "not reached"]));
+  row(`${label}: the check is green`, yes(check ?? [false, "not reached"]));
   row(
     `${label}: an annotated ${tag} on a pack commit equal to the tarball, in the bare remote`,
     yes(tagged(flow.remote, sha, outputs.tag?.tarball)),

@@ -658,8 +658,9 @@ function loadRow(consumer, manager, by, version, made) {
       );
 
       const vite = await attempt(`vite/${consumer}`, manager, by);
-      if (!vite.ok)
+      if (!vite.ok) {
         return [false, `the Vite fixture: no setting installs it: ${vite.refused.join(", ")}`];
+      }
       const found = await checked(manager, vite.project, by);
       if (found.foundations.length !== 1) {
         return [false, `the Vite fixture's install holds ${foundationCount(found)}`];
@@ -745,7 +746,7 @@ function aloneRow(manager, by, version) {
         `the foundation ${peer} as their peer, one foundation, the one the components resolve`,
         "each layer its tag's tree",
       ];
-      return [expected === "peer", facts.join("; ")];
+      return [expected === "peer" && found.foundations.length === 1, facts.join("; ")];
     },
   );
 }
