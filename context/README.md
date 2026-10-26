@@ -910,7 +910,9 @@ weigh on no layer repository. What remains is pnpm's:
   resolves it and its linked layout is opt-in (conventions, Results 1).
 - A minimum release age by default: under no user config, pnpm 12.15.0 applied one to the
   same-day GitHub Packages versions and fell back to install them (Hosting), and it held
-  eslint-plugin-boundaries 7.2.1 in the layout task (the goal record).
+  eslint-plugin-boundaries 7.2.1 in the layout task (the goal record). npm 12.2.1 has none by
+  default: its `min-release-age` is null under no user config (`npm config ls -l`, read
+  2026-10-26).
 
 Against npm's standard by use and its stewardship, these are a consumer's guard and two install
 defaults, and they decide it, as narrowly as conventions did. Second, footprint: npm is 46.5 MB

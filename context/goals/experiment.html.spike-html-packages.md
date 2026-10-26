@@ -102,7 +102,7 @@ Door          two-way: no tag or publish. The measure runs in scratch, and the
 
 ## Progress
 
-slices 3/3 committed · standards done · spec — · editor —
+slices 3/3 committed · standards done · spec done · editor —
 
 ## Decisions
 
@@ -691,6 +691,12 @@ slices 3/3 committed · standards done · spec — · editor —
   far less surface, but ESLint is the standard by use and judges a .d.ts import by the resolved
   file, where Biome's GritQL plugin relies on a naming convention and on version-bound node names.
   Biome is the measured alternative; a change in ESLint's or Prettier's stewardship reopens it.
+- answer: the standards review pinned yq 4.54.1 in mise, per rolling-currency, and release-flow
+  reads release.yml through it as the biome task reads the lockfile; release-flow is not re-run.
+- answer: a file either side can't parse fails the measure: that layer reads "not set up" and the
+  task exits 1, as each layer's own lint test requires every file to parse (standards review).
+- answer: the reweighing's minimum-release-age lead cites npm's side, its null default (spec
+  review).
 
 ## Pending edits
 
