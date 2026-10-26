@@ -6,9 +6,9 @@
 // adopt the reset and elements sheets the app imports from the foundation by package name, and
 // every file must come from the loopback address, each a 200, and the foundation's page.css, which
 // the app imports by package name through Vite's own CSS pipeline, must shape the document and
-// every root (test/consumers/design.js). With --build first, as
-// scripts/live.js runs it on its networked installs, each app is built and its build loaded, and no
-// dev server is started: the dev server is the offline check's alone.
+// every root (test/consumers/design.js). With --build first, as scripts/live.js runs it on its
+// networked installs, each app is built and its build loaded, and no dev server is started: the
+// dev server is the offline check's alone.
 //
 // A build bundles the packages, so its files name no package directory: the sheets every root
 // adopts being the app's own is the check that it holds one foundation. The dev server pre-bundles
@@ -123,9 +123,10 @@ async function load(browser, named, origin, page, roots, foundation) {
     roots.push(...report.roots.map(({ tag }) => tag));
 
     const design = await tab.evaluate(measured(roots));
-    const unstyled = failure(design, installedOrder(foundation));
+    const order = installedOrder(foundation);
+    const unstyled = failure(design, order);
     if (unstyled) fail(`${named} ${unstyled}`);
-    return { responses, design: summary(design, installedOrder(foundation)) };
+    return { responses, design: summary(design, order) };
   } finally {
     await tab.close();
   }

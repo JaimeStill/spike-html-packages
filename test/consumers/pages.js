@@ -5,9 +5,9 @@
 // BROWSER_EXECUTABLE names. Every root must adopt the reset and elements sheets the page imports,
 // every file must come from the loopback address, and each package from one directory, the
 // foundation from the one installed.sh found. The foundation's page.css, which each page links from
-// the install, must shape the document and every root (test/consumers/design.js). Then the jsDelivr page, test/live/import-map.html,
-// must map lit at the version the components' tag pins and each layer at its tag, and link the
-// foundation's page.css at its tag.
+// the install, must shape the document and every root (test/consumers/design.js). Then the
+// jsDelivr page, test/live/import-map.html, must map lit at the version the components' tag pins
+// and each layer at its tag, and link the foundation's page.css at its tag.
 
 import { spawnSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
@@ -53,7 +53,8 @@ async function check(browser, { manager, consumer, project, foundation }) {
     if (error) fail(`${named}: ${error}`);
 
     const design = await page.evaluate(measured(roots.map(({ tag }) => tag)));
-    const unstyled = failure(design, installedOrder(foundation));
+    const order = installedOrder(foundation);
+    const unstyled = failure(design, order);
     if (unstyled) fail(`${named} ${unstyled}`);
 
     const foreign = responses.filter(({ url }) => !url.startsWith(`${origin}/`));
@@ -91,7 +92,7 @@ async function check(browser, { manager, consumer, project, foundation }) {
     return (
       `pages: ${named} renders ${roots.map(({ tag }) => tag).join(", ")} from` +
       ` ${responses.length} files on the loopback address, none from elsewhere; one foundation,` +
-      ` ${reached}, whose reset and elements sheets every root adopts as the page imports them; ${summary(design, installedOrder(foundation))}`
+      ` ${reached}, whose reset and elements sheets every root adopts as the page imports them; ${summary(design, order)}`
     );
   } finally {
     await page.close();

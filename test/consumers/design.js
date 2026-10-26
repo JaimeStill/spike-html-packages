@@ -7,10 +7,10 @@
 // The values are computed, never hard-coded, so the check follows whatever the foundation's
 // tokens define: the body's background and font family against the --bg and --font-body tokens as
 // a property on the root resolves them, each token read inside every component's shadow root,
-// where custom properties inherit across the boundary, and the document's layer order, each layer
-// where it is first named, statement or block, in every sheet through each @import, against the
-// order page.css's own statement fixes. The order is the cascade's, not the statement's text: a
-// Vite build's minifier drops page.css's statement, as its blocks come in the same order.
+// where custom properties inherit across the boundary, and the document's layer order, as the
+// cascade orders the names every sheet gives through each @import, against the order page.css's
+// own statement fixes. The order is the cascade's, not the statement's text: a Vite build's
+// minifier drops page.css's statement, as its blocks come in the same order.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -53,19 +53,29 @@ async function measure(tokens, tags) {
     };
   });
 
-  // The document's layers in the cascade's order, the order each is first named in, by its full
-  // name: a statement's names, a block's, nested under the block it is in, through each import.
-  const layers = [];
-  const named = (name) => layers.includes(name) || layers.push(name);
+  // The document's layers in the cascade's order: a tree of their names, each part a child of
+  // the layer before it in the order it is first named, statement, block, or import's layer(),
+  // through each import; read depth first, the order the cascade gives the names it reaches.
+  const tree = new Map();
+  const named = (name) => {
+    let level = tree;
+    for (const part of name.split(".")) {
+      if (!level.has(part)) level.set(part, new Map());
+      level = level.get(part);
+    }
+  };
+  const ordered = (level = tree, prefix = "") =>
+    [...level].flatMap(([part, below]) => [prefix + part, ...ordered(below, `${prefix}${part}.`)]);
   // A sheet whose rules the document can't read, one from another origin fetched without CORS, is
-  // named by its URL, so a failure says which. The jsDelivr page's page.css is fetched with CORS,
-  // but its imports are not: its own statement names every layer, and fixes their order first.
+  // kept with the layers named before it, which no later name can reorder: the jsDelivr page's
+  // page.css is fetched with CORS, and its statement names every layer before its imports, which
+  // are not.
   const closed = [];
   const rulesOf = (sheet) => {
     try {
       return sheet.cssRules;
     } catch {
-      closed.push(sheet.href);
+      closed.push({ href: sheet.href, before: ordered() });
       return [];
     }
   };
@@ -79,14 +89,18 @@ async function measure(tokens, tags) {
         named(prefix + rule.name);
         walk(rule.cssRules, `${prefix}${rule.name}.`);
       } else if (rule instanceof CSSImportRule) {
-        if (rule.styleSheet) walk(rulesOf(rule.styleSheet), prefix);
+        // An import into an anonymous layer is the same.
+        if (rule.layerName === "") continue;
+        if (rule.layerName !== null) named(prefix + rule.layerName);
+        const inner = rule.layerName === null ? prefix : `${prefix}${rule.layerName}.`;
+        if (rule.styleSheet) walk(rulesOf(rule.styleSheet), inner);
       } else if (rule.cssRules) {
         walk(rule.cssRules, prefix);
       }
     }
   };
   for (const sheet of document.styleSheets) walk(rulesOf(sheet), "");
-  return { values, shadows, layers, closed };
+  return { values, shadows, layers: ordered(), closed };
 }
 
 /** The expression a page evaluates for the tags' shadow roots. */
@@ -125,13 +139,20 @@ export function failure(design, order) {
     });
   }
   // The foundation's layers, in the document's order, against page.css's: each present and in
-  // its place, whatever layers the page adds around them.
+  // its place, whatever layers the page adds around them. An unread sheet before all of them are
+  // named could name them first, so the order is unknown.
   const present = design.layers.filter((name) => order.includes(name));
-  if (present.join(", ") !== order.join(", ")) {
+  const [unread] = design.closed;
+  const unknown = unread && order.filter((name) => !unread.before.includes(name));
+  if (unknown?.length > 0) {
+    missing.push(
+      `the foundation's layer order: ${unread.href}, unread, comes before the document names` +
+        ` ${unknown.join(", ")}`,
+    );
+  } else if (present.join(", ") !== order.join(", ")) {
     missing.push(
       `the foundation's layer order, ${order.join(", ")}: the document's is` +
-        ` ${present.join(", ") || "none of them"}` +
-        (design.closed.length > 0 ? `, ${design.closed.join(", ")} unread` : ""),
+        ` ${present.join(", ") || "none of them"}`,
     );
   }
   return missing.length > 0 ? `misses ${[...new Set(missing)].join("; ")}` : undefined;
