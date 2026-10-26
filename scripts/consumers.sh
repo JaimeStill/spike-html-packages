@@ -2,8 +2,9 @@
 # Installs each consumer fixture in test/consumers/<consumer>/<manager>/ under its manager, offline
 # and frozen from its committed lockfile and the manager's cache in .cache/consumers/, in a scratch
 # copy outside the repository, and checks the install against the layers' tags, fetched into
-# .cache/tags/, then proves npm's guard by each consumer's install failing under it lowered. `warm`
-# instead fills the caches and fetches the tags from the network.
+# .cache/tags/; then loads each install's page in the browser BROWSER_EXECUTABLE names
+# (test/consumers/pages.js), and proves npm's guard by each consumer's install failing under it
+# lowered. `warm` instead fills the caches and fetches the tags from the network.
 # Adapted from spike-html-packages (c2b4a19): scripts/consumers.sh, from packed tarballs to tags.
 set -euo pipefail
 
@@ -73,6 +74,7 @@ if [[ $mode == warm ]]; then
   exit 0
 fi
 
+pages=()
 for consumer in "${consumers[@]}"; do
   for manager in "${managers[@]}"; do
     if [[ $manager == bun ]]; then runtime=bun; else runtime=node; fi
@@ -96,6 +98,7 @@ for consumer in "${consumers[@]}"; do
     releases=()
     while read -r kind dir; do
       [[ $kind != release ]] || releases+=("$dir")
+      [[ $kind != foundation ]] || foundation=$dir
     done <<<"$checked"
 
     "$runtime" "$fixtures/consumers.js" "$project" "${releases[@]}"
@@ -103,8 +106,13 @@ for consumer in "${consumers[@]}"; do
     (cd "$project" && "$runtime" resolve.js)
     echo "consumers: $manager installed $consumer offline from ${lockfile[$manager]}, each layer" \
       "its tag's tree, one foundation, no devDependency; it resolves under $runtime"
+    cp -r "$fixtures/pages" "$project"
+    pages+=("$manager" "$consumer" "$project" "$foundation")
   done
 done
+
+# Each install's page, in one browser, then the jsDelivr page's pins.
+node "$fixtures/pages.js" "$tags" "${pages[@]}"
 
 # npm's guard, proven both ways: the install that passes under each committed .npmrc fails under
 # the guard lowered, in a scratch copy, refusing one of the consumer's own git dependencies. npm ci --offline enforces

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Fails naming mise run install when something a task needs is missing: the root's node_modules
-# tooling, and for the consumer tier, each manager's cache and each layer's tag fetch in .cache/;
-# with `live`, the live task's one need instead, the pinned chrome-headless-shell.
+# Fails naming mise run install when something a task needs is missing: the pinned
+# chrome-headless-shell, which the consumer pages and the live task load; and but for `live`, whose
+# one need it is, the root's node_modules tooling, and for the consumer tier, each manager's cache
+# and each layer's tag fetch in .cache/.
 # Adapted from spike-html-packages-components (8cb64a8): scripts/preflight.sh, the caches and tags
-# let in, and the browser half for the live task alone.
+# let in.
 set -euo pipefail
 
 fail() {
@@ -11,16 +12,14 @@ fail() {
   exit 1
 }
 
-if [[ "${1:-}" == live ]]; then
-  shell=$(mise which chrome-headless-shell 2>/dev/null) || fail "chrome-headless-shell"
-  # mise caches downloads by checksum: a version bumped without its sha256 installs the old build.
-  pin=$(mise current http:chrome-headless-shell)
-  if [[ "$("$shell" --version)" != *" $pin" ]]; then
-    echo "preflight: $shell isn't chrome-headless-shell $pin; give the pin its own sha256" >&2
-    exit 1
-  fi
-  exit 0
+shell=$(mise which chrome-headless-shell 2>/dev/null) || fail "chrome-headless-shell"
+# mise caches downloads by checksum: a version bumped without its sha256 installs the old build.
+pin=$(mise current http:chrome-headless-shell)
+if [[ "$("$shell" --version)" != *" $pin" ]]; then
+  echo "preflight: $shell isn't chrome-headless-shell $pin; give the pin its own sha256" >&2
+  exit 1
 fi
+[[ "${1:-}" != live ]] || exit 0
 
 [[ -x node_modules/.bin/prettier ]] || fail "prettier (devDependencies)"
 for manager in npm pnpm bun; do

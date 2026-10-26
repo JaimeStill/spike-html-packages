@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- npm's page: lit and the layers unbundled from an npm install, which hoists every package to
+     the top of node_modules/, so the map needs no scopes. pages.js serves the install's root and
+     loads it; page.js renders the three components and reports what each shadow root adopted. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>npm page</title>
+    <!-- Each entry is the file or directory the package's exports name for the browser: lit's
+         three packages are its own imports, and the foundation is the components' peer. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "/node_modules/lit/index.js",
+          "lit-element/": "/node_modules/lit-element/",
+          "lit-html": "/node_modules/lit-html/lit-html.js",
+          "lit-html/": "/node_modules/lit-html/",
+          "@lit/reactive-element": "/node_modules/@lit/reactive-element/reactive-element.js",
+          "@jaimestill/spike-html-packages-foundation/": "/node_modules/@jaimestill/spike-html-packages-foundation/dist/",
+          "@jaimestill/spike-html-packages-components/": "/node_modules/@jaimestill/spike-html-packages-components/dist/"
+        }
+      }
+    </script>
+    <script type="module" src="page.js"></script>
+  </head>
+  <body>
+    <main>
+      <sl-status-badge label="draft"></sl-status-badge>
+      <sl-entry-lit-shadow></sl-entry-lit-shadow>
+      <sl-pagination-lit-shadow page="1" size="10" total="30"></sl-pagination-lit-shadow>
+    </main>
+  </body>
+</html>

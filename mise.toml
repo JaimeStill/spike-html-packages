@@ -13,7 +13,8 @@ npm = "12.2.1"
 pnpm = "12.15.0"
 shellcheck = "0.11.0"
 
-# The live task's browser, at spike-html-packages-components' (8cb64a8) pin. Chrome for Testing
+# The browser the consumer pages and the live task load, at spike-html-packages-components'
+# (8cb64a8) pin. Chrome for Testing
 # publishes no checksums: take the sha256 and size from the download by hand at each bump.
 [tools."http:chrome-headless-shell"]
 version = "156.0.8078.47"
@@ -26,7 +27,7 @@ linux-x64 = { url = "https://storage.googleapis.com/chrome-for-testing-public/{{
 # Adapted from spike-html-packages-components (8cb64a8): mise.toml's preflight, its description
 # naming the caches, the tag fetches, and the live task's browser.
 [tasks.preflight]
-description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the live task's browser"
+description = "Fail naming mise run install when a tool, cache, or tag fetch the tasks need is missing; with live, the browser alone"
 hide = true
 run = "scripts/preflight.sh"
 
@@ -45,16 +46,16 @@ depends = ["preflight"]
 run = "shellcheck scripts/*.sh"
 
 [tasks."test:consumers"]
-description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, and check the install against the layers' tags"
+description = "Install each consumer fixture offline from its lockfile under npm, pnpm, and bun, check the install against the layers' tags, load its page in the browser, and check the jsDelivr page's pins"
 depends = ["preflight"]
-run = "scripts/consumers.sh"
+run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) scripts/consumers.sh"
 
 [tasks.check]
 description = "Run every check; reads no network; writes nothing in the repository outside .cache/"
 depends = ["lint", "test:consumers"]
 
 [tasks.install]
-description = "Install the pins and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
+description = "Install the pins, the browser among them, and node_modules, fill the consumer caches, and fetch the layers' tags; reads the network"
 run = "scripts/install.sh"
 
 [tasks.lock]

@@ -1,5 +1,6 @@
-// The live task's driver: chrome-headless-shell over the DevTools Protocol on a pipe, with no
-// package between, the browser resolving the loopback address and the hosts it is allowed alone.
+// The browser driver of the consumer pages and the live task: chrome-headless-shell over the
+// DevTools Protocol on a pipe, with no package between, the browser resolving the loopback address
+// and the hosts it is allowed alone.
 // Adapted from spike-html-packages-components (8cb64a8): test/browser/support/browser-pipe.js,
 // with the host allowlist.
 
@@ -15,7 +16,7 @@ const settings = { lang: "en-US", tz: "UTC", width: 1280, height: 720 };
  * browser resolves the loopback address and each of the hosts, none by default, and no other. */
 export async function launch({ hosts = [] } = {}) {
   const executable = process.env.BROWSER_EXECUTABLE;
-  if (!executable) throw new Error("BROWSER_EXECUTABLE names no browser: run mise run live");
+  if (!executable) throw new Error("BROWSER_EXECUTABLE names no browser: run it from mise");
   const resolvable = ["127.0.0.1", ...hosts].map((host) => `, EXCLUDE ${host}`).join("");
   const profile = mkdtempSync(join(tmpdir(), "browser-pipe."));
   const child = spawn(

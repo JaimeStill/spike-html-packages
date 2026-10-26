@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- pnpm's page: lit and the layers unbundled from a pnpm install, which puts each package in a
+     directory of its own in the virtual store, node_modules/.pnpm/<package>@<version>/, links
+     beside it the packages it depends on, and links only the consumer's own dependencies at the
+     top of node_modules/. pages.js serves the install's root and loads it; page.js renders the
+     three components and reports what each shadow root adopted. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>pnpm page</title>
+    <!-- Each entry is a package's real directory in the store, as node resolves a link, so the
+         page and the components reach the foundation by one URL. A scope gives each store
+         directory the links pnpm puts beside it: the components' lit and their peer, and lit's
+         three packages. pnpm names a git dependency's directory by its codeload URL, cut short
+         and hashed; the lockfile's tag fixes both. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@jaimestill/spike-html-packages-foundation/": "/node_modules/.pnpm/@jaimestill+spike-html-packages-foundation@https+++codeload.github.com+JaimeStill+spike_90d720ac5eafc0a120ba0da8b4da8669/node_modules/@jaimestill/spike-html-packages-foundation/dist/",
+          "@jaimestill/spike-html-packages-components/": "/node_modules/.pnpm/@jaimestill+spike-html-packages-components@https+++codeload.github.com+JaimeStill+spike_762de0a7820ed7ac481cc181f255ac38/node_modules/@jaimestill/spike-html-packages-components/dist/"
+        },
+        "scopes": {
+          "/node_modules/.pnpm/@jaimestill+spike-html-packages-components@https+++codeload.github.com+JaimeStill+spike_762de0a7820ed7ac481cc181f255ac38/node_modules/": {
+            "lit": "/node_modules/.pnpm/lit@3.3.3/node_modules/lit/index.js",
+            "@jaimestill/spike-html-packages-foundation/": "/node_modules/.pnpm/@jaimestill+spike-html-packages-foundation@https+++codeload.github.com+JaimeStill+spike_90d720ac5eafc0a120ba0da8b4da8669/node_modules/@jaimestill/spike-html-packages-foundation/dist/"
+          },
+          "/node_modules/.pnpm/lit@3.3.3/node_modules/": {
+            "lit-element/": "/node_modules/.pnpm/lit-element@4.2.2/node_modules/lit-element/",
+            "lit-html": "/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js",
+            "lit-html/": "/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/",
+            "@lit/reactive-element": "/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js"
+          },
+          "/node_modules/.pnpm/lit-element@4.2.2/node_modules/": {
+            "lit-html": "/node_modules/.pnpm/lit-html@3.3.3/node_modules/lit-html/lit-html.js",
+            "@lit/reactive-element": "/node_modules/.pnpm/@lit+reactive-element@2.1.2/node_modules/@lit/reactive-element/reactive-element.js"
+          }
+        }
+      }
+    </script>
+    <script type="module" src="page.js"></script>
+  </head>
+  <body>
+    <main>
+      <sl-status-badge label="draft"></sl-status-badge>
+      <sl-entry-lit-shadow></sl-entry-lit-shadow>
+      <sl-pagination-lit-shadow page="1" size="10" total="30"></sl-pagination-lit-shadow>
+    </main>
+  </body>
+</html>
