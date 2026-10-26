@@ -8,6 +8,9 @@
 // adopted these objects, unless the components reached a second foundation.
 import reset from "@jaimestill/spike-html-packages-foundation/baseline/reset.css" with { type: "css" };
 import elements from "@jaimestill/spike-html-packages-foundation/baseline/elements.css" with { type: "css" };
+// The foundation's page entry, a plain import Vite's own CSS pipeline takes, its @imports and all:
+// css-sheets.js leaves a declaration with no `with { type: "css" }` to it.
+import "@jaimestill/spike-html-packages-foundation/page.css";
 import "@jaimestill/spike-html-packages-components/status-badge.js";
 import "@jaimestill/spike-html-packages-components/entry-lit-shadow.js";
 import "@jaimestill/spike-html-packages-components/pagination-lit-shadow.js";

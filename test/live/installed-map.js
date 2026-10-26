@@ -5,7 +5,8 @@
 // how it was installed, by a git tag's codeload URL, a tarball's, or a registry version, with its
 // peers, and an install with no lockfile may resolve lit's own dependencies to newer versions. Each
 // entry keeps its file within the package; only the package's directory is resolved anew, as node
-// resolves it from the scope's package, or from the project for the top-level imports.
+// resolves it from the scope's package, or from the project for the top-level imports. The page's
+// stylesheet links, the foundation's page.css, follow the install as its top-level imports do.
 //
 // An npm or bun install that nests a second foundation in the components' node_modules gets a
 // scope of its own for the components, mapping theirs, so the page loads both foundations as the
@@ -45,7 +46,8 @@ function scopeOwner(key) {
   return name.replace("+", "/");
 }
 
-/** Rewrites <project>/pages/<manager>.html's import map to the install's directories. */
+/** Rewrites <project>/pages/<manager>.html's import map and stylesheet links to the install's
+ * directories. */
 export function followInstall(project, manager) {
   const page = join(project, "pages", `${manager}.html`);
   const html = readFileSync(page, "utf8");
@@ -95,6 +97,11 @@ export function followInstall(project, manager) {
   const json = JSON.stringify(rewritten, null, 2);
   writeFileSync(
     page,
-    html.replace(mapPattern, (_, open, __, close) => `${open}\n${json}\n${close}`),
+    html
+      .replace(mapPattern, (_, open, __, close) => `${open}\n${json}\n${close}`)
+      .replace(
+        /(<link rel="stylesheet" href=")([^"]+)(")/g,
+        (_, open, href, close) => open + resolved(real, href) + close,
+      ),
   );
 }

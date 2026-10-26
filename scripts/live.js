@@ -636,11 +636,12 @@ const said = (output, prefix) =>
  * test/consumers/pages.js; the build is the consumer's Vite fixture installed as the row's was
  * (attempt()), checked against the tags, test/consumers/vite/app/ copied in, built and loaded by
  * test/consumers/vite.js --build. Each must render every root adopting the reset and elements
- * sheets the page or app imports, from the loopback address alone; a second foundation makes the
- * row a no, as either runner's sheet check finds it. */
+ * sheets the page or app imports, from the loopback address alone, and the design the foundation's
+ * page.css gives, which the page links and the app imports (test/consumers/design.js); a second
+ * foundation makes the row a no, as either runner's sheet check finds it. */
 function loadRow(consumer, manager, by, version, made) {
   return measured(
-    `${manager} ${version}'s install of ${described[consumer]} ${releases[by]} loads on one foundation in its page and its Vite build`,
+    `${manager} ${version}'s install of ${described[consumer]} ${releases[by]} loads on one foundation, styled by its page.css, in its page and its Vite build`,
     async () => {
       const install = await made;
       if (install === null) return [false, "its install row installed nothing to load"];
@@ -678,8 +679,8 @@ function loadRow(consumer, manager, by, version, made) {
       if (!build.ok) return [false, `the Vite build: ${said(build.output, "vite")}`];
       const built = /from (\d+) files/.exec(said(build.output, "vite"));
       const facts = [
-        `the page renders ${rendered?.[1]} from ${rendered?.[2]} files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation`,
-        `Vite ${viteVersion}'s build of the app, its fixture installed under ${vite.settings} with each layer its tag's tree and one foundation, renders them from ${built?.[1]} files, every root adopting the sheets the app imports`,
+        `the page renders ${rendered?.[1]} from ${rendered?.[2]} files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order`,
+        `Vite ${viteVersion}'s build of the app, its fixture installed under ${vite.settings} with each layer its tag's tree and one foundation, renders them from ${built?.[1]} files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design`,
       ];
       return [true, facts.join("; ")];
     },

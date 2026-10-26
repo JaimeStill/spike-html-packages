@@ -4,7 +4,9 @@
 // served statically from the loopback address, then served by Vite's dev server on the loopback
 // address, and each is loaded in the browser BROWSER_EXECUTABLE names: every root must render and
 // adopt the reset and elements sheets the app imports from the foundation by package name, and
-// every file must come from the loopback address, each a 200. With --build first, as
+// every file must come from the loopback address, each a 200, and the foundation's page.css, which
+// the app imports by package name through Vite's own CSS pipeline, must shape the document and
+// every root (test/consumers/design.js). With --build first, as
 // scripts/live.js runs it on its networked installs, each app is built and its build loaded, and no
 // dev server is started: the dev server is the offline check's alone.
 //
@@ -23,6 +25,7 @@ import { realpathSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { launch } from "../live/browser-pipe.js";
+import { failure, measured, summary } from "./design.js";
 import { serve } from "../live/server.js";
 
 const installs = [];
@@ -87,9 +90,10 @@ function packageOf(project, pathname) {
   return match && { dir: realpathSync(match[1]), name: match[2] };
 }
 
-/** Loads the app's page from the origin, failing unless it renders as one foundation's; resolves
- * to the responses it received. */
-async function load(browser, named, origin, page, roots) {
+/** Loads the app's page from the origin, failing unless it renders as one foundation's and as the
+ * installed foundation's page.css shapes it; resolves to the responses it received and the line
+ * the design adds. */
+async function load(browser, named, origin, page, roots, foundation) {
   // A blank page first, so the network events are on before the page's first request.
   const tab = await browser.open("about:blank");
   try {
@@ -117,14 +121,18 @@ async function load(browser, named, origin, page, roots) {
       }
     }
     roots.push(...report.roots.map(({ tag }) => tag));
-    return responses;
+
+    const design = await tab.evaluate(measured(roots));
+    const unstyled = failure(design, foundation);
+    if (unstyled) fail(`${named} ${unstyled}`);
+    return { responses, design: summary(design, foundation) };
   } finally {
     await tab.close();
   }
 }
 
 /** Builds the install's app and loads the build, served statically; resolves to a line. */
-async function build(browser, { manager, consumer, project }) {
+async function build(browser, { manager, consumer, project, foundation }) {
   const named = `${manager}'s ${consumer} Vite build`;
   const out = `${project}.build`;
   const built = vite(project, ["build", "--outDir", out, "--emptyOutDir"]);
@@ -132,11 +140,18 @@ async function build(browser, { manager, consumer, project }) {
   const { origin, stop } = await serve(out);
   try {
     const roots = [];
-    const responses = await load(browser, named, origin, "index.html", roots);
+    const { responses, design } = await load(
+      browser,
+      named,
+      origin,
+      "index.html",
+      roots,
+      foundation,
+    );
     return (
       `vite: ${named} renders ${roots.join(", ")} from ${responses.length} files on the loopback` +
       " address, none from elsewhere; every root adopts the reset and elements sheets the app" +
-      " imports from the foundation: one foundation in the bundle"
+      ` imports from the foundation: one foundation in the bundle; ${design}`
     );
   } finally {
     await stop();
@@ -164,7 +179,7 @@ async function dev(browser, { manager, consumer, project, foundation }) {
     }
     // The dev server serves index.html at the root, as a consumer opens it.
     const roots = [];
-    const responses = await load(browser, named, origin, "", roots);
+    const { responses, design } = await load(browser, named, origin, "", roots, foundation);
 
     // Each package from one directory: a second is a second copy, whose modules and sheets are
     // other objects.
@@ -185,7 +200,7 @@ async function dev(browser, { manager, consumer, project, foundation }) {
     return (
       `vite: ${named} renders ${roots.join(", ")} from ${responses.length} files on the loopback` +
       " address, none from elsewhere; one foundation, the install's, whose reset and elements" +
-      " sheets every root adopts as the app imports them"
+      ` sheets every root adopts as the app imports them; ${design}`
     );
   } finally {
     server.child.kill();
