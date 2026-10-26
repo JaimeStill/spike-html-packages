@@ -13,9 +13,9 @@ This repository holds the spike's record and docs; the layers live in repositori
 - **Standards:** `STANDARDS.md`, with pointers into the architecture repository.
 - **Check:** `mise run check`: Prettier, shellcheck over the scripts, and the consumer tier, which
   installs each fixture in `test/consumers/` offline from its lockfile and `.cache/`, filled by
-  `mise run install`, then loads each install's page and each Vite app in chrome-headless-shell.
-  `mise run live` measures the releases from the network, GitHub Packages among them, with a
-  read:packages token in `GITHUB_PACKAGES_TOKEN`.
+  `mise run install`, then loads each install's page and each Vite app in chrome-headless-shell,
+  held to the design check in `test/consumers/design.js`. `mise run live` measures the releases from
+  the network, GitHub Packages among them, with a read:packages token in `GITHUB_PACKAGES_TOKEN`.
 - **Release flow:** `mise run release-flow` compares the hand flow with pnpm's change-intent
   versioning on scratch clones of the foundation, from the network, and pushes nothing to GitHub.
 - **Publish:** `mise run publish [dry-run]`, run by hand with

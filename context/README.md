@@ -102,11 +102,11 @@ The tasks, in the order they run; each cites the evidence it proves.
    together and the components alone; JSR, recorded from deno 2.9.8's dry runs, with no publish
    (evidence 1).
 7. `consumers`: the components' v0.2.0, with the foundation as a peer at `^0.1.0`; a page loading
-   each install unbundled and a Vite app with the local CSS module script plugin, in
-   `mise run check` over the tags and in `mise run live` over the release assets and GitHub
-   Packages, now at the tags' versions; and `mise run release-flow`, comparing pnpm's change-intent
-   versioning with the hand flow in scratch (evidence 6, 7). Both are measured: "Live, 2026-10-26,
-   components v0.2.0" and "Release flow, 2026-10-26" record them.
+   each install unbundled and a Vite app with the local CSS module script plugin, each styled by the
+   foundation's page.css, in `mise run check` over the tags and in `mise run live` over the release
+   assets and GitHub Packages, now at the tags' versions; and `mise run release-flow`, comparing
+   pnpm's change-intent versioning with the hand flow in scratch (evidence 6, 7). Both are measured:
+   "Live, 2026-10-26, components v0.2.0" and "Release flow, 2026-10-26" record them.
 8. `answer`: the reweighed picks, the answer, and the answer section (evidence 8).
 
 ## Releases
@@ -140,12 +140,13 @@ This repository is the spike's record and its docs:
   guard. The six consumer fixtures, `<consumer>/<manager>/`, are the three together (`three/`) and
   the components with the foundation (`components/`) under npm, pnpm, and bun. The six Vite
   fixtures, `vite/<consumer>/<manager>/`, are the same two with Vite in their devDependencies.
-  `consumers.js`, `exports.js`, and `resolve.js` resolve each install's exported subpaths;
-  `pages/` holds each manager's page and `pages.js` loads them; `vite/app/` holds the Vite app and
-  `vite.js` builds and serves it.
-- `test/live/`: the import-map page, the loopback server and browser pipe that the check's pages
-  and Vite apps use too, and `installed-map.js`, which rewrites a page's import map to a networked
-  install's directories.
+  `consumers.js`, `exports.js`, and `resolve.js` resolve each install's exported subpaths; `pages/`
+  holds each manager's page and `pages.js` loads them; `vite/app/` holds the Vite app and `vite.js`
+  builds and serves it; `design.js` holds the design check that `pages.js`, `vite.js`, and `live.js`
+  share.
+- `test/live/`: the import-map page, the loopback server and browser pipe that the check's pages and
+  Vite apps use too, and `installed-map.js`, which rewrites a page's import map and stylesheet links
+  to a networked install's directories.
 - `.cache/`, ignored: the managers' caches, `consumers/`, and the layers' tag fetches, `tags/`,
   which `mise run install` fills and the check reads.
 
@@ -175,13 +176,14 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
 - `mise run lock`: each of the twelve fixtures resolved anew under its manager and guard, in a
   scratch copy, its lockfile copied back over the committed one; reads the network, and with the
   tags unchanged leaves every lockfile as it is.
-- `mise run check`: `lint:format`, Prettier over the code, JSON, and CSS; `lint:shell`,
-  shellcheck 0.11.0 over the scripts; and `test:consumers`, which Consumer installs describes:
-  each fixture installed offline and frozen from its lockfile and checked against the tags, each
-  consumer install's page and each Vite app loaded in chrome-headless-shell, the jsDelivr page's
-  pins checked, and npm's guard proven by each consumer's install failing under it lowered. It
-  reads no network and no token, and writes nothing in the repository outside `.cache/`; a
-  preflight names `mise run install` when the browser, a cache, or a tag fetch is missing.
+- `mise run check`: `lint:format`, Prettier over the code, JSON, and CSS; `lint:shell`, shellcheck
+  0.11.0 over the scripts; and `test:consumers`, which Consumer installs describes: each fixture
+  installed offline and frozen from its lockfile and checked against the tags, each consumer
+  install's page and each Vite app loaded in chrome-headless-shell and held to the sheet and design
+  checks, the jsDelivr page's pins and page.css link checked, and npm's guard proven by each
+  consumer's install failing under it lowered. It reads no network and no token, and writes nothing
+  in the repository outside `.cache/`; a preflight names `mise run install` when the browser, a
+  cache, or a tag fetch is missing.
 - `mise run currency`: every mise tool, package.json pin, fixture's layer tag, and Vite fixture's
   Vite pin behind its latest. It prints parse-changelog as held, at the 0.6.16 that
   create-gh-release-action v1.11.0 runs, and exits 0 when a held pin is all that is behind.
@@ -375,30 +377,53 @@ with `EALLOWGIT`, and the package npm names as refused must be one the consumer 
 for the three and the foundation for the components. The Vite fixtures repeat neither the subpath
 nor the guard proof.
 
-Each consumer fixture's install is then served from the loopback address, and
-chrome-headless-shell loads that manager's page, `test/consumers/pages/<manager>.html`. Its import
-map is written by hand to follow the manager's layout: npm and bun hoist every package to the top
-of `node_modules/`, and pnpm puts each in its virtual store, `node_modules/.pnpm/`, with scopes
-giving each store directory the packages pnpm links beside it. pnpm names a git dependency's store
-directory by its codeload URL, cut short and hashed, so the pnpm page hard-codes those names, and
-the lockfile's tags fix them. The page loads lit and the layers unbundled from the install and
-renders the three components. It passes when each shadow root adopts the same reset and elements
-sheet objects that the page imports by package name, every file comes from the loopback address,
-and each package from one directory, the foundation from the one the install check found; a page
-that finds two foundations fails. The check then requires the jsDelivr import-map page,
-`test/live/import-map.html`, to map lit at the version the components' v0.2.0 manifest pins and
-each layer at its tag.
+Each consumer fixture's install is then served from the loopback address, and chrome-headless-shell
+loads that manager's page, `test/consumers/pages/<manager>.html`. Its import map is written by hand
+to follow the manager's layout: npm and bun hoist every package to the top of `node_modules/`, and
+pnpm puts each in its virtual store, `node_modules/.pnpm/`, with scopes giving each store directory
+the packages pnpm links beside it. pnpm names a git dependency's store directory by its codeload
+URL, cut short and hashed, so the pnpm page hard-codes those names, and the lockfile's tags fix
+them. The page links the foundation's page.css from the install, loads lit and the layers unbundled
+from it, and renders the three components, the pagination at its default size, 12, one of the 12,
+24, 48, and 96 its size select offers. It passes when each shadow root adopts the same reset and
+elements sheet objects that the page imports by package name, every file comes from the loopback
+address, each package comes from one directory, the foundation from the one the install check found,
+and the design check below passes; a page that finds two foundations fails. The check then requires
+the jsDelivr import-map page, `test/live/import-map.html`, to map lit at the version the components'
+v0.2.0 manifest pins and each layer at its tag, and to link the foundation's page.css from jsDelivr
+at its tag.
 
-Each Vite fixture's app, `test/consumers/vite/app/`, imports the components and the foundation's
-sheets by package name. Its config loads the local CSS module script plugin, `css-sheets.js`,
-copied from this repository's history at c2b4a19, since Vite has no CSS module scripts of its own
-(vitejs/vite#17700). The install's own Vite, run under node for every manager, builds the app;
-the build is served statically, then the app is served from Vite's dev server, and each renders
-the three components in chrome-headless-shell and passes the page's sheet check. A build bundles
-the packages, so the sheet check is what proves one foundation there. On the dev server, Vite's
-pre-bundling leaves each CSS import out of the bundled modules, and the plugin rewrites it as the
-server serves them, so the config needs no `optimizeDeps` setting. The dev server runs in the
+Each Vite fixture's app, `test/consumers/vite/app/`, imports the components, the foundation's
+sheets, and its page.css by package name. page.css is a plain import, which Vite's own CSS pipeline
+bundles. Its config loads the local CSS module script plugin, `css-sheets.js`, copied from this
+repository's history at c2b4a19, since Vite has no CSS module scripts of its own
+(vitejs/vite#17700). The install's own Vite, run under node for every manager, builds the app; the
+build is served statically, then the app is served from Vite's dev server, and each renders the
+three components in chrome-headless-shell and passes the page's sheet and design checks. A build
+bundles the packages, so the sheet check is what proves one foundation there. On the dev server,
+Vite's pre-bundling leaves each CSS import out of the bundled modules, and the plugin rewrites it as
+the server serves them, so the config needs no `optimizeDeps` setting. The dev server runs in the
 offline check only; `mise run live` builds the Vite apps over its networked installs.
+
+The design check, `test/consumers/design.js`, requires the foundation's page.css to shape the
+document. It computes every value it compares, so it follows whatever the foundation's tokens
+define:
+
+- The body's background and font family must equal the `--bg` and `--font-body` tokens, as a
+  property on the root resolves them.
+- Each token must resolve inside every component's shadow root to the root's value, since custom
+  properties inherit across the shadow boundary.
+- The foundation's eight layers must appear in the document's layer order as page.css's `@layer`
+  statement names them, whatever layers the page adds around them.
+
+The check reads the layer order from the cascade, not from page.css's statement, since Vite's build
+minifier drops the statement, whose order the blocks after it already give. It builds a tree of the
+layer names in every sheet, each name under its parent in the order first named, by a statement, a
+block, or an `@import`'s `layer()`, and reads the tree depth first. A sheet the page can't read,
+such as one from another origin fetched without CORS, makes the order unknown when it comes before
+every foundation layer is named. The jsDelivr page links page.css with `crossorigin="anonymous"`, so
+the page can read its rules; its four imported sheets stay unreadable, but page.css's statement
+names all eight layers before them.
 
 Every install the check, `mise run lock`, and `mise run live` make runs through
 `scripts/unconfigured.sh`, which points npm, pnpm, and bun at empty user and global config files
@@ -524,23 +549,23 @@ subpath, under node for npm and pnpm and under bun for bun's.
 
 ## Live, 2026-10-26, components v0.2.0
 
-`mise run live`, run with gh's token in `GITHUB_PACKAGES_TOKEN`, printed the table below and
-exited 0, over the components' v0.2.0, the foundation and the SDK at v0.1.0, and GitHub Packages
-at the tags' versions. Its first row is the preflight: each tag and release asset on GitHub, and
-each package on GitHub Packages at its tag's version, public, with no 0.0.1 left. Then come
-jsDelivr /gh/ and the import-map page, and each manager's installs with no lockfile and a fresh
-cache, at the tags, by the release assets' URLs, and from GitHub Packages, the three together and
-the components with the foundation, each compared with its tag's tree file for file, its manifest
-included. The page and Vite rows load the release-asset and GitHub Packages installs: the
-manager's page, its import map rewritten to the install's directories by
-`test/live/installed-map.js`, and the Vite app's build, each held to the sheet check that Consumer
-installs describes; a second foundation makes the row a no. The last rows install the components
-alone, with no foundation declared, and read yes when the manager does what it was measured to
-do, naming the error.
+`mise run live`, run with gh's token in `GITHUB_PACKAGES_TOKEN`, printed the table below and exited
+0, over the components' v0.2.0, the foundation and the SDK at v0.1.0, and GitHub Packages at the
+tags' versions. Its first row is the preflight: each tag and release asset on GitHub, and each
+package on GitHub Packages at its tag's version, public, with no 0.0.1 left. Then come jsDelivr /gh/
+and the import-map page, held to the design check against the foundation's page.css at its tag, and
+each manager's installs with no lockfile and a fresh cache, at the tags, by the release assets'
+URLs, and from GitHub Packages, the three together and the components with the foundation, each
+compared with its tag's tree file for file, its manifest included. The page and Vite rows load the
+release-asset and GitHub Packages installs: the manager's page, its import map and page.css link
+rewritten to the install's directories by `test/live/installed-map.js`, and the Vite app's build,
+each held to the sheet and design checks that Consumer installs describes; a second foundation makes
+the row a no. The last rows install the components alone, with no foundation declared, and read yes
+when the manager does what it was measured to do, naming the error.
 
-Every install gives one foundation, and every page and Vite build renders the components with
-their shadow roots adopting the sheets the consumer imports. Hosting states the guards each
-install needs and what the components alone do.
+Every install gives one foundation, and every page and Vite build renders the components with their
+shadow roots adopting the sheets the consumer imports, styled by the foundation's page.css. Hosting
+states the guards each install needs and what the components alone do.
 
 | measure | result |
 | --- | --- |
@@ -548,7 +573,7 @@ install needs and what the components alone do.
 | jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-foundation@v0.1.0/ as the tag's tree | yes: 28/28 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
 | jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-sdk@v0.1.0/ as the tag's tree | yes: 7/7 files byte-equal (status 200); .js no files; .css no files; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.1.0`; x-jsd-version-type `version` |
 | jsDelivr serves https://cdn.jsdelivr.net/gh/JaimeStill/spike-html-packages-components@v0.2.0/ as the tag's tree | yes: 12/12 files byte-equal (status 200); .js `application/javascript; charset=utf-8`; .css `text/css; charset=utf-8`; cache-control `public, max-age=31536000, s-maxage=31536000, immutable`; x-jsd-version `0.2.0`; x-jsd-version-type `version` |
-| chrome-headless-shell 156.0.8078.47 renders the import-map page from jsDelivr | yes: sl-status-badge 3 sheets, sl-entry-lit-shadow 3 sheets, sl-pagination-lit-shadow 3 sheets; the foundation's reset and elements sheets the same objects in every root; loaded from the loopback page, https://cdn.jsdelivr.net |
+| chrome-headless-shell 156.0.8078.47 renders the import-map page from jsDelivr, styled by the page.css it links there | yes: sl-status-badge 3 sheets, sl-entry-lit-shadow 3 sheets, sl-pagination-lit-shadow 3 sheets; the foundation's reset and elements sheets the same objects in every root; page.css shapes it: the body's background rgb(255, 252, 240) from --bg and its font from --font-body, both tokens resolving in every shadow root, and the foundation's 8 layers in page.css's order; loaded from the loopback page, https://cdn.jsdelivr.net |
 | npm 12.2.1 installs the three at the tags, with no lockfile | yes: allow-git=root allow-remote=none installs it; allow-git=none allow-remote=none fails EALLOWGIT; each layer its tag's tree, its manifest included; one foundation |
 | pnpm 12.15.0 installs the three at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
 | bun 1.4.4 installs the three at the tags, with no lockfile | yes: defaults installs it; no lesser setting; each layer its tag's tree, its manifest included; one foundation |
@@ -573,18 +598,18 @@ install needs and what the components alone do.
 | npm 12.2.1's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
 | pnpm 12.15.0's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under node | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under node as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
 | bun 1.4.4's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions is each layer's tag tree and resolves under bun | yes: each layer its tag's tree, its manifest included; one foundation, the one the components resolve to; no devDependency; all 26 export subpaths resolve under bun as their exports name them, types-only ones to nothing; .css installed: components dist/entry-shadow.css, dist/pagination-shadow.css, dist/status-badge.css; foundation dist/baseline.css, dist/baseline/elements.css, dist/baseline/reset.css, dist/baseline/tokens/color.css, dist/baseline/tokens/color/flexoki.css, dist/baseline/tokens/space.css, dist/baseline/tokens/space/regular.css, dist/baseline/tokens/type.css, dist/baseline/tokens/type/mono.css, dist/meta.css, dist/page.css, dist/structure.css, dist/utilities.css; @jaimestill/spike-html-packages-components/entry-shadow.css resolves by package name to its dist/entry-shadow.css |
-| npm 12.2.1's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| pnpm 12.15.0's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| bun 1.4.4's install of the three by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| npm 12.2.1's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| pnpm 12.15.0's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| bun 1.4.4's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| npm 12.2.1's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| pnpm 12.15.0's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| bun 1.4.4's install of the three from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| npm 12.2.1's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| pnpm 12.15.0's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
-| bun 1.4.4's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 17 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 2 files, every root adopting the sheets the app imports |
+| npm 12.2.1's install of the three by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| pnpm 12.15.0's install of the three by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| bun 1.4.4's install of the three by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| npm 12.2.1's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under allow-git=none allow-remote=root with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| pnpm 12.15.0's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| bun 1.4.4's install of the components and the foundation, their peer, by their release assets' URLs loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under defaults with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| npm 12.2.1's install of the three from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| pnpm 12.15.0's install of the three from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| bun 1.4.4's install of the three from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| npm 12.2.1's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| pnpm 12.15.0's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
+| bun 1.4.4's install of the components and the foundation, their peer, from GitHub Packages at the tags' versions loads on one foundation, styled by its page.css, in its page and its Vite build | yes: the page renders sl-status-badge, sl-entry-lit-shadow, sl-pagination-lit-shadow from 30 files of the install, its import map following the install's directories, every root adopting the reset and elements sheets the page imports from one foundation, and the page.css it links giving the body its background and font from the tokens, each token resolving in every shadow root, and the foundation's layer order; Vite 8.3.5's build of the app, its fixture installed under the registry and the token with each layer its tag's tree and one foundation, renders them from 3 files, every root adopting the sheets the app imports, and the page.css it imports by package name giving the same design |
 | npm 12.2.1 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: allow-git=none allow-remote=none fails EALLOWGIT, allow-git=root allow-remote=none fails E404; it stops on E404, leaving no components and no foundation in node_modules |
 | pnpm 12.15.0 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: defaults fails ERR_PNPM_FETCH_404; it stops on ERR_PNPM_FETCH_404, leaving no components and no foundation in node_modules |
 | bun 1.4.4 installs the components alone, no foundation declared, at the tags, with no lockfile: it gives the components no foundation | yes: no setting installs it: defaults fails GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404; it stops on GET https://registry.npmjs.org/@jaimestill%2fspike-html-packages-foundation - 404, leaving the components and no foundation in node_modules |

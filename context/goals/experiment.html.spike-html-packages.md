@@ -207,7 +207,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · standards ✓ (26a32f9, c03ead8, ea65119) · spec — (round 6 reopens) · editor —
+slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · standards ✓ (26a32f9, c03ead8, ea65119) · round 6: 8c2dda3, dd28725, standards d123ede, live 50/50 rerun · spec — (round 6 reopens) · editor ✓
 
 ## Decisions
 
@@ -757,6 +757,20 @@ slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   (round 6, 3).
 - consumers: the fixtures' pagination sets a page size the size select offers; an unoffered size
   is the components' concern, left unchanged (round 6, 4).
+- consumers: corrects round 6's PLAN facts, which held that the jsDelivr import-map page already
+  linked page.css; it linked no stylesheet.
+- consumers: the jsDelivr page also links page.css, from jsDelivr at the foundation's tag, and
+  live's import-map row runs the design check; the offline check requires that link (decided by
+  the session after round 6, matching the redirect's intent).
+- consumers: the jsDelivr page's link carries `crossorigin="anonymous"`, so the page can read
+  page.css's rules; its four imported sheets stay unreadable cross-origin, and page.css's own
+  statement names all eight layers before them.
+- consumers: the check reads the layer order as the cascade's tree, each name under its parent in
+  first-named order, through each import's `layer()`, read depth first, since Vite's build
+  minifier drops page.css's `@layer` statement; an unreadable sheet before every foundation layer
+  is named makes the order unknown (standards review, d123ede).
+- consumers: the shadow-root token check can fail only on a component overriding a token or an
+  empty shadow root, since custom properties inherit across the boundary; judged and left.
 
 ## Pending edits
 
@@ -805,7 +819,8 @@ slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   The components' v0.2.0, with the foundation as a peer at ^0.1.0, so every hosting installs one
   foundation; a page loading each install unbundled by a hand-written import map, and a Vite app
   with the local CSS module script plugin, built and on its dev server, rendering the components
-  with their shadow roots adopting the sheets the consumer imports, offline in `mise run check`
+  with their shadow roots adopting the sheets the consumer imports and the foundation's page.css
+  shaping the design, offline in `mise run check`
   over the tags and in `mise run live` over the release-asset URLs and GitHub Packages, now at the
   tags' versions; and
   a networked `mise run release-flow` comparing pnpm's change-intent versioning with the hand
