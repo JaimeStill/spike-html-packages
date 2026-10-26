@@ -5,7 +5,10 @@
 # devDependency is installed. `tag`, the default, is an install of the layers from their tags,
 # which must hold one foundation, the one the components resolve theirs to. `asset` is an install
 # from the layers' release assets, whose components still declare the foundation by its tag: its
-# foundations are printed, not held to one.
+# foundations are printed, not held to one. `registry` is an install from GitHub Packages at 0.0.1,
+# held to one foundation as `tag` is, whose manifests are the one exception to the tag's tree: each
+# differs from its tag's only in its version, 0.0.1, and in the components' foundation dependency,
+# which names the registry foundation at 0.0.1, as scripts/publish.sh published them.
 #
 # Prints a line per layer the consumer resolves, `release <dir>`: each layer it declares, and the
 # foundation the components resolve theirs to when it declares none; then a line per distinct
@@ -13,7 +16,7 @@
 # `components-foundation <dir>`. Exits 1, naming the mismatch on stderr, if the install
 # isn't its tags.
 #
-#   scripts/installed.sh <manager> <project> <tags> [tag|asset]
+#   scripts/installed.sh <manager> <project> <tags> [tag|asset|registry]
 #
 # <tags> holds a bare repository per layer, <tags>/<layer>, with the tag fetched.
 set -euo pipefail
@@ -31,17 +34,20 @@ scope=@jaimestill/$repository
 foundation=${scope}foundation
 layers=(foundation sdk components)
 tag=v0.1.0
+version=0.0.1
 
 fail() {
   echo "installed: $*" >&2
   exit 1
 }
 
-# Each layer's tree at its tag, extracted into the scratch, and its tag object's hash.
+# Each layer's tree at its tag, extracted into the scratch, its manifest kept apart for the
+# registry's exception, and its tag object's hash.
 declare -A tag_object
 for layer in "${layers[@]}"; do
   mkdir -p "$scratch/$layer"
   git --git-dir="$tags/$layer" archive "$tag" | tar -x -C "$scratch/$layer"
+  cp "$scratch/$layer/package.json" "$scratch/$layer.package.json"
   tag_object[$layer]=$(git --git-dir="$tags/$layer" rev-parse "refs/tags/$tag")
 done
 
@@ -49,14 +55,35 @@ done
 # dependencies a manager nests in its node_modules: the foundation and devDependency checks below
 # hold those. bun 1.4.4 adds one file, .bun-tag, to each package it installs, left out of the
 # comparison. From GitHub it names the repository and the annotated tag object's short hash, not
-# the commit's, and must name this tag; from a release asset it is the tarball's sha512 integrity.
+# the commit's, and must name this tag; from a release asset it is the tarball's sha512 integrity;
+# from a registry it adds none.
 matches_tag() {
   local layer=$1 installed=$2
-  if [[ $manager == bun ]]; then
+  if [[ $manager == bun && $mode == registry ]]; then
+    [[ ! -e $installed/.bun-tag ]] ||
+      fail "$manager's install of $layer from the registry holds a .bun-tag"
+  elif [[ $manager == bun ]]; then
     local expected=$owner-$repository$layer-${tag_object[$layer]:0:7} written=
     [[ -f $installed/.bun-tag ]] && written=$(<"$installed/.bun-tag")
     [[ $written == "$expected" || ($mode == asset && $written =~ ^sha512-[A-Za-z0-9+/]+=*$) ]] ||
       fail "$manager's install of $layer holds no .bun-tag naming $tag ($expected)"
+  fi
+  if [[ $mode == registry ]]; then
+    # The manifest held to its exception, then compared as the tag's: the rest is file for file.
+    node -e '
+      const assert = require("node:assert/strict");
+      const { readFileSync } = require("node:fs");
+      const [tagged, installed, version, foundation] = process.argv.slice(1);
+      const expected = JSON.parse(readFileSync(tagged, "utf8"));
+      expected.version = version;
+      if (expected.dependencies?.[foundation] !== undefined) {
+        expected.dependencies[foundation] = version;
+      }
+      assert.deepEqual(JSON.parse(readFileSync(installed, "utf8")), expected);
+    ' "$scratch/$layer.package.json" "$installed/package.json" "$version" "$foundation" ||
+      fail "$manager's install of $layer holds a manifest that differs from its $tag tree's other" \
+        "than in its version, $version, and the components' foundation dependency"
+    cp "$installed/package.json" "$scratch/$layer/package.json"
   fi
   diff -r -x .bun-tag -x node_modules "$scratch/$layer" "$installed" >&2 ||
     fail "$manager's install of $layer differs from its $tag tree"
@@ -105,7 +132,7 @@ found=$(installs_of "$project" "$foundation")
 components=$(realpath "$project/node_modules/${scope}components")
 theirs=$(resolve_from "$components" "$foundation") ||
   fail "$manager's components resolve no foundation"
-if [[ $mode == tag ]]; then
+if [[ $mode != asset ]]; then
   # One foundation, the one the components resolve theirs to.
   [[ $(wc -l <<<"$found") == 1 ]] ||
     fail "$manager installed other than one foundation:"$'\n'"$found"

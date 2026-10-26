@@ -1,18 +1,32 @@
-// The releases' facts on GitHub and jsDelivr, and the managers' installs of them from the network,
-// as one dated markdown table: the networked evidence the check's offline tier can't reach. It
-// fails first, naming each v0.1.0 tag and release asset GitHub doesn't hold, and writes nothing to
-// the repository: every fetch and install is in a scratch directory it removes. Each measure is a
-// row, yes or no with what it observed; it exits 1 if any row is a no.
+// The releases' facts on GitHub and jsDelivr, and the managers' installs of them from the network
+// and from GitHub Packages, as one dated markdown table: the networked evidence the check's offline
+// tier can't reach. It fails first, naming the token variable when it is unset, and each v0.1.0 tag
+// and release asset GitHub doesn't hold, and each package GitHub Packages doesn't hold at 0.0.1 or
+// doesn't make public. It writes nothing to the repository: every fetch and install is in a scratch
+// directory it removes. Each measure is a row, yes or no with what it observed; it exits 1 if any
+// row is a no.
 //
-//   BROWSER_EXECUTABLE=... node scripts/live.js
+//   GITHUB_PACKAGES_TOKEN=$(gh auth token) BROWSER_EXECUTABLE=... node scripts/live.js
+//
+// The token is read from the environment and never written to a file: npm's and bun's project
+// config hold a reference to the variable, and pnpm takes it from its own environment.
 
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch } from "../test/live/browser-pipe.js";
 import { serve } from "../test/live/server.js";
+import { listFiles } from "../test/consumers/exports.js";
 
 // The layers, each its own repository on GitHub, released by the one tag.
 const owner = "JaimeStill";
@@ -27,6 +41,18 @@ const cdn = "https://cdn.jsdelivr.net";
 /** A layer's release asset by its GitHub download URL, a dependency a manager installs by. */
 const assetURL = (layer) =>
   `https://github.com/${owner}/${repository(layer)}/releases/download/${tag}/${asset(layer)}`;
+// The layers on GitHub Packages, scripts/publish.sh's publishes of the tags, read with gh's token.
+const registry = "https://npm.pkg.github.com";
+const registryHost = new URL(registry).host;
+const published = "0.0.1";
+const tokenVariable = "GITHUB_PACKAGES_TOKEN";
+const token = process.env[tokenVariable];
+if (!token) {
+  console.error(
+    `live: ${tokenVariable} is unset; run ${tokenVariable}=$(gh auth token) mise run live`,
+  );
+  process.exit(1);
+}
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const fixtures = join(root, "test/consumers");
@@ -45,10 +71,11 @@ function run(command, args, { cwd = scratch } = {}) {
   return { ok: status === 0, stdout, output: `${stdout}${stderr}`.trim() };
 }
 
-/** run, without blocking the other rows: an install takes seconds of the network. */
-function started(command, args, { cwd = scratch } = {}) {
+/** run, without blocking the other rows: an install takes seconds of the network. `adding` is
+ * environment for this command alone. */
+function started(command, args, { cwd = scratch, adding = {} } = {}) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { cwd, env });
+    const child = spawn(command, args, { cwd, env: { ...env, ...adding } });
     let [stdout, stderr] = ["", ""];
     child.stdout.on("data", (chunk) => (stdout += chunk));
     child.stderr.on("data", (chunk) => (stderr += chunk));
@@ -77,8 +104,13 @@ async function measured(measure, body) {
   rows[at] = `| ${cell(measure)} | ${holds ? "yes" : "no"}: ${cell(observed)} |`;
 }
 
-/** Each tag or release asset GitHub doesn't hold, named; none when all six are published. */
-function unpublished() {
+/** Each layer's 0.0.1 publish time in GitHub Packages' metadata, null where it names none: filled
+ * by unpublished() and read by the pnpm rows, whose minimum release age reads the same field. */
+const publishTimes = new Map();
+
+/** Each tag or release asset GitHub doesn't hold, and each package GitHub Packages doesn't hold at
+ * 0.0.1 or make public, named; none when all six are published and the three packages public. */
+async function unpublished() {
   const absent = [];
   for (const layer of layers) {
     const repo = `${owner}/${repository(layer)}`;
@@ -91,6 +123,24 @@ function unpublished() {
     ]);
     if (!assets.output.split("\n").includes(asset(layer))) {
       absent.push(`the release asset ${asset(layer)} on ${repo}'s ${tag}`);
+    }
+
+    const name = scope + repository(layer);
+    const response = await fetch(`${registry}/${name.replace("/", "%2f")}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const metadata = response.ok ? await response.json() : {};
+    if (!Object.hasOwn(metadata.versions ?? {}, published)) {
+      absent.push(`${name}@${published} on GitHub Packages (status ${response.status})`);
+    }
+    publishTimes.set(layer, metadata.time?.[published] ?? null);
+    const visibility = run("gh", [
+      ...["api", `users/${owner}/packages/npm/${repository(layer)}`],
+      ...["--jq", ".visibility"],
+    ]);
+    if (visibility.output !== "public") {
+      const is = visibility.ok ? visibility.output : "not found";
+      absent.push(`${name} public on GitHub Packages: it is ${is}`);
     }
   }
   return absent;
@@ -273,10 +323,14 @@ function errorCode(output) {
   return line.length > 120 ? `${line.slice(0, 117)}...` : line;
 }
 
-const releases = { tag: "at the tags, with no lockfile", asset: "by their release assets' URLs" };
+const releases = {
+  tag: "at the tags, with no lockfile",
+  asset: "by their release assets' URLs",
+  registry: `from GitHub Packages at ${published}`,
+};
 
-/** The consumer's fixture package.json: the layers at their tags as committed, or each by its
- * release asset's URL. */
+/** The consumer's fixture package.json: the layers at their tags as committed, each by its
+ * release asset's URL, or each at exactly its GitHub Packages version. */
 function manifest(consumer, manager, by) {
   const fixture = join(fixtures, consumer, manager, "package.json");
   const { description, ...json } = JSON.parse(readFileSync(fixture, "utf8"));
@@ -285,6 +339,10 @@ function manifest(consumer, manager, by) {
       layers
         .filter((layer) => Object.hasOwn(json.dependencies, scope + repository(layer)))
         .map((layer) => [scope + repository(layer), assetURL(layer)]),
+    );
+  } else if (by === "registry") {
+    json.dependencies = Object.fromEntries(
+      Object.keys(json.dependencies).map((name) => [name, published]),
     );
   }
   return `${JSON.stringify(json, null, 2)}\n`;
@@ -341,8 +399,168 @@ function installRow(consumer, manager, by, version) {
   });
 }
 
+/** The settings a GitHub Packages install is tried under, least first: none; the @jaimestill
+ * registry alone; then the registry and the token. npm reads both from a project .npmrc, the token
+ * by a reference to its variable, which npm expands; bun from bunfig.toml's install.scopes, whose
+ * token takes a $VARIABLE; pnpm the registry from the .npmrc and the token from its environment
+ * alone, let through scripts/unconfigured.sh (which says why). */
+const registrySettings = [
+  "no registry setting",
+  "the registry alone",
+  "the registry and the token",
+];
+const registryScope = scope.slice(0, -1);
+function writeRegistry(project, manager, step) {
+  if (step === 0) return;
+  if (manager === "bun") {
+    const auth = step === 2 ? `, token = "$${tokenVariable}"` : "";
+    writeFileSync(
+      join(project, "bunfig.toml"),
+      `[install.scopes]\n"${registryScope}" = { url = "${registry}"${auth} }\n`,
+    );
+    return;
+  }
+  const lines = [`${registryScope}:registry=${registry}\n`];
+  if (manager === "npm" && step === 2) {
+    lines.push(`//${registryHost}/:_authToken=\${${tokenVariable}}\n`);
+  }
+  // After the guard's .npmrc, if npm's guard wrote one.
+  appendFileSync(join(project, ".npmrc"), lines.join(""));
+}
+
+/** What pnpm's minimum release age did to an install, from GitHub Packages' publish times and
+ * pnpm's output: it skips a version whose metadata names no publish time, under
+ * minimumReleaseAgeIgnoreMissingTime; it falls back, outside minimumReleaseAgeStrict, by adding a
+ * version younger than the age to minimumReleaseAgeExclude and installing it; or it doesn't apply. */
+function releaseAge(output) {
+  const times = [...publishTimes].map(([layer, time]) => `${layer} ${time ?? "none"}`).join(", ");
+  const missing = [...publishTimes].filter(([, time]) => time === null).map(([layer]) => layer);
+  if (missing.length > 0) {
+    return `pnpm's minimum release age skipped ${missing.join(", ")}, which name no publish time (${times})`;
+  }
+  const excluded = /Added (\d+) entr\w+ to minimumReleaseAgeExclude/.exec(output);
+  return excluded
+    ? `pnpm's minimum release age fell back: it added ${excluded[1]} versions to minimumReleaseAgeExclude, published ${times}`
+    : `pnpm's minimum release age didn't apply: published ${times}`;
+}
+
+/** Row e: the consumer installed under the manager from GitHub Packages, each layer at exactly
+ * 0.0.1, in a scratch project with no lockfile and a fresh scratch cache, the manager's guard and
+ * the registry settings tried least first: a refusal raises the guard as installRow raises it, and
+ * any other failure the registry setting, the guard kept where it stands. Resolves
+ * `installed` to the project that installed, or null, for row f. */
+function registryRow(consumer, manager, version) {
+  const guard = guards[manager];
+  const which = consumer === "three" ? "the three" : "the components alone";
+  let done;
+  const installed = new Promise((resolve) => (done = resolve));
+  const row = measured(`${manager} ${version} installs ${which} ${releases.registry}`, async () => {
+    try {
+      const refused = [];
+      let [setting, step] = [guard.least, 0];
+      for (let n = 0; ; n++) {
+        const project = join(scratch, "installs", `${consumer}-${manager}-registry-${n}`);
+        mkdirSync(project, { recursive: true });
+        writeFileSync(join(project, "package.json"), manifest(consumer, manager, "registry"));
+        guard.write(project, setting);
+        writeRegistry(project, manager, step);
+        const pnpmToken = manager === "pnpm" && step === 2;
+        const args = [
+          ...(pnpmToken ? ["--github-packages-token"] : []),
+          ...[manager, ...installs[manager](`${project}.cache`)],
+        ];
+        const adding = pnpmToken ? { [`pnpm_config_//${registryHost}/:_authToken`]: token } : {};
+        const install = await started(unconfigured, args, { cwd: project, adding });
+        const named =
+          setting === guard.least
+            ? registrySettings[step]
+            : `${registrySettings[step]}, ${guard.name(setting)}`;
+        if (!install.ok) {
+          const code = errorCode(install.output);
+          refused.push(`${named} fails ${code}`);
+          const raised = guard.raise(setting, code);
+          if (raised) setting = raised;
+          else if (step < registrySettings.length - 1) step++;
+          else return [false, `no setting installs it: ${refused.join(", ")}`];
+          continue;
+        }
+        done(project);
+        const facts = [
+          `${registrySettings[step]} installs it`,
+          refused.length > 0 ? refused.join(", ") : "no lesser setting",
+          setting === guard.least
+            ? `the git guard at its least (${guard.name(setting)})`
+            : `git guard ${guard.name(setting)}`,
+          ...(manager === "pnpm" ? [releaseAge(install.output)] : []),
+        ];
+        return [true, facts.join("; ")];
+      }
+    } finally {
+      done(null);
+    }
+  });
+  return { row, installed };
+}
+
+/** Row f: the install row e made, against the tags by scripts/installed.sh, its manifests held to
+ * the registry's exception; then every export subpath resolved by package name, by
+ * test/consumers/resolve.js under node for npm and pnpm and bun for bun, with the .css each layer
+ * installs. */
+function registryTreeRow(consumer, manager, version, installed) {
+  const which = consumer === "three" ? "the three" : "the components alone";
+  const runtime = manager === "bun" ? "bun" : "node";
+  return measured(
+    `${manager} ${version}'s install of ${which} ${releases.registry} is each layer's ${tag} tree and resolves under ${runtime}`,
+    async () => {
+      const project = await installed;
+      if (project === null) return [false, "row e installed nothing to check"];
+      for (const layer of layers) tagTree(layer);
+      const check = await started(join(root, "scripts/installed.sh"), [
+        ...[manager, project, tags, "registry"],
+      ]);
+      if (!check.ok) {
+        const mismatch = check.output.split("\n").findLast((line) => line.startsWith("installed:"));
+        return [false, mismatch ?? check.output];
+      }
+      const dirs = check.stdout
+        .split("\n")
+        .filter((line) => line.startsWith("release "))
+        .map((line) => line.slice("release ".length));
+
+      const steps = [
+        [runtime, [join(fixtures, "consumers.js"), project, ...dirs]],
+        [runtime, ["resolve.js"]],
+      ];
+      copyFileSync(join(fixtures, "resolve.js"), join(project, "resolve.js"));
+      for (const [command, args] of steps) {
+        const step = await started(command, args, { cwd: project });
+        if (!step.ok) return [false, `${runtime} ${args[0]} fails: ${errorCode(step.output)}`];
+      }
+      const subpaths = JSON.parse(readFileSync(join(project, "subpaths.json"), "utf8"));
+      const css = dirs.map((dir) => {
+        const { name } = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+        const files = listFiles(dir).filter((path) => path.endsWith(".css"));
+        const layer = name.slice((scope + repository("")).length);
+        return `${layer} ${files.length > 0 ? files.join(", ") : "none"}`;
+      });
+      const byName = subpaths.find(({ runtime: target }) => target?.endsWith(".css"));
+      const facts = [
+        `each layer its ${tag} tree but its manifest, which differs only in version ${published} and the components' foundation dependency ${published}`,
+        "one foundation, the one the components resolve to",
+        "no devDependency",
+        `all ${subpaths.length} export subpaths resolve under ${runtime} as their exports name them, types-only ones to nothing`,
+        `.css installed: ${css.join("; ")}`,
+        byName
+          ? `${byName.name}${byName.subpath.slice(1)} resolves by package name to its ${byName.runtime}`
+          : "no .css subpath",
+      ];
+      return [byName !== undefined, facts.join("; ")];
+    },
+  );
+}
+
 try {
-  const absent = unpublished();
+  const absent = await unpublished();
   if (absent.length > 0) {
     console.error(`live: GitHub doesn't hold what the table reads:\n- ${absent.join("\n- ")}`);
     process.exitCode = 1;
@@ -367,13 +585,19 @@ try {
     const versions = Object.fromEntries(
       managers.map((manager) => [manager, run(manager, ["--version"]).output]),
     );
-    await Promise.all(
-      ["tag", "asset"].flatMap((by) =>
-        consumers.flatMap((consumer) =>
-          managers.map((manager) => installRow(consumer, manager, by, versions[manager])),
-        ),
-      ),
+    // A row takes its place when it starts: the tags' and assets' rows, then rows e, each GitHub
+    // Packages install, then rows f, each install's trees once row e has made it.
+    const pairs = consumers.flatMap((consumer) => managers.map((manager) => [consumer, manager]));
+    const installed = ["tag", "asset"].flatMap((by) =>
+      pairs.map(([consumer, manager]) => installRow(consumer, manager, by, versions[manager])),
     );
+    const registryInstalls = pairs.map(([consumer, manager]) =>
+      registryRow(consumer, manager, versions[manager]),
+    );
+    const registryTrees = pairs.map(([consumer, manager], at) =>
+      registryTreeRow(consumer, manager, versions[manager], registryInstalls[at].installed),
+    );
+    await Promise.all([...installed, ...registryInstalls.map(({ row }) => row), ...registryTrees]);
 
     const date = new Date().toISOString().slice(0, 10);
     console.log(`## Live, ${date}\n\n| measure | result |\n| --- | --- |\n${rows.join("\n")}`);

@@ -67,6 +67,10 @@ run = "scripts/currency.sh"
 quiet = true
 
 [tasks.live]
-description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network; reads the network, writes nothing in the repository"
+description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
 depends = ["preflight live"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.js"
+
+[tasks.publish]
+description = "Publish each layer's v0.1.0 tree to GitHub Packages at 0.0.1, skipping the layers it already holds, with the token in GITHUB_PACKAGES_TOKEN; dry-run uploads nothing; reads the network, writes nothing in the repository"
+run = "scripts/publish.sh"
