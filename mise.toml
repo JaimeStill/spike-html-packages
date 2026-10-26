@@ -1,5 +1,5 @@
-# Tasks never install a missing tool; mise run install, lock, currency, and live are the tasks that
-# read the network.
+# Tasks never install a missing tool; mise run install, lock, currency, live, release-flow, and
+# publish are the tasks that read the network.
 [settings]
 task.run_auto_install = false
 
@@ -12,6 +12,9 @@ node = "26.12.1"
 npm = "12.2.1"
 pnpm = "12.15.0"
 shellcheck = "0.11.0"
+# The release-flow task's stand-in for taiki-e/create-gh-release-action v1.11.0, at the
+# parse-changelog that action downloads and runs.
+"github:taiki-e/parse-changelog" = "0.6.16"
 
 # The browser the consumer pages and the live task load, at spike-html-packages-components'
 # (8cb64a8) pin. Chrome for Testing
@@ -63,7 +66,7 @@ description = "Resolve each consumer fixture anew under its manager and guard, a
 run = "scripts/lock.sh"
 
 [tasks.currency]
-description = "Report every pin behind its latest, exiting nonzero if any"
+description = "Report every pin behind its latest, exiting nonzero if any but a pin held at what another tool runs; reads the network"
 run = "scripts/currency.sh"
 quiet = true
 
@@ -71,6 +74,10 @@ quiet = true
 description = "Print a dated table of the releases' facts on GitHub and jsDelivr, the import-map page among them, and of npm, pnpm, and bun installing them from the network and from GitHub Packages, the installs' pages and Vite builds and the components alone among them, with the token in GITHUB_PACKAGES_TOKEN; reads the network, writes nothing in the repository"
 depends = ["preflight live"]
 run = "BROWSER_EXECUTABLE=$(mise which chrome-headless-shell) node scripts/live.js"
+
+[tasks.release-flow]
+description = "Print a dated table of two release flows for the foundation's 0.1.1, by hand and by pnpm change and pnpm version -r, each through release.yml's own steps in a scratch clone pushed to a local bare remote; reads the network, pushes nothing to GitHub, writes nothing in the repository"
+run = "node scripts/release-flow.js"
 
 [tasks.publish]
 description = "Publish each layer's latest tag, unchanged, to GitHub Packages at the tag's version, skipping the layers it already holds, with the token in GITHUB_PACKAGES_TOKEN; dry-run uploads nothing; reads the network, writes nothing in the repository"
