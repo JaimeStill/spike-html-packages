@@ -149,7 +149,7 @@ Door          two-way: everything. The GitHub Packages publishes are real and
 
 ## Progress
 
-slices 1/3 committed (e2e1322) · published 2026-10-26, private, unlinked · standards — · spec — · editor —
+slices 2/3 committed (e2e1322, ee5b330) · waiting on the architect: the three packages public and linked, then the real `mise run live` and slice 3 · standards — · spec — · editor —
 
 ## Decisions
 
