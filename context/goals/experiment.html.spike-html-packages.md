@@ -102,7 +102,7 @@ Door          two-way: no tag or publish. The measure runs in scratch, and the
 
 ## Progress
 
-slices 3/3 committed · standards done · spec done · editor —
+slices 3/3 committed · standards done · spec done · editor done
 
 ## Decisions
 
@@ -769,9 +769,9 @@ slices 3/3 committed · standards done · spec done · editor —
      setting, phantom imports refused, and a minimum release age by default, against npm's
      standard by use and stewardship. ESLint + Prettier, settled, with Biome the measured
      alternative: Biome 2.6.3 matched every case with far less surface, but judges a declaration
-     import by a naming convention. Proven by `mise run biome`'s table of 2026-10-26 and the goal
-     record's decisions; the download and funding figures are sourced facts only, read
-     2026-10-26.
+     import by a naming convention. The lint is proven by `mise run biome`'s table of 2026-10-26;
+     both picks are the goal record's decisions; the download and funding figures are sourced
+     facts only, read 2026-10-26.
 
   A change in ESLint's or Prettier's stewardship reopens the lint, with Biome the alternative. A
   registry release reopens npm against pnpm; GitHub Packages stays published as the measured
@@ -806,3 +806,11 @@ slices 3/3 committed · standards done · spec done · editor —
   `spike-html-packages-foundation`, `spike-html-packages-sdk`, and
   `spike-html-packages-components`; references.toml and references.local.toml locate them for the
   intake.
+
+- coordinator · references.local.toml, local only: after the three layer keys, add the line
+  below, as spike-html-conventions' sync did. The file is gitignored, so the sync writes the line
+  on this machine and it is no part of the pull request:
+
+  ```
+  spike-html-packages = "~/experiments/spike-html-packages"
+  ```

@@ -107,10 +107,10 @@ The tasks, in the order they run; each cites the evidence it proves.
    assets and GitHub Packages, now at the tags' versions; and `mise run release-flow`, comparing
    pnpm's change-intent versioning with the hand flow in scratch (evidence 6, 7). Both are measured:
    "Live, 2026-10-26, components v0.2.0" and "Release flow, 2026-10-26" record them.
-8. `answer`: `mise run biome`, linting each layer's violation and allowed trees with its ESLint
-   and with Biome 2.6.3 in scratch; the reweighed picks, the answer, and the answer section
-   (evidence 8). Measured and answered: "ESLint and Biome, 2026-10-26" records the measure, and
-   "The answer" states the spike's answer.
+8. `answer`: `mise run biome`, linting the tree each layer's lint test writes with the layer's
+   ESLint and with Biome 2.6.3 in scratch, and formatting the layer with Biome; the reweighed
+   picks; and the answer (evidence 8). "ESLint and Biome, 2026-10-26" records the measure,
+   "Evidence 8, reweighed" the picks, and "The answer" the spike's answer.
 
 ## Releases
 
@@ -207,7 +207,9 @@ coordinator's `.claude/marathon.toml`, under `[workspace.paths]`.
   tree the layer's own lint test writes with the layer's pinned ESLint and with Biome 2.6.3, which
   mise pins for this task alone, then formats the clone with Biome at the layer's Prettier
   options. It pushes nothing, reads no token, writes nothing in the repository, and removes its
-  scratch. It exits 1 only when a layer can't be set up; a missed case is a measured fact.
+  scratch. It exits 1 only when a layer can't be set up, which includes a file ESLint or Biome
+  can't parse, since each layer's own lint test requires every file to parse; a missed case is a
+  measured fact.
 - `mise run publish`: each layer's latest tag, the highest `vX.Y.Z` on its remote, published to
   GitHub Packages at the tag's version, in the order foundation, sdk, components, from a scratch
   copy of the tag's tree, unchanged. It runs by hand, as
