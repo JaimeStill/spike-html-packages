@@ -4,6 +4,8 @@
 # spike-html-packages-components.
 # Its goals live in the coordinator's roadmap (standards-lab/context/roadmap.toml).
 # `mise run currency` reports every mise tool, package.json pin, and fixture tag behind its latest.
+# `mise run publish`, by hand with GITHUB_PACKAGES_TOKEN, publishes the layers to GitHub Packages
+# at 0.0.1; `mise run live` needs the same token.
 # No gate.
 [project]
 kind = "code"

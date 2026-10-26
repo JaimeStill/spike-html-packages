@@ -13,7 +13,11 @@ This repository holds the spike's record and docs; the layers live in repositori
 - **Standards:** `STANDARDS.md`, with pointers into the architecture repository.
 - **Check:** `mise run check`: Prettier, shellcheck over the scripts, and the consumer tier, which
   installs each fixture in `test/consumers/` offline from its lockfile and `.cache/`, filled by
-  `mise run install`. `mise run live` measures the releases from the network.
+  `mise run install`. `mise run live` measures the releases from the network, GitHub Packages
+  among them, with a read:packages token in `GITHUB_PACKAGES_TOKEN`.
+- **Publish:** `mise run publish [dry-run]`, run by hand with
+  `GITHUB_PACKAGES_TOKEN=$(gh auth token)`, publishes each layer's v0.1.0 tree to GitHub Packages
+  at 0.0.1 and skips each one already there.
 - **Currency:** `mise run currency`: every mise tool, package.json pin, and fixture tag behind its
   latest.
 - **Goals:** this spike's tasks live in the coordinator's roadmap,
