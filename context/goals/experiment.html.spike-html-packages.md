@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 2/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset) · root slices 3-9 —
+slices 3/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6) · root slices 4-9 —
 
 ## Decisions
 
