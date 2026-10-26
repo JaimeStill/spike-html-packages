@@ -720,8 +720,9 @@ slices 0/9 committed · standards — · spec — · editor —
   summary becomes:
 
   ```
-  Real 0.0.1 publishes of the three layers under @jaimestill to GitHub Packages, from a networked
-  `mise run publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
+  Real publishes of the three layers under @jaimestill to GitHub Packages, first at 0.0.1 and then,
+  in the consumers task, at their tags' versions with 0.0.1 deleted, from a networked `mise run
+  publish`, made public and linked to their repositories by hand; npm, pnpm, and bun
   installing them in `mise run live`'s dated table, each needing the registry and a token even
   for public packages, with the .css arriving whole. JSR is recorded from deno 2.9.8 dry runs and
   not published, since every JSR publisher runs Deno, whose runtime development ends
@@ -752,9 +753,3 @@ slices 0/9 committed · standards — · spec — · editor —
   a networked `mise run release-flow` comparing pnpm's change-intent versioning with the hand
   flow, in scratch. Evidence 6, 7.
   ```
-
-- coordinator · roadmap: amend the pending `registries` restatement: its summary opens "Real
-  publishes of the three layers under @jaimestill to GitHub Packages, first at 0.0.1 and then, in
-  the consumers task, at their tags' versions with 0.0.1 deleted, from a networked `mise run
-  publish`, …"; the rest stays.
-- coordinator · html-artifacts.md: nothing new; the pending JSR correction stands.
