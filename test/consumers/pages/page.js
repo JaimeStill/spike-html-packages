@@ -1,7 +1,7 @@
 // The consumer pages' script: it renders the three components and sets window.report, a promise
 // of what each shadow root adopted, or of the error that stopped it. Each page's import map says
 // where its manager's install put the packages.
-// Adapted from test/live/import-map.html: its module script.
+// Adapted from spike-html-packages (e2b8799): test/live/import-map.html, its module script.
 
 window.report = (async () => {
   try {

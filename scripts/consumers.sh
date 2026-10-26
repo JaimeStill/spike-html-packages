@@ -44,9 +44,8 @@ fail() {
 
 # Installs the project frozen from its lockfile, from the repo-local caches, run from the project
 # so each manager reads the guard in the fixture's own config file, and none of the user's own
-# (scripts/unconfigured.sh). pnpm's metadata cache
-# (cacheDir), which --offline resolves from, defaults to the home directory: it goes in
-# .cache/consumers/pnpm/, beside the store.
+# (scripts/unconfigured.sh). pnpm's metadata cache (cacheDir), which --offline resolves from,
+# defaults to the home directory: it goes in .cache/consumers/pnpm/, beside the store.
 install() {
   local manager=$1 project=$2
   shift 2
@@ -144,10 +143,10 @@ node "$fixtures/pages.js" "$tags" "${pages[@]}"
 node "$fixtures/vite.js" "${apps[@]}"
 
 # npm's guard, proven both ways: the install that passes under each committed .npmrc fails under
-# the guard lowered, in a scratch copy, refusing one of the consumer's own git dependencies. npm ci --offline enforces
-# allow-git before it reads the cache, so the refusal is EALLOWGIT, and any other failure, such as
-# ENOTCACHED, proves nothing; nor does a refusal of a package other than the one the lowered guard
-# refuses.
+# the guard lowered, in a scratch copy, refusing one of the consumer's own git dependencies. npm ci
+# --offline enforces allow-git before it reads the cache, so the refusal is EALLOWGIT, and any
+# other failure, such as ENOTCACHED, proves nothing; nor does a refusal of a package other than
+# the one the lowered guard refuses.
 for consumer in "${consumers[@]}"; do
   project=$scratch/$consumer-npm-lowered
   cp -r "$fixtures/$consumer/npm" "$project"

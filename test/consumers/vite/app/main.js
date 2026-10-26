@@ -1,6 +1,7 @@
 // The Vite app's script: it renders the three components and sets window.report, a promise of what
 // each shadow root adopted. Its imports are static, the declarations css-sheets.js rewrites.
-// Adapted from test/consumers/pages/page.js: its imports static, so no error is caught.
+// Adapted from spike-html-packages (382e78e): test/consumers/pages/page.js, its imports static, so
+// no error is caught.
 
 // The app imports the foundation's two baseline sheets by the same names the components do: Vite
 // builds one module per resolved file, so a root that adopted the foundation's reset and elements

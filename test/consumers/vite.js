@@ -10,13 +10,13 @@
 //
 // A build bundles the packages, so its files name no package directory: the sheets every root
 // adopts being the app's own is the check that it holds one foundation. The dev server pre-bundles
-// the components' modules, lit and the foundation's dom.js with them, into node_modules/.vite/deps/,
-// and Vite 8.3.5's pre-bundling leaves each CSS import out of the bundle, by its absolute path, its
-// `with { type: "css" }` kept: css-sheets.js rewrites it as the dev server serves the pre-bundled
-// module, so the components and the app reach one virtual module per sheet file, and the config
-// needs no optimizeDeps of its own. Each sheet's module is served by its file's path, so there each
-// package must also come from one directory, the foundation from the one installed.sh found, as
-// test/consumers/pages.js holds the import-map pages.
+// the components' modules, lit and the foundation's dom.js with them, into
+// node_modules/.vite/deps/, and Vite 8.3.5's pre-bundling leaves each CSS import out of the
+// bundle, by its absolute path, its `with { type: "css" }` kept: css-sheets.js rewrites it as the
+// dev server serves the pre-bundled module, so the components and the app reach one virtual module
+// per sheet file, and the config needs no optimizeDeps of its own. Each sheet's module is served by
+// its file's path, so there each package must also come from one directory, the foundation from
+// the one installed.sh found, as test/consumers/pages.js holds the import-map pages.
 
 import { spawn } from "node:child_process";
 import { realpathSync } from "node:fs";

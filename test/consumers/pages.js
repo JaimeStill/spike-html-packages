@@ -21,7 +21,6 @@ for (let at = 0; at < rest.length; at += 4) {
 }
 
 const scope = "@jaimestill/spike-html-packages-";
-const tagNames = ["sl-status-badge", "sl-entry-lit-shadow", "sl-pagination-lit-shadow"];
 
 /** Fails the check with the message. */
 function fail(message) {
