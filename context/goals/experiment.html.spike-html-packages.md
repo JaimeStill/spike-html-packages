@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 3/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · at the slice 6 stop: before the first publish (foundation 0.1.0, sdk 0.1.0, components 0.2.0), the architect confirms the token · root slices 7-9 —
+slices 3/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · at the slice 6 stop: the architect deletes the three 0.0.1 versions · root slices 7-9 —
 
 ## Decisions
 
