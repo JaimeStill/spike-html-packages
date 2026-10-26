@@ -200,7 +200,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 0/9 committed · standards — · spec — · editor —
+slices 1/9 committed (components 2662e5f) · standards — · spec — · editor —
 
 ## Decisions
 
@@ -700,6 +700,10 @@ slices 0/9 committed · standards — · spec — · editor —
 - consumers: measured in PLAN: `pnpm version -r` reads the registry for an unmarked package and
   bumps a private one offline; it writes changesets-form `## X.Y.Z` / `### Patch Changes`
   sections above a Keep a Changelog preamble, with no format setting.
+
+- consumers: held typescript-eslint at 8.72.0 in the components: 8.72.1 (2026-10-26T17:09Z) is
+  younger than pnpm 12's default minimum release age, and taking it would commit a
+  minimumReleaseAgeExclude; retried before the brief, as layout held eslint-plugin-boundaries.
 
 ## Pending edits
 
