@@ -383,8 +383,8 @@ function measure(label, flow) {
       ? [true, "the section as written, exactly"]
       : extracted.startsWith(written.body)
         ? [
-            true,
-            `the section as written, then the file's next lines to the next heading: ${extracted.slice(written.body.length).trim().split("\n")[0]} ...`,
+            false,
+            `the section as written, then the file's next lines to the next heading, which the release notes would carry: ${extracted.slice(written.body.length).trim().split("\n")[0]} ...`,
           ]
         : [false, `not the section as written: ${extracted.split("\n")[0]} ...`];
   row(`${label}: parse-changelog 0.6.16 extracts ${to}`, yes(extract));
