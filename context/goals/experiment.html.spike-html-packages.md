@@ -1,6 +1,6 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
+- **State:** building
 - **Task:** consumers
 - **Branch:** consumers
 
@@ -74,15 +74,22 @@ Behaviors     1. The components' manifest is at 0.2.0. lit 3.3.3 is its one
                  the layers unbundled from the install. It renders the
                  three components. Each shadow root adopts the same reset
                  and elements sheet objects the page imports by package
-                 name. A page that finds two foundations fails.
+                 name. A page that finds two foundations fails. Each page
+                 also links the foundation's page.css from the install, and
+                 the check requires the design it gives: the document's
+                 background and font from the tokens, a token custom
+                 property resolving inside each shadow root, and the
+                 foundation's @layer order. Its pagination sets a page size
+                 the size select offers.
               7. Six Vite fixtures of their own (the two shapes under npm,
                  pnpm, and bun) each pin Vite and commit a lockfile. They
                  build with the local CSS module script plugin, copied
                  from this repository's history with provenance. In
                  `mise run check`, each one's `vite build`, served
                  statically, and its dev server each render the three
-                 components and pass behavior 6's sheet check. Two
-                 foundations fail.
+                 components and pass behavior 6's sheet and design checks,
+                 the app importing page.css by package name through Vite's
+                 own CSS pipeline. Two foundations fail.
               8. The check also requires the jsDelivr import-map page's lit
                  to equal the lit pinned by the components' v0.2.0
                  manifest; the page names the components at v0.2.0. The
@@ -200,7 +207,7 @@ Release       v0.2.0 of JaimeStill/spike-html-packages-components
 
 ## Progress
 
-slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · standards ✓ (26a32f9, c03ead8, ea65119) · spec ✓ (no gaps) · editor ✓ (767f3f1, 812f759)
+slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack commit 51fe88c with its asset; root b37c1d6, 382e78e, 47c7df5, 9b06330) · published 2026-10-26: foundation 0.1.0, sdk 0.1.0, components 0.2.0, public and linked; rerun skips all three · the three 0.0.1 versions deleted 2026-10-26 by the API after the architect granted delete:packages (ids 1448033488, 1448033571, 1448033642) · root 560fb6e (live, 50 rows, exit 0) · root 05e39a5 (release-flow, exit 0) · standards ✓ (26a32f9, c03ead8, ea65119) · spec — (round 6 reopens) · editor —
 
 ## Decisions
 
@@ -738,6 +745,18 @@ slices 9/9 committed (components merged #2 at 4c0a5d8; v0.2.0 released on pack c
   MISE_GITHUB_TOKEN (standards review).
 - consumers: currency prints parse-changelog as held and exits 0 when a held pin is all that is
   behind.
+
+- consumers: redirected at BRIEF (round 6): the consumers must show the layers shaping the app's
+  design, not only the sheet identity.
+- consumers: the installed pages and the Vite app both load the foundation's page.css (round 6,
+  1).
+- consumers: the Vite app imports page.css by package name, a plain import Vite's own CSS
+  pipeline bundles; the local plugin stays for the components' CSS module scripts (round 6, 2).
+- consumers: the check requires computed design values page.css gives (the document's background
+  and font, a token resolving inside each shadow root, the @layer order), not a screenshot
+  (round 6, 3).
+- consumers: the fixtures' pagination sets a page size the size select offers; an unoffered size
+  is the components' concern, left unchanged (round 6, 4).
 
 ## Pending edits
 
