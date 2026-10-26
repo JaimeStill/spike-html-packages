@@ -1,8 +1,8 @@
 # goal · experiment.html.spike-html-packages
 
-- **State:** brief ready
-- **Task:** answer
-- **Branch:** answer
+- **State:** idle
+- **Task:** none
+- **Branch:** none
 
 ## Tasks
 
@@ -13,7 +13,7 @@
 5. [x] by-tag
 6. [x] registries
 7. [x] consumers
-8. [ ] answer
+8. [x] answer
 
 ## Task brief · answer
 
@@ -99,10 +99,6 @@ Out of scope  Any change to, release of, or upgrade in the layer repositories
 Door          two-way: no tag or publish. The measure runs in scratch, and the
               coordinator's edits land through the sync pull request.
 ```
-
-## Progress
-
-slices 3/3 committed · standards done · spec done · editor done
 
 ## Decisions
 
